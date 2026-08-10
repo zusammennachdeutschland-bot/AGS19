@@ -16,7 +16,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 24
+          node-version: 22
 
       - name: Setup Java JDK
         uses: actions/setup-java@v5
@@ -24,8 +24,10 @@ jobs:
           distribution: 'zulu'
           java-version: '17'
 
-      - name: Install Dependencies
-        run: npm install
+      - name: Install Dependencies & Capacitor
+        run: |
+          npm install
+          npm install @capacitor/cli @capacitor/core @capacitor/android
 
       - name: Build Web Application
         run: npm run build
