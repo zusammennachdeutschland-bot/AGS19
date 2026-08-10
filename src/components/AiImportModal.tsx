@@ -1,10 +1,17 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
-import { parseAiImportText, SAMPLE_IMPORT_TEMPLATE, SAMPLE_MULTI_SCHEDULE_TEMPLATE, AiImportResult } from '../utils/aiImportParser';
+import { 
+  parseAiImportText, 
+  SAMPLE_IMPORT_TEMPLATE, 
+  SAMPLE_MULTI_SCHEDULE_TEMPLATE, 
+  AI_PROMPT_TEMPLATE_AR,
+  AI_PROMPT_TEMPLATE_EN,
+  AiImportResult 
+} from '../utils/aiImportParser';
 import { formatGroupScheduleDisplay } from '../utils/scheduleUtils';
 import { 
   Bot, Sparkles, Copy, Check, CheckCircle2, AlertTriangle, X, 
-  Users, Calendar, Clock, DollarSign, ArrowRight, ShieldCheck, FileText, ChevronRight
+  Users, Calendar, Clock, DollarSign, ArrowRight, ShieldCheck, FileText, ChevronRight, MessageSquareCode
 } from 'lucide-react';
 import { Group } from '../types';
 
@@ -60,11 +67,18 @@ export const AiImportModal: React.FC<AiImportModalProps> = ({
       sessionCount = 8;
       pricePerSession = group.lesson_price ?? Math.round(group.payment_amount / 8);
       monthlyPackagePrice = group.payment_amount;
+    } else if (group.payment_type === '12_lessons') {
+      sessionCount = 12;
+      pricePerSession = group.lesson_price ?? Math.round(group.payment_amount / 12);
+      monthlyPackagePrice = group.payment_amount;
     } else if (group.payment_type === 'monthly') {
       sessionCount = 8;
       pricePerSession = group.lesson_price ?? Math.round(group.payment_amount / 8);
       monthlyPackagePrice = group.payment_amount;
     }
+
+    // Standardize group paymentCycle so UI options are selected
+    const selectedPaymentCycle = group.payment_type === 'per_lesson' ? 'per_lesson' : 'monthly';
 
     // 1. Create Group with full multi-schedule & payment fields
     const newGroup = addGroup({
@@ -75,7 +89,7 @@ export const AiImportModal: React.FC<AiImportModalProps> = ({
       scheduleTime: group.time,
       schedules: group.schedules,
       scheduleDayTimes: group.dayTimes,
-      paymentCycle: group.payment_type,
+      paymentCycle: selectedPaymentCycle,
       sessionCount,
       monthlyPackagePrice,
       pricePerSession,
@@ -212,17 +226,34 @@ export const AiImportModal: React.FC<AiImportModalProps> = ({
             /* PASTE & PREVIEW FORM VIEW */
             <>
               {/* Instructions Banner */}
-              <div className="bg-indigo-50/80 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800/60 rounded-xl p-3.5 sm:p-4 text-xs space-y-2">
-                <div className="flex items-center justify-between gap-2">
+              <div className="bg-indigo-50/80 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800/60 rounded-xl p-3.5 sm:p-4 text-xs space-y-3">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
                   <div className="flex items-center gap-2 font-bold text-indigo-900 dark:text-indigo-200">
-                    <Sparkles className="w-4 h-4 text-indigo-600 dark:text-indigo-400 shrink-0" />
-                    <span>{language === 'ar' ? 'تعليمات الاستيراد الذكي' : 'How to use AI Group Import'}</span>
+                    <Bot className="w-4 h-4 text-purple-600 dark:text-purple-400 shrink-0" />
+                    <span>{language === 'ar' ? 'أوامر للذكاء الاصطناعي (AI Prompt Orders)' : 'Copy Prompt / Orders for AI'}</span>
                   </div>
 
                   <div className="flex items-center gap-1.5 flex-wrap">
                     <button
+                      onClick={() => handleCopySample(language === 'ar' ? AI_PROMPT_TEMPLATE_AR : AI_PROMPT_TEMPLATE_EN, 'prompt')}
+                      className="bg-purple-600 hover:bg-purple-700 text-white font-bold px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer text-xs shadow-xs shrink-0 active:scale-95"
+                    >
+                      {copied === 'prompt' ? (
+                        <>
+                          <Check className="w-3.5 h-3.5 text-white" />
+                          <span>{language === 'ar' ? 'تم نسخ الأوامر!' : 'Prompt Copied!'}</span>
+                        </>
+                      ) : (
+                        <>
+                          <MessageSquareCode className="w-3.5 h-3.5 text-purple-100" />
+                          <span>{language === 'ar' ? 'نسخ أوامر ChatGPT / Gemini' : 'Copy AI Prompt Orders'}</span>
+                        </>
+                      )}
+                    </button>
+
+                    <button
                       onClick={() => handleCopySample(SAMPLE_MULTI_SCHEDULE_TEMPLATE, 'multi')}
-                      className="bg-white dark:bg-indigo-900/80 hover:bg-indigo-100 dark:hover:bg-indigo-800 border border-purple-300 dark:border-purple-700 text-purple-700 dark:text-purple-200 font-bold px-2.5 py-1 rounded-lg transition-all flex items-center gap-1 cursor-pointer text-[11px] shadow-2xs shrink-0"
+                      className="bg-white dark:bg-indigo-900/80 hover:bg-indigo-100 dark:hover:bg-indigo-800 border border-indigo-300 dark:border-indigo-700 text-indigo-700 dark:text-indigo-200 font-bold px-2.5 py-1.5 rounded-lg transition-all flex items-center gap-1 cursor-pointer text-[11px] shadow-2xs shrink-0"
                     >
                       {copied === 'multi' ? (
                         <>
@@ -232,34 +263,17 @@ export const AiImportModal: React.FC<AiImportModalProps> = ({
                       ) : (
                         <>
                           <Sparkles className="w-3.5 h-3.5 text-purple-500" />
-                          <span>{language === 'ar' ? 'مواعيد متعددة + سعر الحصة' : 'Multi-Schedule + Lesson Price'}</span>
-                        </>
-                      )}
-                    </button>
-
-                    <button
-                      onClick={() => handleCopySample(SAMPLE_IMPORT_TEMPLATE, 'standard')}
-                      className="bg-white dark:bg-indigo-900/80 hover:bg-indigo-100 dark:hover:bg-indigo-800 border border-indigo-300 dark:border-indigo-700 text-indigo-700 dark:text-indigo-200 font-bold px-2.5 py-1 rounded-lg transition-all flex items-center gap-1 cursor-pointer text-[11px] shadow-2xs shrink-0"
-                    >
-                      {copied === 'standard' ? (
-                        <>
-                          <Check className="w-3.5 h-3.5 text-emerald-600" />
-                          <span>{language === 'ar' ? 'تم النسخ!' : 'Copied!'}</span>
-                        </>
-                      ) : (
-                        <>
-                          <Copy className="w-3.5 h-3.5" />
-                          <span>{language === 'ar' ? 'نموذج تقليدي' : 'Standard Template'}</span>
+                          <span>{language === 'ar' ? 'تجربة نموذج جاهز' : 'Sample Data'}</span>
                         </>
                       )}
                     </button>
                   </div>
                 </div>
 
-                <p className="text-slate-600 dark:text-slate-300 leading-relaxed">
+                <p className="text-slate-600 dark:text-slate-300 leading-relaxed text-[11px]">
                   {language === 'ar' 
-                    ? 'اطلب من الذكاء الاصطناعي (ChatGPT / Gemini) تجهيز البيانات بهذا التنسيق، ثم انسخ النص والصقه بالأسفل:'
-                    : 'Ask your AI tool (ChatGPT, Gemini, Claude) to format your group & students list in the template below, then paste it here:'}
+                    ? 'اضغط على "نسخ أوامر ChatGPT / Gemini" والصقها في برنامج الذكاء الاصطناعي مع قائمة أسماء طلابك وملاحظات المجموعة، ثم انسخ الرد والصقه في الصندوق بالأسفل مباشرة.'
+                    : 'Click "Copy AI Prompt Orders" and paste it into ChatGPT/Gemini along with your raw group list/notes. Then copy the AI response and paste it into the box below.'}
                 </p>
               </div>
 

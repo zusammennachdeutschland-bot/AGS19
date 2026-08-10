@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { Group, Student, LessonType, AttendanceStatus, HomeworkStatus, PaymentStatus } from '../types';
+import { getDayNumber } from '../utils/scheduleUtils';
 import { 
   X, Play, Users, User, Clock, Calendar as CalendarIcon, Video, MapPin, 
   CheckCircle2, Sparkles, BookOpen, Award, FileText, Zap, ChevronRight, ArrowLeft
@@ -40,28 +41,10 @@ export const StartLessonNowModal: React.FC<StartLessonNowModalProps> = ({ onClos
     if (!dayFilter || dayFilter === 'all') return true;
     if (!group.scheduleDays || group.scheduleDays.length === 0) return false;
 
-    let targetFull = dayFilter;
-    let targetShort = dayFilter;
+    const targetDayNum = dayFilter === 'today' ? new Date().getDay() : getDayNumber(dayFilter);
+    if (targetDayNum === -1) return true;
 
-    if (dayFilter === 'today') {
-      const todayNum = new Date().getDay();
-      const found = GERMAN_WEEKDAYS.find(w => w.dayNum === todayNum);
-      if (found) {
-        targetFull = found.full;
-        targetShort = found.short;
-      }
-    } else {
-      const found = GERMAN_WEEKDAYS.find(w => w.full.toLowerCase() === dayFilter.toLowerCase() || w.short.toLowerCase() === dayFilter.toLowerCase());
-      if (found) {
-        targetFull = found.full;
-        targetShort = found.short;
-      }
-    }
-
-    return group.scheduleDays.some(d => {
-      const lower = d.toLowerCase();
-      return lower.includes(targetFull.toLowerCase()) || lower.includes(targetShort.toLowerCase());
-    });
+    return group.scheduleDays.some(d => getDayNumber(d) === targetDayNum);
   };
 
   const filteredGroups = activeGroups.filter(g => matchGroupDay(g, selectedDayFilter));

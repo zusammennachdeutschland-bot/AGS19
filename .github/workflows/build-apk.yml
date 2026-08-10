@@ -1,0 +1,60 @@
+name: Build Android APK
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Setup Java JDK
+        uses: actions/setup-java@v5
+        with:
+          distribution: 'zulu'
+          java-version: '21'
+
+      - name: Install Project Dependencies
+        run: npm install --legacy-peer-deps
+
+      - name: Install ALL Capacitor Plugins
+        run: |
+          npm install @capacitor/cli @capacitor/core @capacitor/android 
+          npm install @capacitor/app @capacitor/browser @capacitor/clipboard 
+          npm install @capacitor/device @capacitor/dialog @capacitor/filesystem 
+          npm install @capacitor/haptics @capacitor/keyboard @capacitor/local-notifications 
+          npm install @capacitor/preferences @capacitor/share @capacitor/splash-screen 
+          npm install @capacitor/status-bar @capacitor/toast
+
+      - name: Build Web Application
+        run: npm run build
+
+      - name: Clean and Recreate Android Project
+        run: |
+          rm -rf android
+          npx cap add android
+
+      - name: Sync Capacitor Android
+        run: npx cap sync android
+
+      - name: Build Debug APK
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleDebug --stacktrace
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: AGS19-App-APK
+          path: android/app/build/outputs/apk/debug/app-debug.apk

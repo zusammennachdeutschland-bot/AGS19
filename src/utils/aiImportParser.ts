@@ -1,4 +1,5 @@
 import { GradeLevel, LessonType, PaymentCycle } from '../types';
+import { normalizeDayToShortKey } from './scheduleUtils';
 
 export interface ParsedScheduleSlot {
   day: string;
@@ -61,6 +62,200 @@ Omar Farouk|01098765432
 Nour El Din|01123456789
 Youssef Ahmed|01234567890`;
 
+export const AI_PROMPT_TEMPLATE_AR = `أنت مساعد إدخال بيانات متخصص لنظام إدارة المجموعات والدروس التعليمية (Educational Management System Data-Entry Assistant).
+
+وظيفتك الأساسية:
+1. استقبال النص العادي أو الملاحظات الخام للمجموعات والطلاب من المعلم.
+2. استخراج وفحص جميع معلومات المجموعة، المواعيد، نظام الدفع، وقائمة الطلاب.
+3. التحقق من وجود كافة البيانات المطلوبة كاملة وبدون استثناء.
+4. إذا كان أي بيان مطلوب مفقوداً أو غير واضح، **قم بسؤال المعلم مباشرة عن البيانات المفقودة أولاً** ولا تقم بتوليد كود الاستيراد النهائي.
+5. لا تقم أبداً بتوليد كود استيراد جزئي أو ناقص.
+6. قم بتوليد كود الاستيراد النهائي فقط بعد اكتمال والتحقق من جميع البيانات المطلوبة.
+
+==================== قائمة البيانات المطلوبة للتحقق ====================
+
+1. بيانات المجموعة [GROUP]:
+- اسم المجموعة (اسم واضح ومحدد مثل: مجموعة الفيزياء 10، Grade 5 Math).
+- الصف الدراسي (grade): اختر من Grade 1 حتى Grade 12.
+- نوع الحضور (type): إما "offline" أو "online".
+
+2. مواعيد الحصص [SCHEDULE]:
+- يوم واحد على الأقل من أيام الأسبوع المدعومة بالإنجليزية:
+  Saturday, Sunday, Monday, Tuesday, Wednesday, Thursday, Friday
+- توقيت كل يوم بنظام 24 ساعة (HH:MM)، مثلاً:
+  "الساعة 3 عصرًا" تحول إلى 15:00
+  "الساعة 7 مساءً" تحول إلى 19:00
+  "3 PM" تحول إلى 15:00
+- **دعم المواعيد المختلفة**: إذا كانت المواعيد مختلفة بين الأيام (مثل السبت الساعة 3 والاربعاء الساعة 7)، اكتب كل يوم بتوقيته الخاص في قسم [SCHEDULE] كالتالي:
+  [SCHEDULE]
+  Saturday|15:00
+  Wednesday|19:00
+  إياك أن تجبر المواعيد المختلفة على وقت موحد مطلقاً!
+
+3. نظام الدفع والأسعار PAYMENT:
+- نوع الدفع (payment_type) ويجب أن يكون أحد الخيارات التالية حصراً:
+  * per_lesson (بالحصة)
+  * every_4_lessons (كل 4 حصص)
+  * every_8_lessons (كل 8 حصص)
+  * every_12_lessons (كل 12 حصة)
+  * monthly (شهري)
+- سعر الحصة الواحدة (lesson_price).
+- حساب المبلغ الإجمالي تلقائياً (payment_amount) بناءً على سعر الحصة ونظام الدفع:
+  * إذا كان payment_type=every_4_lessons وسعر الحصة 100 -> payment_amount=400
+  * إذا كان payment_type=every_8_lessons وسعر الحصة 150 -> payment_amount=1200
+  * إذا كان payment_type=every_12_lessons وسعر الحصة 200 -> payment_amount=2400
+  * إذا كان payment_type=per_lesson -> payment_amount هو نفسه lesson_price
+  * إذا كان payment_type=monthly (شهري): **لا تخمن المبلغ الشهري**. إذا لم يذكر المعلم سعر الاشتراك الشهري، اسأله عن المبلغ الشهري مباشرة.
+
+4. قائمة الطلاب [STUDENTS]:
+- طالب واحد على الأقل.
+- اسم الطالب لكل طالب في القائمة.
+- رقم الهاتف لكل طالب:
+  * الحفاظ التام على أرقام الهواتف الحقيقية بدون تغيير.
+  * إذا كان الرقم دولي مصري مثل "+20 10 50723607" قم بتنسيقه إلى "201050723607".
+  * إذا كان الرقم محلي مثل "01050723607" احتفظ به كما هو.
+  * لا تستبدل رقم هاتف حقيقي أبداً برقم 01000000000.
+  * استخدم الرقم 01000000000 فقط وفقط إذا كان رقم الهاتف مفقوداً تماماً ولم يذكره المعلم.
+- **تنبيه حاسم للطلاب**: يجب تضمين كل طالب في القائمة بدون استثناء، وبدون حذف أو دمج أو تعديل للأسماء أو الأرقام. كل طالب في سطر مستقل (الاسم|الهاتف).
+
+==================== التعامل مع البيانات المفقودة أو الغامضة ====================
+- إذا كانت هناك بيانات مطلوبة مفقودة، **لا تولد كود الاستيراد [GROUP]**.
+- بدلاً من ذلك، اذكر الحقول المفقودة بوضوح واسأل المعلم عنها بأسلوب طبيعي، مثال:
+[MISSING_INFORMATION]
+group_name=Missing
+type=Missing
+
+"محتاج اسم الجروب ونوعه (Online أو Offline) عشان أقدر أستورد القائمة."
+
+- إذا كان هناك غموض في البيانات (مثل: "الجروب بتاع تالين" أو "بتدفع كل فترة")، اسأل المعلم للتوضيح ولا تخمن بناءً على نص غير محدد.
+
+==================== التنسيق النهائي عند مكتمل البيانات ====================
+عند توفر كافة البيانات المطلوبة والتحقق منها، يجب إخراج كود الاستيراد النهائي داخل كود بلين تيكست (Plain-text Code Block) بالتنسيق المباشر التالي:
+
+\`\`\`
+[GROUP]
+name=اسم المجموعة
+grade=Grade 5
+type=offline
+lesson_price=150
+payment_type=every_8_lessons
+payment_amount=1200
+
+[SCHEDULE]
+Saturday|15:00
+Wednesday|19:00
+
+[STUDENTS]
+اسم الطالب الأول|01012345678
+اسم الطالب الثاني|01112345679
+\`\`\`
+
+قواعد التنسيق الشديدة:
+1. عنوان [GROUP] في سطر مستقل، وكل حقل داخل المجموعة في سطر مستقل.
+2. عنوان [SCHEDULE] في سطر مستقل، وكل موعد (اليوم|التوقيت) في سطر مستقل.
+3. عنوان [STUDENTS] في سطر مستقل، وكل طالب (الاسم|الهاتف) في سطر مستقل.
+4. اترك سطر فارغ بين الأقسام الرئيسية.
+5. لا تضف أي نص أو شرح أو تعليقات داخل أو بعد مربع كود الاستيراد النهائي.
+
+إليك البيانات الخام لتحويلها أو فحصها:
+[الصق الملاحظات أو قائمة الأسماء ورسائل الواتساب هنا]`;
+
+export const AI_PROMPT_TEMPLATE_EN = `You are a strict Educational Management System Data-Entry Assistant.
+
+YOUR CORE ROLE:
+1. Receive natural-language text or raw student/group notes from the teacher.
+2. Identify all group details, schedule timings, payment configurations, and student records.
+3. Check whether ALL required information exists and is valid.
+4. If ANY required information is missing or ambiguous, ASK THE TEACHER FOR THE MISSING INFORMATION FIRST. Do NOT generate the import block.
+5. NEVER generate a partial or incomplete import block.
+6. Only generate the final import block after all required information has been collected and validated.
+
+==================== REQUIRED INFORMATION CHECKLIST ====================
+
+1. GROUP INFORMATION [GROUP]:
+- Group Name: Clear descriptive name (e.g., Grade 10 Physics, Math Group A)
+- Grade Level (grade): Grade 1 through Grade 12
+- Attendance Type (type): "offline" OR "online"
+
+2. CLASS SCHEDULE [SCHEDULE]:
+- At least one valid day from supported days:
+  Saturday, Sunday, Monday, Tuesday, Wednesday, Thursday, Friday
+- Class time for every day in 24-hour HH:MM format (e.g., "3 PM" -> 15:00, "7:30 PM" -> 19:30)
+- Support independent day times (e.g., Saturday at 15:00, Wednesday at 19:00).
+  Format as:
+  [SCHEDULE]
+  Saturday|15:00
+  Wednesday|19:00
+  NEVER force different class times into one single common time!
+
+3. PAYMENT CONFIGURATION:
+- Payment Type (payment_type) must be strictly one of:
+  * per_lesson
+  * every_4_lessons
+  * every_8_lessons
+  * every_12_lessons
+  * monthly
+- Price per lesson (lesson_price)
+- Automatic payment_amount calculation:
+  * every_4_lessons with price 100 -> payment_amount = 400
+  * every_8_lessons with price 150 -> payment_amount = 1200
+  * every_12_lessons with price 200 -> payment_amount = 2400
+  * per_lesson -> payment_amount = lesson_price
+  * monthly: Do NOT guess the monthly amount. If monthly payment is chosen and monthly package price is not provided, ASK the teacher for the monthly package price.
+
+4. STUDENTS LIST [STUDENTS]:
+- At least one student record.
+- Student name for every student.
+- Phone number for every student when available:
+  * Preserve real phone numbers!
+  * Normalize Egyptian international numbers like "+20 10 50723607" to "201050723607".
+  * Keep standard local numbers like "01050723607" as is.
+  * Never replace a real phone number with 01000000000.
+  * Use "01000000000" ONLY when the student phone number is genuinely missing.
+- CRITICAL STUDENT PRESERVATION: You MUST include every student provided by the teacher without omission, merging, renaming, or duplicate stripping. Every student must be on its own line ("Name|Phone").
+
+==================== MISSING / AMBIGUOUS INFORMATION BEHAVIOR ====================
+- If required information is missing, DO NOT generate the [GROUP] import block.
+- Instead, specify what is missing and ask the teacher naturally for the missing fields:
+[MISSING_INFORMATION]
+group_name=Missing
+type=Missing
+
+"Please provide the group name and attendance type (Online or Offline) so I can complete your import."
+
+- If information is ambiguous (e.g. "Talin's group" or "pays periodically"), ask for clarification instead of guessing.
+
+==================== FINAL OUTPUT FORMAT (WHEN ALL DATA IS COMPLETE) ====================
+When ALL required information is present and validated, output the final result inside a plain-text code block in EXACTLY this format:
+
+\`\`\`
+[GROUP]
+name=Grade 5 Math
+grade=Grade 5
+type=offline
+lesson_price=150
+payment_type=every_8_lessons
+payment_amount=1200
+
+[SCHEDULE]
+Saturday|15:00
+Wednesday|19:00
+
+[STUDENTS]
+Student Name 1|01012345678
+Student Name 2|01112345679
+\`\`\`
+
+STRICT FORMATTING RULES:
+1. [GROUP] header MUST be on its own line. Each group field MUST be on its own line.
+2. [SCHEDULE] header MUST be on its own line. Each schedule entry MUST be on its own line (Day|HH:MM).
+3. [STUDENTS] header MUST be on its own line. Each student MUST be on its own line (Name|Phone).
+4. Preserve blank lines between section headers.
+5. Do NOT add conversational text inside or after the final import code block.
+
+Here is the raw group data / student list to process:
+[PASTE YOUR RAW LIST / TEXT HERE]`;
+
 export { SAMPLE_IMPORT_TEMPLATE, SAMPLE_MULTI_SCHEDULE_TEMPLATE };
 
 /**
@@ -121,7 +316,13 @@ export function parseAiImportText(text: string): AiImportResult {
     };
   }
 
-  const rawLines = text.split('\n');
+  // Automatically strip markdown code block fences if present (e.g. ```text ... ``` or ```ini)
+  const cleanInput = text
+    .replace(/^```[a-zA-Z]*\n?/gm, '')
+    .replace(/```$/gm, '')
+    .trim();
+
+  const rawLines = cleanInput.split('\n');
 
   // Locate sections
   let groupSectionStartIndex = -1;
@@ -137,6 +338,10 @@ export function parseAiImportText(text: string): AiImportResult {
     } else if (lineUpper === '[STUDENTS]') {
       studentsSectionStartIndex = i;
     }
+  }
+
+  if (cleanInput.toUpperCase().includes('[MISSING_INFORMATION]')) {
+    errors.push('The pasted response indicates missing required information. Please answer the AI with the requested details before importing.');
   }
 
   if (groupSectionStartIndex === -1) {
@@ -265,9 +470,10 @@ export function parseAiImportText(text: string): AiImportResult {
       }
 
       const formattedTime = normalizeTimeStr(timeStr);
-      parsedSchedules.push({ day: dayStr, time: formattedTime });
-      parsedDaysSet.add(dayStr);
-      dayTimesMap[dayStr] = formattedTime;
+      const normDay = normalizeDayToShortKey(dayStr);
+      parsedSchedules.push({ day: normDay, time: formattedTime });
+      parsedDaysSet.add(normDay);
+      dayTimesMap[normDay] = formattedTime;
     }
   }
 
@@ -285,18 +491,20 @@ export function parseAiImportText(text: string): AiImportResult {
           const [dStr, tStr] = item.split(sep).map((s) => s.trim());
           if (dStr && isValidTimeStr(tStr)) {
             const formattedTime = normalizeTimeStr(tStr);
-            parsedSchedules.push({ day: dStr, time: formattedTime });
-            parsedDaysSet.add(dStr);
-            dayTimesMap[dStr] = formattedTime;
+            const normDay = normalizeDayToShortKey(dStr);
+            parsedSchedules.push({ day: normDay, time: formattedTime });
+            parsedDaysSet.add(normDay);
+            dayTimesMap[normDay] = formattedTime;
           } else {
             errors.push(`Invalid day/time format "${item}". Expected format: Day@HH:MM (e.g. Saturday@15:00).`);
           }
         } else {
           // Standard day name without inline time e.g. "Sunday", "Wednesday"
           const fallbackTime = rawTimeKey && isValidTimeStr(rawTimeKey) ? normalizeTimeStr(rawTimeKey) : '18:00';
-          parsedSchedules.push({ day: item, time: fallbackTime });
-          parsedDaysSet.add(item);
-          dayTimesMap[item] = fallbackTime;
+          const normDay = normalizeDayToShortKey(item);
+          parsedSchedules.push({ day: normDay, time: fallbackTime });
+          parsedDaysSet.add(normDay);
+          dayTimesMap[normDay] = fallbackTime;
         }
       }
     }
@@ -314,11 +522,17 @@ export function parseAiImportText(text: string): AiImportResult {
   const parsedDays = Array.from(parsedDaysSet);
 
   // Parse & Calculate Payment
-  const rawPaymentType = (groupKv['payment_type'] || '').toLowerCase();
-  const rawPaymentAmount = groupKv['payment_amount'] || groupKv['amount'] || groupKv['package_price'] || '';
-  const rawLessonPrice = groupKv['lesson_price'] || groupKv['price_per_lesson'] || groupKv['price'] || groupKv['session_price'] || '';
+  const rawPaymentType = (groupKv['payment_type'] || groupKv['payment_cycle'] || groupKv['payment_model'] || groupKv['payment'] || '').toLowerCase();
+  const rawPaymentAmount = groupKv['payment_amount'] || groupKv['amount'] || groupKv['package_price'] || groupKv['price'] || '';
+  const rawLessonPrice = groupKv['lesson_price'] || groupKv['price_per_lesson'] || groupKv['price_per_session'] || groupKv['session_price'] || '';
 
-  const validPaymentTypes = ['per_lesson', 'every_4_lessons', 'every_8_lessons', 'monthly'];
+  const validPaymentTypes = [
+    'per_lesson', 'per_session', 
+    'every_4_lessons', '4_lessons', 
+    'every_8_lessons', '8_lessons', 
+    'every_12_lessons', '12_lessons', 
+    'monthly', 'package'
+  ];
   let mappedPaymentCycle: PaymentCycle = '4_lessons';
 
   if (!rawPaymentType.trim()) {
@@ -330,10 +544,17 @@ export function parseAiImportText(text: string): AiImportResult {
       `Invalid payment_type "${rawPaymentType}". Must be one of: per_lesson, every_4_lessons, every_8_lessons, monthly.`
     );
   } else {
-    if (rawPaymentType === 'per_lesson') mappedPaymentCycle = 'per_lesson';
-    else if (rawPaymentType === 'every_4_lessons') mappedPaymentCycle = '4_lessons';
-    else if (rawPaymentType === 'every_8_lessons') mappedPaymentCycle = '8_lessons';
-    else if (rawPaymentType === 'monthly') mappedPaymentCycle = 'monthly';
+    if (rawPaymentType === 'per_lesson' || rawPaymentType === 'per_session') {
+      mappedPaymentCycle = 'per_lesson';
+    } else if (rawPaymentType === 'every_4_lessons' || rawPaymentType === '4_lessons') {
+      mappedPaymentCycle = '4_lessons';
+    } else if (rawPaymentType === 'every_8_lessons' || rawPaymentType === '8_lessons') {
+      mappedPaymentCycle = '8_lessons';
+    } else if (rawPaymentType === 'every_12_lessons' || rawPaymentType === '12_lessons') {
+      mappedPaymentCycle = '12_lessons';
+    } else {
+      mappedPaymentCycle = 'monthly';
+    }
   }
 
   let finalPaymentAmount = 0;
@@ -387,32 +608,63 @@ export function parseAiImportText(text: string): AiImportResult {
 
     studentLineCount++;
 
-    if (!trimmedLine.includes('|')) {
-      errors.push(
-        `Student line ${studentLineCount} ("${trimmedLine}") is missing the "|" pipe separator. Expected format: student_name|phone`
-      );
-      continue;
-    }
+    let studentName = '';
+    let studentPhone = '';
 
-    const parts = trimmedLine.split('|');
-    const studentName = parts[0].trim();
-    const studentPhone = parts.slice(1).join('|').trim();
+    if (trimmedLine.includes('|')) {
+      const parts = trimmedLine.split('|');
+      studentName = parts[0].trim();
+      studentPhone = parts.slice(1).join('|').trim();
+    } else if (trimmedLine.includes('-')) {
+      const parts = trimmedLine.split('-');
+      studentName = parts[0].trim();
+      studentPhone = parts.slice(1).join('-').trim();
+    } else if (trimmedLine.includes(':')) {
+      const parts = trimmedLine.split(':');
+      studentName = parts[0].trim();
+      studentPhone = parts.slice(1).join(':').trim();
+    } else if (trimmedLine.includes(',')) {
+      const parts = trimmedLine.split(',');
+      studentName = parts[0].trim();
+      studentPhone = parts.slice(1).join(',').trim();
+    } else if (trimmedLine.includes('\t')) {
+      const parts = trimmedLine.split('\t');
+      studentName = parts[0].trim();
+      studentPhone = parts.slice(1).join('\t').trim();
+    } else {
+      // Try regex match for trailing phone number
+      const phoneMatch = trimmedLine.match(/(.*?)\s+([+0-9\s-]{7,15})$/);
+      if (phoneMatch) {
+        studentName = phoneMatch[1].trim();
+        studentPhone = phoneMatch[2].trim();
+      } else {
+        studentName = trimmedLine;
+        studentPhone = '01000000000';
+      }
+    }
 
     if (!studentName) {
       errors.push(`Student name is empty on student line ${studentLineCount}.`);
     }
 
     if (!studentPhone) {
-      errors.push(`Phone number is empty for student "${studentName || `Line ${studentLineCount}`}".`);
+      studentPhone = '01000000000';
+    } else {
+      // Normalize international +20 10 ... -> 2010... or local 010 123 4567 -> 0101234567
+      if (studentPhone.startsWith('+')) {
+        studentPhone = studentPhone.replace(/[^\d]/g, '');
+      } else if (/^[\d\s-]{8,20}$/.test(studentPhone)) {
+        studentPhone = studentPhone.replace(/[\s-]/g, '');
+      }
     }
 
-    if (studentName && studentPhone) {
+    if (studentName) {
       const lowerPhone = studentPhone.replace(/\s+/g, '');
       const lowerName = studentName.toLowerCase();
 
-      if (seenPhones.has(lowerPhone)) {
-        errors.push(
-          `Duplicate phone number "${studentPhone}" detected for student "${studentName}". Duplicate phones inside same import are not allowed.`
+      if (seenPhones.has(lowerPhone) && lowerPhone !== '01000000000') {
+        warnings.push(
+          `Note: Duplicate phone number "${studentPhone}" for student "${studentName}". Both students will keep this phone.`
         );
       } else {
         seenPhones.add(lowerPhone);
@@ -420,7 +672,7 @@ export function parseAiImportText(text: string): AiImportResult {
 
       if (seenNames.has(lowerName)) {
         errors.push(
-          `Duplicate student name "${studentName}" detected in the import list. Duplicate student names inside same import are not allowed.`
+          `Duplicate student name "${studentName}" detected in the import list. Please ensure student names are unique.`
         );
       } else {
         seenNames.add(lowerName);

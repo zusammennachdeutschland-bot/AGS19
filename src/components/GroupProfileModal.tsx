@@ -15,7 +15,7 @@ export const GroupProfileModal: React.FC<GroupProfileModalProps> = ({ group, onC
 
   const [name, setName] = useState(group.name);
   const [type, setType] = useState(group.type);
-  const [paymentCycle, setPaymentCycle] = useState<PaymentCycle>(group.paymentCycle || 'monthly');
+  const [paymentCycle, setPaymentCycle] = useState<PaymentCycle>(group.paymentCycle === 'per_lesson' ? 'per_lesson' : 'monthly');
   const [monthlyPackagePrice, setMonthlyPackagePrice] = useState(group.monthlyPackagePrice);
   const [pricePerSession, setPricePerSession] = useState(group.pricePerSession || Math.round(group.monthlyPackagePrice / (group.sessionCount || 8)));
   const [sessionCount, setSessionCount] = useState(group.sessionCount || 8);

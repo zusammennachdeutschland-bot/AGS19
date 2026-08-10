@@ -6,7 +6,7 @@ import { StudentProfileModal } from './StudentProfileModal';
 import { GroupProfileModal } from './GroupProfileModal';
 import { DeleteConfirmModal } from './DeleteConfirmModal';
 import { AiImportModal } from './AiImportModal';
-import { formatGroupScheduleDisplay } from '../utils/scheduleUtils';
+import { formatGroupScheduleDisplay, getDayNumber } from '../utils/scheduleUtils';
 
 export const StudentsView: React.FC = () => {
   const { 
@@ -47,28 +47,10 @@ export const StudentsView: React.FC = () => {
     if (!dayFilter || dayFilter === 'all') return true;
     if (!group.scheduleDays || group.scheduleDays.length === 0) return false;
 
-    let targetFull = dayFilter;
-    let targetShort = dayFilter;
+    const targetDayNum = dayFilter === 'today' ? new Date().getDay() : getDayNumber(dayFilter);
+    if (targetDayNum === -1) return true;
 
-    if (dayFilter === 'today') {
-      const todayNum = new Date().getDay();
-      const found = GERMAN_WEEKDAYS.find(w => w.dayNum === todayNum);
-      if (found) {
-        targetFull = found.full;
-        targetShort = found.short;
-      }
-    } else {
-      const found = GERMAN_WEEKDAYS.find(w => w.full.toLowerCase() === dayFilter.toLowerCase() || w.short.toLowerCase() === dayFilter.toLowerCase());
-      if (found) {
-        targetFull = found.full;
-        targetShort = found.short;
-      }
-    }
-
-    return group.scheduleDays.some(d => {
-      const lower = d.toLowerCase();
-      return lower.includes(targetFull.toLowerCase()) || lower.includes(targetShort.toLowerCase());
-    });
+    return group.scheduleDays.some(d => getDayNumber(d) === targetDayNum);
   };
 
   const activeStudents = students.filter(s => s.status !== 'archived');
@@ -299,13 +281,13 @@ export const StudentsView: React.FC = () => {
               </button>
             </div>
           ) : (
-            filteredStudents.map((student) => {
+            filteredStudents.map((student, idx) => {
               const studentGroup = groups.find(g => g.id === student.groupId);
               const cleanParentPhone = student.parentPhone.replace(/[^0-9+]/g, '');
 
               return (
                 <div
-                  key={student.id}
+                  key={`${student.id}_${idx}`}
                   className="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 rounded-xl p-4 shadow-2xs hover:shadow-xs transition-all flex items-center justify-between gap-3 cursor-pointer group relative"
                   onClick={() => {
                     setSelectedStudent(student);
@@ -493,12 +475,12 @@ export const StudentsView: React.FC = () => {
               </button>
             </div>
           ) : (
-            filteredGroups.map((group) => {
+            filteredGroups.map((group, idx) => {
             const count = students.filter(s => s.groupId === group.id).length;
 
             return (
               <div
-                key={group.id}
+                key={`${group.id}_${idx}`}
                 onClick={() => setSelectedGroup(group)}
                 className="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 rounded-xl p-4 shadow-2xs hover:shadow-xs transition-all flex items-center justify-between gap-3 cursor-pointer group"
               >

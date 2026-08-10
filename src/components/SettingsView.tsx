@@ -283,11 +283,11 @@ export const SettingsView: React.FC = () => {
     },
     {
       id: 'backup' as SettingsCategory,
-      title: language === 'ar' ? 'البيانات والنسخ الاحتياطي' : language === 'de' ? 'Daten & Sicherung' : 'Data & Backup',
-      description: language === 'ar' ? 'تنزيل واستعادة وتصدير واستيراد البيانات' : language === 'de' ? 'Sicherung herunterladen & wiederherstellen' : 'Download, restore, export & import data',
+      title: language === 'ar' ? 'النسخ الاحتياطي والبيانات' : language === 'de' ? 'Sicherung & Daten' : 'Backup & Restore',
+      description: language === 'ar' ? 'تنزيل واستعادة النسخة الاحتياطية وإعادة ضبط البيانات' : language === 'de' ? 'Sicherung herunterladen, wiederherstellen & zurücksetzen' : 'Download, restore backups & reset data',
       icon: HardDrive,
       color: 'bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border-cyan-200/50 dark:border-cyan-800/50',
-      badge: 'JSON Backup'
+      badge: 'Backup & Reset'
     },
     {
       id: 'about' as SettingsCategory,
@@ -374,36 +374,6 @@ export const SettingsView: React.FC = () => {
                 </button>
               );
             })}
-          </div>
-
-          {/* DANGER ZONE VISUALLY SEPARATED AT BOTTOM */}
-          <div className="pt-3">
-            <div className="bg-rose-50/60 dark:bg-rose-950/20 border-2 border-rose-200/80 dark:border-rose-900/50 rounded-xl p-4 space-y-3 shadow-2xs">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2.5">
-                  <div className="p-2.5 bg-rose-500/10 border border-rose-200 dark:border-rose-900/60 rounded-lg text-rose-600 dark:text-rose-400 shrink-0">
-                    <ShieldAlert className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h3 className="text-xs font-black uppercase tracking-wider text-rose-600 dark:text-rose-400">
-                      {language === 'ar' ? 'منطقة الخطر' : 'Danger Zone'}
-                    </h3>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">
-                      {language === 'ar' ? 'إجراءات حساسة ومسح البيانات التام' : 'Sensitive actions & total data reset'}
-                    </p>
-                  </div>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => setActiveCategory('danger')}
-                  className="px-3.5 py-2 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-xl shadow-xs transition-all cursor-pointer flex items-center gap-1.5 shrink-0"
-                >
-                  <Trash2 className="w-4 h-4" />
-                  <span>{language === 'ar' ? 'فتح منطقة الخطر' : 'Open Danger Zone'}</span>
-                </button>
-              </div>
-            </div>
           </div>
         </div>
       )}
@@ -1447,35 +1417,39 @@ export const SettingsView: React.FC = () => {
       {/* ==========================================
           SUBPAGE 6: DATA & BACKUP
       ========================================== */}
-      {activeCategory === 'backup' && (
+      {/* ==========================================
+          SUBPAGE 6: DATA & BACKUP (INCLUDES DANGER ZONE)
+      ========================================== */}
+      {(activeCategory === 'backup' || activeCategory === 'danger') && (
         <div className="space-y-4 animate-scale-up">
           {renderSubPageHeader(
-            language === 'ar' ? 'البيانات والنسخ الاحتياطي' : 'Data & Backup',
-            language === 'ar' ? 'تنزيل نسخة احتياطية واستعادتها وتصدير أو استيراد البيانات' : 'Download, restore, export & import application data'
+            language === 'ar' ? 'النسخ الاحتياطي وإدارة البيانات' : 'Backup & Data Management',
+            language === 'ar' ? 'تنزيل واستعادة نسخة احتياطية من البيانات أو مسح البيانات' : 'Download, restore backup or reset application data'
           )}
 
+          {/* Backup & Restore Section */}
           <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-xl p-5 shadow-2xs space-y-4">
             <div className="flex items-center justify-between">
               <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
                 <HardDrive className="w-4 h-4 text-emerald-600" />
-                <span>{t('settings_backup')}</span>
+                <span>{language === 'ar' ? 'النسخ الاحتياطي والاستعادة' : 'Backup & Restore'}</span>
               </h3>
             </div>
 
             <p className="text-xs text-slate-600 dark:text-slate-400">
               {language === 'ar' 
-                ? 'احتفظ بنسخة من جميع الطلاب والمجموعات والحصص والمدفوعات آمنة محلياً أو استعدها في أي وقت.'
-                : 'Keep a secure local backup of all students, groups, lessons, and payment records.'}
+                ? 'احتفظ بنسخة من جميع الطلاب والمجموعات والحصص والمدفوعات آمنة محلياً (ملف JSON) أو استعدها في أي وقت.'
+                : 'Keep a secure local JSON backup of all students, groups, lessons, and payment records, or restore at any time.'}
             </p>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
               <button
                 type="button"
                 onClick={exportBackupFile}
-                className="bg-emerald-600 hover:bg-emerald-700 active:scale-[0.99] text-white font-bold py-3.5 px-4 rounded-lg shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer"
+                className="bg-emerald-600 hover:bg-emerald-700 active:scale-[0.99] text-white font-bold py-3.5 px-4 rounded-xl shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer"
               >
                 <Download className="w-4 h-4" />
-                <span>{t('settings_download_backup')}</span>
+                <span>{language === 'ar' ? 'تنزيل / تصدير النسخة الاحتياطية (JSON)' : 'Download / Export Backup (JSON)'}</span>
               </button>
 
               <div>
@@ -1489,33 +1463,12 @@ export const SettingsView: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
-                  className="w-full bg-slate-800 hover:bg-slate-900 dark:bg-slate-800 dark:hover:bg-slate-700 active:scale-[0.99] text-white font-bold py-3.5 px-4 rounded-lg shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer"
+                  className="w-full bg-slate-800 hover:bg-slate-900 dark:bg-slate-800 dark:hover:bg-slate-700 active:scale-[0.99] text-white font-bold py-3.5 px-4 rounded-xl shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer"
                 >
-                  <Upload className="w-4 h-4" />
-                  <span>{t('settings_restore_backup')}</span>
+                  <Upload className="w-4 h-4 text-purple-400" />
+                  <span>{language === 'ar' ? 'استعادة / استيراد من ملف (JSON)' : 'Restore / Import Backup (JSON)'}</span>
                 </button>
               </div>
-            </div>
-
-            {/* Export / Import Actions */}
-            <div className="pt-3 border-t border-slate-100 dark:border-slate-800 grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-              <button
-                type="button"
-                onClick={exportBackupFile}
-                className="p-3 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-800 dark:text-slate-200 rounded-xl font-bold flex items-center justify-center gap-2 cursor-pointer"
-              >
-                <FileText className="w-4 h-4 text-blue-600" />
-                <span>{language === 'ar' ? 'تصدير البيانات (JSON)' : 'Export Data (JSON)'}</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                className="p-3 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-800 dark:text-slate-200 rounded-xl font-bold flex items-center justify-center gap-2 cursor-pointer"
-              >
-                <Upload className="w-4 h-4 text-purple-600" />
-                <span>{language === 'ar' ? 'استيراد بيانات خارجية' : 'Import External Data'}</span>
-              </button>
             </div>
 
             {restoreStatusMsg && (
@@ -1524,6 +1477,34 @@ export const SettingsView: React.FC = () => {
                 <span>{restoreStatusMsg}</span>
               </div>
             )}
+          </div>
+
+          {/* Danger Zone Section inside Backup */}
+          <div className="bg-rose-50/70 dark:bg-rose-950/30 border-2 border-rose-200 dark:border-rose-900/80 rounded-xl p-5 space-y-3.5 shadow-sm">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 bg-rose-600 text-white rounded-lg shrink-0 shadow-xs">
+                <AlertTriangle className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-xs font-black uppercase tracking-wider text-rose-900 dark:text-rose-200">
+                  {language === 'ar' ? 'منطقة الخطر (إعادة ضبط البيانات)' : 'Danger Zone (Data Reset)'}
+                </h3>
+                <p className="text-xs text-rose-700 dark:text-rose-300 mt-0.5 leading-relaxed">
+                  {language === 'ar'
+                    ? 'إجراءات حساسة: سيؤدي هذا إلى حذف كافة الطلاب والمجموعات والحصص والمدفوعات نهائياً من هذا الجهاز.'
+                    : 'Sensitive actions: Resetting data will permanently delete all students, groups, lessons, and payment records.'}
+                </p>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setShowClearConfirm(true)}
+              className="w-full bg-rose-600 hover:bg-rose-700 active:scale-[0.99] text-white font-black text-xs py-3 px-4 rounded-xl shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer"
+            >
+              <Trash2 className="w-4 h-4" />
+              <span>{t('settings_clear_data')}</span>
+            </button>
           </div>
         </div>
       )}
@@ -1626,45 +1607,6 @@ export const SettingsView: React.FC = () => {
             <div className="text-center pt-2 text-xs font-mono font-bold text-slate-400">
               AGS19 • Version 2.5.0
             </div>
-          </div>
-        </div>
-      )}
-
-      {/* ==========================================
-          SUBPAGE 8: DANGER ZONE
-      ========================================== */}
-      {activeCategory === 'danger' && (
-        <div className="space-y-4 animate-scale-up">
-          {renderSubPageHeader(
-            language === 'ar' ? 'منطقة الخطر' : 'Danger Zone',
-            language === 'ar' ? 'إجراءات حساسة ومسح البيانات التام' : 'Sensitive actions & total data reset'
-          )}
-
-          <div className="bg-rose-50/70 dark:bg-rose-950/30 border-2 border-rose-300 dark:border-rose-900 rounded-xl p-6 space-y-4 shadow-md">
-            <div className="flex items-center gap-3">
-              <div className="p-3 bg-rose-600 text-white rounded-lg shrink-0 shadow-sm">
-                <AlertTriangle className="w-6 h-6" />
-              </div>
-              <div>
-                <h3 className="text-base font-black text-rose-900 dark:text-rose-200">
-                  {t('settings_clear_data')}
-                </h3>
-                <p className="text-xs text-rose-700 dark:text-rose-300 mt-0.5">
-                  {language === 'ar'
-                    ? 'سيؤدي هذا الإجراء إلى حذف كافة الطلاب والمجموعات والحصص وسجلات المدفوعات نهائياً من هذا الجهاز.'
-                    : 'This action will permanently delete all students, groups, lessons, and payment records from this device.'}
-                </p>
-              </div>
-            </div>
-
-            <button
-              type="button"
-              onClick={() => setShowClearConfirm(true)}
-              className="w-full bg-rose-600 hover:bg-rose-700 active:scale-[0.99] text-white font-black text-xs py-3.5 px-4 rounded-lg shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
-            >
-              <Trash2 className="w-4 h-4" />
-              <span>{t('settings_clear_data')}</span>
-            </button>
           </div>
         </div>
       )}

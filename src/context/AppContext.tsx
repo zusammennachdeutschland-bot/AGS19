@@ -260,30 +260,75 @@ export const AppProvider: React.FC<{ children: React.ReactNode, initialData: any
     return translations[language]?.[key] || translations['de']?.[key] || key;
   };
 
-  // Initial state for fresh start
+  // Initial state for fresh start with duplicate ID sanitization
   const [groups, setGroups] = useState<Group[]>(() => {
     const saved = initialData['dl_groups'];
-    return saved !== null && saved !== undefined ? saved : INITIAL_GROUPS;
+    const raw: Group[] = saved !== null && saved !== undefined ? saved : INITIAL_GROUPS;
+    const seen = new Set<string>();
+    return raw.map((item, idx) => {
+      if (seen.has(item.id)) {
+        const newId = `${item.id}_fixed_${idx}_${Math.random().toString(36).substring(2, 6)}`;
+        return { ...item, id: newId };
+      }
+      seen.add(item.id);
+      return item;
+    });
   });
 
   const [students, setStudents] = useState<Student[]>(() => {
     const saved = initialData['dl_students'];
-    return saved !== null && saved !== undefined ? saved : INITIAL_STUDENTS;
+    const raw: Student[] = saved !== null && saved !== undefined ? saved : INITIAL_STUDENTS;
+    const seen = new Set<string>();
+    return raw.map((item, idx) => {
+      if (seen.has(item.id)) {
+        const newId = `${item.id}_fixed_${idx}_${Math.random().toString(36).substring(2, 6)}`;
+        return { ...item, id: newId };
+      }
+      seen.add(item.id);
+      return item;
+    });
   });
 
   const [lessons, setLessons] = useState<Lesson[]>(() => {
     const saved = initialData['dl_lessons'];
-    return saved !== null && saved !== undefined ? saved : INITIAL_LESSONS;
+    const raw: Lesson[] = saved !== null && saved !== undefined ? saved : INITIAL_LESSONS;
+    const seen = new Set<string>();
+    return raw.map((item, idx) => {
+      if (seen.has(item.id)) {
+        const newId = `${item.id}_fixed_${idx}_${Math.random().toString(36).substring(2, 6)}`;
+        return { ...item, id: newId };
+      }
+      seen.add(item.id);
+      return item;
+    });
   });
 
   const [payments, setPayments] = useState<PaymentRecord[]>(() => {
     const saved = initialData['dl_payments'];
-    return saved !== null && saved !== undefined ? saved : INITIAL_PAYMENT_RECORDS;
+    const raw: PaymentRecord[] = saved !== null && saved !== undefined ? saved : INITIAL_PAYMENT_RECORDS;
+    const seen = new Set<string>();
+    return raw.map((item, idx) => {
+      if (seen.has(item.id)) {
+        const newId = `${item.id}_fixed_${idx}_${Math.random().toString(36).substring(2, 6)}`;
+        return { ...item, id: newId };
+      }
+      seen.add(item.id);
+      return item;
+    });
   });
 
   const [notifications, setNotifications] = useState<NotificationItem[]>(() => {
     const saved = initialData['dl_notifications'];
-    return saved !== null && saved !== undefined ? saved : INITIAL_NOTIFICATIONS;
+    const raw: NotificationItem[] = saved !== null && saved !== undefined ? saved : INITIAL_NOTIFICATIONS;
+    const seen = new Set<string>();
+    return raw.map((item, idx) => {
+      if (seen.has(item.id)) {
+        const newId = `${item.id}_fixed_${idx}_${Math.random().toString(36).substring(2, 6)}`;
+        return { ...item, id: newId };
+      }
+      seen.add(item.id);
+      return item;
+    });
   });
 
   // Inspiration & Gratitude Reminders State
@@ -784,7 +829,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode, initialData: any
   const addGroup = (groupData: Omit<Group, 'id'>): Group => {
     const newGroup: Group = {
       ...groupData,
-      id: `g_${Date.now()}`
+      id: `g_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`
     };
     setGroups(prev => [...prev, newGroup]);
     return newGroup;
@@ -827,7 +872,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode, initialData: any
   const addStudent = (studentData: Omit<Student, 'id' | 'documents' | 'joinedDate'>): Student => {
     const newStudent: Student = {
       ...studentData,
-      id: `s_${Date.now()}`,
+      id: `s_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
       documents: [],
       joinedDate: new Date().toISOString().split('T')[0]
     };

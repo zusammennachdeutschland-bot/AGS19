@@ -62,7 +62,7 @@ export interface Group {
   sessionCount: number; // e.g., 1, 4, 8, 12
   startingSessionNumber?: number; // e.g., 1, 3, 5, 8...
   paymentMethod?: 'vodafone_cash' | 'cash' | 'bank_transfer' | 'paypal' | 'instapay';
-  paymentCycle?: 'per_lesson' | '4_lessons' | '8_lessons' | '12_lessons';
+  paymentCycle?: PaymentCycle;
   scheduleDays?: string[]; // e.g. ['Sunday', 'Wednesday']
   scheduleTime?: string; // e.g. "17:00"
   scheduleDayTimes?: Record<string, string>; // e.g. { "Sunday": "15:00", "Wednesday": "19:00" }

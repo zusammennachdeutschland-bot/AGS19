@@ -151,7 +151,7 @@ export const PaymentsView: React.FC = () => {
           const lessonIds = currentChunk.map(l => l.id);
 
           list.push({
-            id: (chunkIndex === 0 && unpaidRec?.id) ? unpaidRec.id : `due_cycle_${st.id}_${currentChunk[0]?.id || Date.now()}_${chunkIndex}`,
+            id: (chunkIndex === 0 && unpaidRec?.id) ? unpaidRec.id : `due_cycle_${st.id}_${currentChunk[0]?.id || Date.now()}_chunk_${chunkIndex}`,
             studentId: st.id,
             studentName: st.name,
             groupId: st.groupId || grp?.id || '',
@@ -253,7 +253,7 @@ export const PaymentsView: React.FC = () => {
         const proratedAmount = Math.round(pricePerSession * stCompletedLessons.length);
 
         list.push({
-          id: `in_progress_cycle_${st.id}_${stCompletedLessons[0]?.id || Date.now()}`,
+          id: `in_progress_cycle_${st.id}_${stCompletedLessons[0]?.id || Date.now()}_st_${st.name.replace(/\s+/g, '_')}`,
           studentId: st.id,
           studentName: st.name,
           groupId: st.groupId || grp?.id || '',
@@ -473,9 +473,9 @@ ${datesFormatted}
               </div>
             </div>
           ) : (
-            filteredDueCycles.map(item => (
+            filteredDueCycles.map((item, idx) => (
               <div
-                key={item.id}
+                key={`${item.id}_${idx}`}
                 className="bg-white dark:bg-slate-900 p-4 sm:p-5 rounded-xl border border-amber-200/80 dark:border-amber-950/80 shadow-xs space-y-3.5 relative overflow-hidden"
               >
                 {/* TOP ROW: STUDENT INFO & AMOUNT DUE */}
@@ -593,8 +593,8 @@ ${datesFormatted}
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-                {filteredInProgressCycles.map(item => (
-                  <div key={item.id} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 rounded-lg space-y-3 shadow-xs relative text-right dir-rtl">
+                {filteredInProgressCycles.map((item, idx) => (
+                  <div key={`${item.id}_${idx}`} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 rounded-lg space-y-3 shadow-xs relative text-right dir-rtl">
                     <div className="flex justify-between items-start flex-row-reverse">
                       <div>
                         <h4 className="text-xs font-black text-slate-800 dark:text-white text-right">{item.studentName}</h4>
