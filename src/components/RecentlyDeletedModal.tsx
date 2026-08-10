@@ -19,7 +19,7 @@ export const RecentlyDeletedModal: React.FC = () => {
   const totalCount = recentlyDeleted.students.length + recentlyDeleted.groups.length + recentlyDeleted.lessons.length;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pt-[max(24px,env(safe-area-inset-top,24px))] bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
       <div 
         className="w-full max-w-2xl bg-white dark:bg-slate-800 rounded-lg shadow-2xl border border-slate-200 dark:border-slate-700 overflow-hidden flex flex-col max-h-[85vh]"
         onClick={(e) => e.stopPropagation()}

@@ -25,9 +25,18 @@ import { RecentlyDeletedModal } from './components/RecentlyDeletedModal';
 import { SetupWizard } from './components/SetupWizard';
 
 import { useLessonReminders } from './hooks/useLessonReminders';
+import { Capacitor } from '@capacitor/core';
+import { StatusBar, Style } from '@capacitor/status-bar';
 
 function MainApp() {
   useLessonReminders();
+
+  useEffect(() => {
+    if (Capacitor.isNativePlatform()) {
+      StatusBar.setOverlaysWebView({ overlay: true }).catch(() => {});
+      StatusBar.setStyle({ style: Style.Dark }).catch(() => {});
+    }
+  }, []);
 
   const { 
     activeTab, setActiveTab, 

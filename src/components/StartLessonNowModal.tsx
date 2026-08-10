@@ -12,7 +12,7 @@ interface StartLessonNowModalProps {
 }
 
 export const StartLessonNowModal: React.FC<StartLessonNowModalProps> = ({ onClose }) => {
-  const { groups, students, profile, addLesson, openLessonControl, saveLessonReport, t } = useApp();
+  const { groups, students, profile, addLesson, openLessonControl, saveLessonReport, startActiveLessonTimer, t } = useApp();
 
   const now = new Date();
   const todayStr = now.toISOString().split('T')[0];
@@ -172,8 +172,9 @@ export const StartLessonNowModal: React.FC<StartLessonNowModalProps> = ({ onClos
     addLesson(newLessonData, 1);
 
     if (mode === 'start_live') {
-      // Launch live control modal immediately
+      // Launch live timer & control modal immediately
       confetti({ particleCount: 70, spread: 60 });
+      startActiveLessonTimer(newLessonData);
       openLessonControl(newLessonData);
       onClose();
     } else {
@@ -199,7 +200,7 @@ export const StartLessonNowModal: React.FC<StartLessonNowModalProps> = ({ onClos
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+    <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 pt-[max(24px,env(safe-area-inset-top,24px))] overflow-y-auto">
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl w-full max-w-xl shadow-2xl overflow-hidden my-auto animate-scale-up space-y-0">
         
         {/* Header */}

@@ -62,7 +62,7 @@ export const AddQuickLessonModal: React.FC<AddQuickLessonModalProps> = ({ onClos
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto font-sans">
+    <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 pt-[max(24px,env(safe-area-inset-top,24px))] overflow-y-auto font-sans">
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl w-full max-w-md shadow-2xl overflow-hidden my-auto animate-scale-up">
         {/* Header */}
         <div className="bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800 p-5 flex items-center justify-between text-slate-800 dark:text-slate-100 shrink-0">
@@ -251,10 +251,10 @@ export const AddQuickLessonModal: React.FC<AddQuickLessonModalProps> = ({ onClos
           <button
             type="submit"
             disabled={hasConflict}
-            className={`w-full text-white dark:text-slate-900 font-black text-xs py-2.5 rounded-lg transition-all flex items-center justify-center gap-2 cursor-pointer mt-2 border ${
+            className={`w-full text-white font-black text-xs py-2.5 rounded-lg transition-all flex items-center justify-center gap-2 cursor-pointer mt-2 border ${
               hasConflict 
                 ? 'bg-slate-300 border-slate-300 text-slate-500 cursor-not-allowed opacity-70' 
-                : 'bg-slate-900 border-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:border-slate-100 dark:hover:bg-slate-200 shadow-sm'
+                : 'bg-amber-500 border-amber-500 hover:bg-amber-600 text-white shadow-sm'
             }`}
           >
             <Zap className="w-3.5 h-3.5 fill-current" />

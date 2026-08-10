@@ -47,6 +47,11 @@ export interface TeacherProfile {
 
 export type PaymentCycle = 'per_lesson' | '4_lessons' | '8_lessons' | '12_lessons' | 'monthly';
 
+export interface GroupScheduleSlot {
+  day: string;
+  time: string;
+}
+
 export interface Group {
   id: string;
   name: string;
@@ -58,9 +63,10 @@ export interface Group {
   startingSessionNumber?: number; // e.g., 1, 3, 5, 8...
   paymentMethod?: 'vodafone_cash' | 'cash' | 'bank_transfer' | 'paypal' | 'instapay';
   paymentCycle?: 'per_lesson' | '4_lessons' | '8_lessons' | '12_lessons';
-  scheduleDays?: string[]; // e.g. ['Montag', 'Mittwoch'] or ['Mo', 'Mi']
+  scheduleDays?: string[]; // e.g. ['Sunday', 'Wednesday']
   scheduleTime?: string; // e.g. "17:00"
-  scheduleDayTimes?: Record<string, string>; // e.g. { "Mo": "17:00", "Mi": "18:30" }
+  scheduleDayTimes?: Record<string, string>; // e.g. { "Sunday": "15:00", "Wednesday": "19:00" }
+  schedules?: GroupScheduleSlot[]; // Multi-schedule slots with independent day/time
   zoomLink?: string;
   meetLink?: string;
   address?: string;

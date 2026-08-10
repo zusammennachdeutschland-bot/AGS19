@@ -48,6 +48,11 @@ export const GroupProfileModal: React.FC<GroupProfileModalProps> = ({ group, onC
       ? Number(pricePerSession) * (sessionCount || 8)
       : Number(monthlyPackagePrice);
 
+    const schedules = scheduleDays.map(day => ({
+      day,
+      time: dayTimes[day] || scheduleTime || '17:00'
+    }));
+
     const updatedGroupData = {
       ...group,
       name,
@@ -59,6 +64,7 @@ export const GroupProfileModal: React.FC<GroupProfileModalProps> = ({ group, onC
       scheduleDays,
       scheduleTime,
       scheduleDayTimes: dayTimes,
+      schedules,
       zoomLink: type === 'online' ? zoomLink : undefined,
       meetLink: type === 'online' ? meetLink : undefined,
       address: type === 'offline' ? address : undefined,
@@ -76,7 +82,7 @@ export const GroupProfileModal: React.FC<GroupProfileModalProps> = ({ group, onC
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 pt-[max(24px,env(safe-area-inset-top,24px))]">
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl w-full max-w-md shadow-2xl overflow-hidden animate-scale-up">
         {/* Header */}
         <div className="bg-gradient-to-r from-indigo-700 to-purple-800 p-5 text-white flex items-center justify-between">

@@ -184,11 +184,14 @@ export const LessonControlModal: React.FC = () => {
         setTimerSeconds(activeLessonSession.accumulatedSeconds);
         setIsTimerRunning(false);
       }
+    } else if (selectedLesson.status === 'in_progress' && !activeLessonSession) {
+      // Auto-start active global timer if lesson is in_progress
+      startActiveLessonTimer(selectedLesson);
     } else {
       setTimerSeconds(0);
       setIsTimerRunning(false);
     }
-  }, [selectedLesson?.id, activeLessonSession?.startedAt, activeLessonSession?.isRunning, activeLessonSession?.accumulatedSeconds, activeLessonSession?.lessonId]);
+  }, [selectedLesson?.id, selectedLesson?.status, activeLessonSession?.startedAt, activeLessonSession?.isRunning, activeLessonSession?.accumulatedSeconds, activeLessonSession?.lessonId]);
 
   // Stopwatch interval timer with Date.now() delta calculation
   useEffect(() => {
@@ -331,7 +334,7 @@ export const LessonControlModal: React.FC = () => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+    <div className="fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 pt-[max(24px,env(safe-area-inset-top,24px))] overflow-y-auto">
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl w-full max-w-xl shadow-2xl overflow-hidden my-auto animate-scale-up">
         {/* Top Header */}
         <div className="bg-slate-900 text-white p-5 flex items-center justify-between relative">

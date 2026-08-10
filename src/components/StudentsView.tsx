@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { Student, Group } from '../types';
-import { Users, UserPlus, Search, Phone, Send, ChevronRight, Plus, MapPin, Video, FolderCheck, X, Trash2, Edit3, Archive, RotateCcw, MoreVertical, User, FileText, Award, DollarSign } from 'lucide-react';
+import { Users, UserPlus, Search, Phone, Send, ChevronRight, Plus, MapPin, Video, FolderCheck, X, Trash2, Edit3, Archive, RotateCcw, MoreVertical, User, FileText, Award, DollarSign, Bot } from 'lucide-react';
 import { StudentProfileModal } from './StudentProfileModal';
 import { GroupProfileModal } from './GroupProfileModal';
 import { DeleteConfirmModal } from './DeleteConfirmModal';
+import { AiImportModal } from './AiImportModal';
+import { formatGroupScheduleDisplay } from '../utils/scheduleUtils';
 
 export const StudentsView: React.FC = () => {
   const { 
@@ -23,6 +25,7 @@ export const StudentsView: React.FC = () => {
   const [selectedStudentTab, setSelectedStudentTab] = useState<'overview' | 'attendance' | 'scores' | 'payments' | 'files' | 'edit'>('overview');
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
   const [selectedGroup, setSelectedGroup] = useState<Group | null>(null);
+  const [isAiImportModalOpen, setIsAiImportModalOpen] = useState(false);
 
   const [deleteTarget, setDeleteTarget] = useState<{
     type: 'student' | 'group';
@@ -117,7 +120,7 @@ export const StudentsView: React.FC = () => {
           <span>{t('students_and_groups_title')}</span>
         </h2>
 
-        <div className="flex items-center gap-2 w-full sm:w-auto">
+        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
           <button
             onClick={() => setIsAddStudentModalOpen(true)}
             className="flex-1 sm:flex-initial bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-bold text-xs px-3 py-2.5 rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs whitespace-nowrap"
@@ -127,11 +130,21 @@ export const StudentsView: React.FC = () => {
           </button>
 
           <button
+            type="button"
             onClick={() => setIsAddGroupModalOpen(true)}
-            className="flex-1 sm:flex-initial bg-slate-900 hover:bg-slate-800 dark:bg-white dark:hover:bg-slate-100 active:scale-95 text-white dark:text-slate-900 font-bold text-xs px-3 py-2.5 rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs whitespace-nowrap"
+            className="flex-1 sm:flex-initial bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white font-bold text-xs px-3 py-2.5 rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs whitespace-nowrap"
           >
             <Plus className="w-3.5 h-3.5 shrink-0" />
             <span>{t('students_add_group')}</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setIsAiImportModalOpen(true)}
+            className="flex-1 sm:flex-initial bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 active:scale-95 text-white font-bold text-xs px-3 py-2.5 rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs whitespace-nowrap"
+          >
+            <Bot className="w-3.5 h-3.5 shrink-0 text-purple-200" />
+            <span>{language === 'ar' ? 'استيراد مجموعة + طلاب' : 'Import Group + Students'}</span>
           </button>
         </div>
       </div>
@@ -517,11 +530,9 @@ export const StudentsView: React.FC = () => {
                           ? `${group.pricePerSession || Math.round(group.monthlyPackagePrice / (group.sessionCount || 8))} ${profile.currency} / Sitzung`
                           : `${group.monthlyPackagePrice} ${profile.currency} / ${group.sessionCount} Sessions`}
                       </span>
-                      {group.scheduleDays && group.scheduleDays.length > 0 && (
-                        <span className="text-slate-400 text-[11px] truncate max-w-[120px] sm:max-w-[200px]" title={group.scheduleDays.join(', ')}>
-                          • {group.scheduleDays.join(', ')} {group.scheduleTime ? `um ${group.scheduleTime}` : ''}
-                        </span>
-                      )}
+                      <span className="text-slate-400 text-[11px] truncate max-w-[150px] sm:max-w-[240px]" title={formatGroupScheduleDisplay(group, language)}>
+                        • {formatGroupScheduleDisplay(group, language)}
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -743,6 +754,13 @@ export const StudentsView: React.FC = () => {
           onClose={() => setSelectedGroup(null)}
         />
       )}
+
+      {/* AI Import Group + Students Modal */}
+      <AiImportModal
+        isOpen={isAiImportModalOpen}
+        onClose={() => setIsAiImportModalOpen(false)}
+        onSelectGroup={(g) => setSelectedGroup(g)}
+      />
 
       {/* Custom Delete & Archive Confirmation Modal */}
       {deleteTarget && (

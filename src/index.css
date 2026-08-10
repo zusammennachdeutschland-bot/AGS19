@@ -1,5 +1,24 @@
 @import "tailwindcss";
 
+:root {
+  --sat: env(safe-area-inset-top, 24px);
+  --sab: env(safe-area-inset-bottom, 16px);
+  --sal: env(safe-area-inset-left, 0px);
+  --sar: env(safe-area-inset-right, 0px);
+}
+
+.pt-safe-top {
+  padding-top: max(24px, env(safe-area-inset-top, 24px));
+}
+
+.pb-safe-bottom {
+  padding-bottom: max(16px, env(safe-area-inset-bottom, 16px));
+}
+
+.modal-safe-top {
+  padding-top: max(24px, env(safe-area-inset-top, 24px));
+}
+
 @variant dark (&:where(.dark, .dark *));
 
 @layer utilities {
@@ -75,9 +94,6 @@
 .dark .bg-slate-900,
 .dark .bg-slate-950,
 .dark .bg-white,
-.dark .dark\:bg-slate-900,
-.dark .dark\:bg-slate-950,
-.dark .dark\:bg-black,
 .dark .bg-black {
   background-color: #000000 !important;
 }

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { Student, GradeLevel } from '../types';
+import { getStudentCyclePricing } from '../utils/paymentUtils';
 import { CARTOON_AVATARS } from '../data/avatarPresets';
 import { 
   X, Phone, Send, FileText, Upload, Trash2, Calendar, Award, DollarSign, 
@@ -37,6 +38,28 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({ studen
   const assignedGroup = groups.find(g => g.id === (activeTab === 'edit' ? editGroupId : student.groupId));
   const studentLessons = lessons.filter(l => l.studentId === student.id || l.studentName === student.name);
   const studentPayments = payments.filter(p => p.studentId === student.id || p.studentName === student.name);
+
+  // Dynamic cycle pricing & package progress calculation
+  const { cycleLength, amountDue, pricePerSession } = getStudentCyclePricing(student, assignedGroup);
+
+  const paidLessonIds = new Set<string>();
+  payments.forEach(p => {
+    if (p.status === 'paid' && p.lessonIds) {
+      p.lessonIds.forEach(id => paidLessonIds.add(id));
+    }
+  });
+
+  const unbilledCompletedCount = lessons.filter(l => {
+    if (l.status !== 'completed') return false;
+    const matchesGroup = assignedGroup ? l.groupId === assignedGroup.id : false;
+    const matchesStudent = l.studentId === student.id || l.studentName === student.name;
+    if (!matchesGroup && !matchesStudent) return false;
+    const att = l.report?.studentAttendance?.[student.id] || l.report?.attendanceStatus || 'present';
+    if (att === 'absent') return false;
+    return !paidLessonIds.has(l.id);
+  }).length;
+
+  const currentCycleProgress = unbilledCompletedCount === 0 ? 0 : (unbilledCompletedCount % cycleLength || cycleLength);
 
   // Attendance stats
   const presentCount = studentLessons.filter(l => l.report?.attendanceStatus === 'present' || l.report?.studentAttendance?.[student.id] === 'present').length;
@@ -116,7 +139,7 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({ studen
   const parentDisplay = [student.parentName, student.parentPhone].filter(Boolean).join(' • ');
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+    <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 pt-[max(24px,env(safe-area-inset-top,24px))] overflow-y-auto">
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl w-full max-w-xl shadow-2xl overflow-hidden my-auto animate-scale-up">
         {/* Profile Header Banner */}
         <div className="bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 p-5 text-white relative">
@@ -307,7 +330,7 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({ studen
                 </div>
                 <div className="p-3 bg-amber-50 dark:bg-amber-950/40 rounded-lg border border-amber-200 dark:border-amber-900/40">
                   <span className="block text-[10px] text-slate-500 uppercase">Paketzyklus</span>
-                  <span className="text-xl text-amber-600 font-mono">{student.currentPackageLessonIndex || 1} / {student.packageLessonsCount || 8}</span>
+                  <span className="text-xl text-amber-600 font-mono">{currentCycleProgress} / {cycleLength}</span>
                 </div>
               </div>
 

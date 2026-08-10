@@ -2,15 +2,17 @@ import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { PREDEFINED_GRADES } from '../data/initialData';
 import { GradeLevel, LessonType, PaymentCycle } from '../types';
-import { X, Users, Video, MapPin, DollarSign, Calendar } from 'lucide-react';
+import { X, Users, Video, MapPin, DollarSign, Calendar, Bot, Sparkles } from 'lucide-react';
 import confetti from 'canvas-confetti';
+import { AiImportModal } from './AiImportModal';
 
 interface AddGroupModalProps {
   onClose: () => void;
 }
 
 export const AddGroupModal: React.FC<AddGroupModalProps> = ({ onClose }) => {
-  const { addGroup, generateGroupScheduleLessons, profile, t } = useApp();
+  const { addGroup, generateGroupScheduleLessons, profile, language, t } = useApp();
+  const [isAiImportOpen, setIsAiImportOpen] = useState(false);
 
   const [name, setName] = useState('');
   const [grade, setGrade] = useState<GradeLevel>('Grade 9');
@@ -52,6 +54,11 @@ export const AddGroupModal: React.FC<AddGroupModalProps> = ({ onClose }) => {
       ? Number(pricePerSession) * (sessionCount || 8)
       : Number(monthlyPackagePrice);
 
+    const schedules = scheduleDays.map(day => ({
+      day,
+      time: dayTimes[day] || scheduleTime || '17:00'
+    }));
+
     const createdGroup = addGroup({
       name,
       grade,
@@ -65,6 +72,7 @@ export const AddGroupModal: React.FC<AddGroupModalProps> = ({ onClose }) => {
       scheduleDays,
       scheduleTime,
       scheduleDayTimes: dayTimes,
+      schedules,
       zoomLink: type === 'online' ? zoomLink : undefined,
       meetLink: type === 'online' ? meetLink : undefined,
       address: type === 'offline' ? address : undefined,
@@ -82,7 +90,7 @@ export const AddGroupModal: React.FC<AddGroupModalProps> = ({ onClose }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 pt-[max(24px,env(safe-area-inset-top,24px))]">
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl w-full max-w-md shadow-2xl overflow-hidden animate-scale-up">
         {/* Header */}
         <div className="bg-gradient-to-r from-indigo-600 to-purple-700 p-5 text-white flex items-center justify-between">
@@ -102,6 +110,31 @@ export const AddGroupModal: React.FC<AddGroupModalProps> = ({ onClose }) => {
 
         {/* Form Body */}
         <form onSubmit={handleSubmit} className="p-5 space-y-4 max-h-[75vh] overflow-y-auto">
+          {/* AI Import Shortcut Banner */}
+          <div className="bg-gradient-to-r from-purple-500/10 via-indigo-500/10 to-blue-500/10 border border-purple-200 dark:border-purple-800/60 rounded-xl p-3 flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-lg bg-purple-600 text-white flex items-center justify-center shrink-0 shadow-2xs">
+                <Bot className="w-4 h-4" />
+              </div>
+              <div>
+                <h4 className="text-xs font-black text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                  <span>{language === 'ar' ? 'استيراد مجموعة + طلاب بالذكاء الاصطناعي' : 'Import Group + Students with AI'}</span>
+                  <Sparkles className="w-3 h-3 text-purple-500 fill-purple-500" />
+                </h4>
+                <p className="text-[10px] text-slate-500 dark:text-slate-400">
+                  {language === 'ar' ? 'أنشئ المجموعة والطلاب دفعة واحدة بنص جاهز' : 'Create group and all students at once with AI text'}
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => setIsAiImportOpen(true)}
+              className="bg-purple-600 hover:bg-purple-700 text-white text-[11px] font-bold px-3 py-1.5 rounded-lg transition-all cursor-pointer whitespace-nowrap shadow-2xs"
+            >
+              {language === 'ar' ? 'تجربة الاستيراد' : 'AI Import'}
+            </button>
+          </div>
+
           {/* Group Name */}
           <div className="space-y-1">
             <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
@@ -436,6 +469,14 @@ export const AddGroupModal: React.FC<AddGroupModalProps> = ({ onClose }) => {
           </button>
         </form>
       </div>
+
+      <AiImportModal
+        isOpen={isAiImportOpen}
+        onClose={() => {
+          setIsAiImportOpen(false);
+          onClose();
+        }}
+      />
     </div>
   );
 };

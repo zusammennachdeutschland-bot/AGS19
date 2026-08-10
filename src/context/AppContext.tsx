@@ -6,6 +6,8 @@ import {
 } from '../types';
 import { clearActiveLessonNotification } from '../services/notificationService';
 import { storage } from '../services/storageService';
+import { getStudentCyclePricing } from '../utils/paymentUtils';
+import { getGroupScheduleSlots, getDayNumber } from '../utils/scheduleUtils';
 import { translations, TranslationKey } from '../i18n/translations';
 import { 
   INITIAL_TEACHER_PROFILE, INITIAL_GROUPS, INITIAL_STUDENTS, 
@@ -628,46 +630,30 @@ export const AppProvider: React.FC<{ children: React.ReactNode, initialData: any
   useEffect(() => {
     if (!groups || groups.length === 0) return;
 
-    const dayNameToNum: Record<string, number> = {
-      'So': 0, 'Sonntag': 0, 'Sun': 0,
-      'Mo': 1, 'Montag': 1, 'Mon': 1,
-      'Di': 2, 'Dienstag': 2, 'Tue': 2,
-      'Mi': 3, 'Mittwoch': 3, 'Wed': 3,
-      'Do': 4, 'Donnerstag': 4, 'Thu': 4,
-      'Fr': 5, 'Freitag': 5, 'Fri': 5,
-      'Sa': 6, 'Samstag': 6, 'Sat': 6,
-    };
-
-    const numToShortDay: Record<number, string> = {
-      0: 'So', 1: 'Mo', 2: 'Di', 3: 'Mi', 4: 'Do', 5: 'Fr', 6: 'Sa'
-    };
-
     const newAutoLessons: Lesson[] = [];
     const today = new Date();
 
     groups.forEach(group => {
-      if (!group.scheduleDays || group.scheduleDays.length === 0) return;
-
-      const targetDayNums = group.scheduleDays.map(d => dayNameToNum[d] ?? 1);
-      const mergedDayTimes = group.scheduleDayTimes || {};
+      const slots = getGroupScheduleSlots(group);
+      if (slots.length === 0) return;
 
       for (let dayOffset = 0; dayOffset < 28; dayOffset++) { // 4 weeks
         const d = new Date();
         d.setDate(today.getDate() + dayOffset);
         const dayNum = d.getDay();
 
-        if (targetDayNums.includes(dayNum)) {
+        const matchingSlot = slots.find(s => getDayNumber(s.day) === dayNum);
+        if (matchingSlot) {
           const dateStr = d.toISOString().split('T')[0];
           const existsInLessons = lessons.some(l => l.groupId === group.id && l.date === dateStr);
           const existsInNew = newAutoLessons.some(l => l.groupId === group.id && l.date === dateStr);
 
           if (!existsInLessons && !existsInNew) {
-            const perSessionPrice = group.paymentModel === 'per_session' && group.pricePerSession
+            const perSessionPrice = group.paymentCycle === 'per_lesson' && group.pricePerSession
               ? group.pricePerSession
               : Math.round((group.monthlyPackagePrice || 1200) / (group.sessionCount || 8));
 
-            const dayShort = numToShortDay[dayNum];
-            const sessionTime = mergedDayTimes[dayShort] || group.scheduleTime || '17:00';
+            const sessionTime = matchingSlot.time || '17:00';
 
             newAutoLessons.push({
               id: `l_${Date.now()}_auto_${Math.random().toString(36).substring(2, 6)}`,
@@ -1041,25 +1027,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode, initialData: any
           // Only track if student was present or late (attended)
           if (stAttendance === 'absent') return;
 
-          // Determine bundle size and price for student (Custom student pricing overrides group)
+          // Determine bundle size and price for student using canonical pricing utility
           const grp = groups.find(g => g.id === st.groupId || g.id === targetLesson.groupId);
-
-          let bundleSize = 4;
-          let bundlePrice = 400;
-
-          if (st.paymentPlan || st.bundleSize || st.customBundlePrice || st.pricePerLesson) {
-            // Student Custom Pricing
-            const plan = st.paymentPlan || '4_lessons';
-            bundleSize = st.bundleSize || (plan === 'per_lesson' ? 1 : plan === '4_lessons' ? 4 : plan === '8_lessons' ? 8 : plan === '12_lessons' ? 12 : 4);
-            bundlePrice = st.customBundlePrice !== undefined && st.customBundlePrice !== null
-              ? st.customBundlePrice
-              : (st.pricePerLesson ? st.pricePerLesson * bundleSize : (bundleSize === 1 ? 100 : bundleSize === 4 ? 400 : bundleSize === 8 ? 700 : 1000));
-          } else if (grp) {
-            // Group Pricing
-            const cycle = grp.paymentCycle || (grp.sessionCount === 1 ? 'per_lesson' : grp.sessionCount === 8 ? '8_lessons' : grp.sessionCount === 12 ? '12_lessons' : '4_lessons');
-            bundleSize = grp.sessionCount || (cycle === 'per_lesson' ? 1 : cycle === '4_lessons' ? 4 : cycle === '8_lessons' ? 8 : cycle === '12_lessons' ? 12 : 4);
-            bundlePrice = grp.monthlyPackagePrice || (grp.pricePerSession ? grp.pricePerSession * bundleSize : (bundleSize === 1 ? 100 : bundleSize === 4 ? 400 : bundleSize === 8 ? 700 : 1000));
-          }
+          const { cycleLength: bundleSize, amountDue: bundlePrice } = getStudentCyclePricing(st, grp);
 
           // Format lesson date as DD/MM/YYYY
           const parts = targetLesson.date.split('-');
@@ -1279,23 +1249,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode, initialData: any
 
   const generateGroupScheduleLessons = (groupId: string, days: string[], defaultTime: string, numWeeks: number = 4, customDayTimes?: Record<string, string>, groupOverride?: Group) => {
     const targetGroup = groupOverride || groups.find(g => g.id === groupId);
-    if (!targetGroup || !days || !days.length) return;
+    if (!targetGroup) return;
 
-    const dayNameToNum: Record<string, number> = {
-      'So': 0, 'Sonntag': 0, 'Sun': 0,
-      'Mo': 1, 'Montag': 1, 'Mon': 1,
-      'Di': 2, 'Dienstag': 2, 'Tue': 2,
-      'Mi': 3, 'Mittwoch': 3, 'Wed': 3,
-      'Do': 4, 'Donnerstag': 4, 'Thu': 4,
-      'Fr': 5, 'Freitag': 5, 'Fri': 5,
-      'Sa': 6, 'Samstag': 6, 'Sat': 6,
+    const effectiveGroup: Group = {
+      ...targetGroup,
+      scheduleDays: days && days.length > 0 ? days : targetGroup.scheduleDays,
+      scheduleTime: defaultTime || targetGroup.scheduleTime,
+      scheduleDayTimes: customDayTimes || targetGroup.scheduleDayTimes,
     };
 
-    const numToShortDay: Record<number, string> = {
-      0: 'So', 1: 'Mo', 2: 'Di', 3: 'Mi', 4: 'Do', 5: 'Fr', 6: 'Sa'
-    };
+    const slots = getGroupScheduleSlots(effectiveGroup);
+    if (slots.length === 0) return;
 
-    const targetDayNums = days.map(d => dayNameToNum[d] !== undefined ? dayNameToNum[d] : 1);
     const newLessons: Lesson[] = [];
     const today = new Date();
 
@@ -1312,14 +1277,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode, initialData: any
       return start1 < end2 && start2 < end1;
     };
 
-    const mergedDayTimes = customDayTimes || targetGroup.scheduleDayTimes || {};
-
     for (let dayOffset = 0; dayOffset < numWeeks * 7; dayOffset++) {
       const d = new Date();
       d.setDate(today.getDate() + dayOffset);
       const dayNum = d.getDay();
 
-      if (targetDayNums.includes(dayNum)) {
+      const matchingSlot = slots.find(s => getDayNumber(s.day) === dayNum);
+
+      if (matchingSlot) {
         const dateStr = d.toISOString().split('T')[0];
         const exists = lessons.some(l => l.groupId === groupId && l.date === dateStr);
         if (!exists) {
@@ -1327,11 +1292,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode, initialData: any
             ? targetGroup.pricePerSession
             : Math.round((targetGroup.monthlyPackagePrice || 1200) / (targetGroup.sessionCount || 8));
 
-          const dayShort = numToShortDay[dayNum];
-          const sessionTime = mergedDayTimes[dayShort] || defaultTime || targetGroup.scheduleTime || '17:00';
+          const sessionTime = matchingSlot.time || defaultTime || '17:00';
           const dummyLesson = { id: 'dummy', date: dateStr, time: sessionTime, durationMinutes: targetGroup.lessonDurationMinutes || 60 };
           
-          // Implement overlap detection logic start1 < end2 && start2 < end1 via checkOverlap
           const hasConflict = lessons.some(l => checkOverlap(dummyLesson, l)) || newLessons.some(l => checkOverlap(dummyLesson, l));
           
           if (!hasConflict) {

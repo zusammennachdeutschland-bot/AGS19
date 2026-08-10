@@ -247,8 +247,9 @@ export const ScheduleView: React.FC = () => {
 
           {/* Quick Lesson */}
           <button
+            type="button"
             onClick={() => setIsAddQuickLessonModalOpen(true)}
-            className="bg-slate-900 hover:bg-slate-800 dark:bg-white dark:hover:bg-slate-100 text-white dark:text-slate-900 font-bold text-xs px-2.5 py-2 rounded-lg transition-all flex items-center gap-1 cursor-pointer"
+            className="bg-amber-500 hover:bg-amber-600 active:scale-95 text-white font-bold text-xs px-3 py-2 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs whitespace-nowrap"
           >
             <Zap className="w-3.5 h-3.5 fill-current" />
             <span>{t('nav_quickLesson')}</span>

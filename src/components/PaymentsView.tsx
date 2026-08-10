@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useApp } from '../context/AppContext';
 import { PaymentRecord, Student, Group } from '../types';
+import { getStudentCyclePricing } from '../utils/paymentUtils';
 import { 
   DollarSign, CheckCircle2, Clock, Send, Search, 
   Check, X, Sparkles, History, Calendar, AlertCircle, TrendingUp, ChevronRight
@@ -113,35 +114,8 @@ export const PaymentsView: React.FC = () => {
       // Find assigned group
       const grp = groups.find(g => g.id === st.groupId);
 
-      // Determine cycle length (N) and package price (P)
-      let cycleLength = 4;
-      let amountDue = 400;
-
-      if (st.paymentPlan || st.bundleSize || st.customBundlePrice || st.pricePerLesson) {
-        // Student custom pricing override
-        const plan = st.paymentPlan || '4_lessons';
-        cycleLength = st.bundleSize || (
-          plan === 'per_lesson' ? 1 : 
-          plan === '4_lessons' ? 4 : 
-          plan === '8_lessons' ? 8 : 
-          plan === '12_lessons' ? 12 : 4
-        );
-        amountDue = st.customBundlePrice !== undefined && st.customBundlePrice !== null
-          ? st.customBundlePrice
-          : (st.pricePerLesson ? st.pricePerLesson * cycleLength : (cycleLength === 1 ? 100 : cycleLength === 4 ? 400 : cycleLength === 8 ? 700 : 1000));
-      } else if (grp) {
-        // Group pricing settings
-        const cycle = grp.paymentCycle || (grp.sessionCount === 1 ? 'per_lesson' : grp.sessionCount === 8 ? '8_lessons' : grp.sessionCount === 12 ? '12_lessons' : '4_lessons');
-        cycleLength = grp.sessionCount || (
-          cycle === 'per_lesson' ? 1 : 
-          cycle === '4_lessons' ? 4 : 
-          cycle === '8_lessons' ? 8 : 
-          cycle === '12_lessons' ? 12 : 4
-        );
-        amountDue = grp.monthlyPackagePrice || (
-          grp.pricePerSession ? grp.pricePerSession * cycleLength : (cycleLength === 1 ? 100 : cycleLength === 4 ? 400 : cycleLength === 8 ? 700 : 1000)
-        );
-      }
+      // Determine cycle length (N) and package price (P) using canonical pricing utility
+      const { cycleLength, amountDue } = getStudentCyclePricing(st, grp);
 
       // Collect all completed attended lessons for this student that have NOT been paid for
       const stCompletedLessons = lessons.filter(l => {
@@ -168,25 +142,32 @@ export const PaymentsView: React.FC = () => {
 
       // Check if student completed their cycle (unbilled lessons >= cycleLength)
       if (stCompletedLessons.length >= cycleLength) {
-        // Take the first cycleLength lessons
-        const currentChunk = stCompletedLessons.slice(0, cycleLength);
-        const lessonDates = currentChunk.map(l => formatDateDisplay(l.date));
-        const lessonIds = currentChunk.map(l => l.id);
+        let remaining = [...stCompletedLessons];
+        let chunkIndex = 0;
 
-        list.push({
-          id: unpaidRec?.id || `due_cycle_${st.id}_${currentChunk[0]?.id || Date.now()}`,
-          studentId: st.id,
-          studentName: st.name,
-          groupId: st.groupId || grp?.id || '',
-          groupName: grp?.name || 'Gruppe',
-          cycleLength,
-          amountDue,
-          lessonDates,
-          lessonIds,
-          status: unpaidRec ? 'not_yet' : 'due',
-          parentPhone: st.parentPhone || st.studentPhone || '',
-          existingPaymentRecordId: unpaidRec?.id
-        });
+        while (remaining.length >= cycleLength) {
+          const currentChunk = remaining.slice(0, cycleLength);
+          const lessonDates = currentChunk.map(l => formatDateDisplay(l.date));
+          const lessonIds = currentChunk.map(l => l.id);
+
+          list.push({
+            id: (chunkIndex === 0 && unpaidRec?.id) ? unpaidRec.id : `due_cycle_${st.id}_${currentChunk[0]?.id || Date.now()}_${chunkIndex}`,
+            studentId: st.id,
+            studentName: st.name,
+            groupId: st.groupId || grp?.id || '',
+            groupName: grp?.name || 'Gruppe',
+            cycleLength,
+            amountDue,
+            lessonDates,
+            lessonIds,
+            status: (chunkIndex === 0 && unpaidRec) ? 'not_yet' : 'due',
+            parentPhone: st.parentPhone || st.studentPhone || '',
+            existingPaymentRecordId: chunkIndex === 0 ? unpaidRec?.id : undefined
+          });
+
+          remaining = remaining.slice(cycleLength);
+          chunkIndex++;
+        }
       } else if (unpaidRec) {
         // Unpaid record exists from past cycle
         list.push({
@@ -237,35 +218,8 @@ export const PaymentsView: React.FC = () => {
       // Find assigned group
       const grp = groups.find(g => g.id === st.groupId);
 
-      // Determine cycle length (N) and package price (P)
-      let cycleLength = 4;
-      let amountDue = 400;
-
-      if (st.paymentPlan || st.bundleSize || st.customBundlePrice || st.pricePerLesson) {
-        // Student custom pricing override
-        const plan = st.paymentPlan || '4_lessons';
-        cycleLength = st.bundleSize || (
-          plan === 'per_lesson' ? 1 : 
-          plan === '4_lessons' ? 4 : 
-          plan === '8_lessons' ? 8 : 
-          plan === '12_lessons' ? 12 : 4
-        );
-        amountDue = st.customBundlePrice !== undefined && st.customBundlePrice !== null
-          ? st.customBundlePrice
-          : (st.pricePerLesson ? st.pricePerLesson * cycleLength : (cycleLength === 1 ? 100 : cycleLength === 4 ? 400 : cycleLength === 8 ? 700 : 1000));
-      } else if (grp) {
-        // Group pricing settings
-        const cycle = grp.paymentCycle || (grp.sessionCount === 1 ? 'per_lesson' : grp.sessionCount === 8 ? '8_lessons' : grp.sessionCount === 12 ? '12_lessons' : '4_lessons');
-        cycleLength = grp.sessionCount || (
-          cycle === 'per_lesson' ? 1 : 
-          cycle === '4_lessons' ? 4 : 
-          cycle === '8_lessons' ? 8 : 
-          cycle === '12_lessons' ? 12 : 4
-        );
-        amountDue = grp.monthlyPackagePrice || (
-          grp.pricePerSession ? grp.pricePerSession * cycleLength : (cycleLength === 1 ? 100 : cycleLength === 4 ? 400 : cycleLength === 8 ? 700 : 1000)
-        );
-      }
+      // Determine cycle length (N) and package price (P) using canonical pricing utility
+      const { cycleLength, amountDue } = getStudentCyclePricing(st, grp);
 
       // Collect all completed attended lessons for this student that have NOT been billed yet (neither paid nor unpaid)
       const stCompletedLessons = lessons.filter(l => {

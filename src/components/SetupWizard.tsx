@@ -26,7 +26,7 @@ export const SetupWizard: React.FC = () => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 font-sans animate-in fade-in">
+    <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 pt-[max(24px,env(safe-area-inset-top,24px))] font-sans animate-in fade-in">
       <div className="bg-white dark:bg-slate-900 rounded-xl w-full max-w-md shadow-2xl overflow-hidden animate-in zoom-in-95 flex flex-col">
         <div className="bg-gradient-to-br from-indigo-600 to-blue-700 p-8 text-white text-center">
           <div className="w-16 h-16 bg-white/20 rounded-lg flex items-center justify-center mx-auto mb-4">

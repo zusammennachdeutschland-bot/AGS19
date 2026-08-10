@@ -90,8 +90,11 @@ export const Header: React.FC = () => {
 
   return (
     <>
-      {/* Premium Safe Area Spacer */}
-      <div className="bg-white dark:bg-black select-none max-w-lg mx-auto w-full h-3 shrink-0" />
+      {/* Premium Safe Area Spacer for Android Status Bar */}
+      <div 
+        className="bg-white dark:bg-black select-none max-w-lg mx-auto w-full shrink-0 transition-colors" 
+        style={{ height: 'max(24px, env(safe-area-inset-top, 24px))' }}
+      />
 
       {/* Compact Premium Dashboard Header */}
       <header className="bg-white dark:bg-black border-b border-slate-100 dark:border-slate-900/80 px-4 py-2.5 sticky top-0 z-30 transition-colors">
