@@ -30,7 +30,7 @@ jobs:
       - name: Install Project Dependencies
         run: npm install --legacy-peer-deps
 
-      - name: Install ALL Capacitor Plugins (Bulletproof)
+      - name: Install ALL Capacitor Plugins
         run: |
           npm install @capacitor/cli @capacitor/core @capacitor/android 
           npm install @capacitor/app @capacitor/browser @capacitor/clipboard 
@@ -42,8 +42,10 @@ jobs:
       - name: Build Web Application
         run: npm run build
 
-      - name: Generate Android Project
-        run: npx cap add android
+      - name: Clean and Recreate Android Project
+        run: |
+          rm -rf android
+          npx cap add android
 
       - name: Sync Capacitor Android
         run: npx cap sync android
