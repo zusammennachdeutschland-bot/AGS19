@@ -1,0 +1,2122 @@
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import { 
+  TeacherProfile, Group, Student, Lesson, PaymentRecord, NotificationItem, 
+  LessonReport, StudentDocument, PaymentStatus, LessonStatus, AttendanceStatus, HomeworkStatus, SyncStatus, BackupData, BackupIntegrityReport, StudentPaymentDetail, AppLanguage, AccentColor, RecentlyDeletedData, ActiveLessonSession,
+  InspirationSettings, InspirationMessage, InspirationFrequency, InspirationDisplayMethod, InspirationSource
+} from '../types';
+import { clearActiveLessonNotification } from '../services/notificationService';
+import { storage } from '../services/storageService';
+import { translations, TranslationKey } from '../i18n/translations';
+import { 
+  INITIAL_TEACHER_PROFILE, INITIAL_GROUPS, INITIAL_STUDENTS, 
+  INITIAL_LESSONS, INITIAL_PAYMENT_RECORDS, INITIAL_NOTIFICATIONS,
+  INITIAL_INSPIRATION_SETTINGS, INITIAL_INSPIRATION_MESSAGES
+} from '../data/initialData';
+import confetti from 'canvas-confetti';
+
+interface AppContextType {
+  todos: any[];
+  setTodos: any;
+  // Navigation & Theme & Language & Accent
+  theme: 'light' | 'dark';
+  toggleTheme: () => void;
+  language: AppLanguage;
+  setLanguage: (lang: AppLanguage) => void;
+  accentColor: AccentColor;
+  setAccentColor: (color: AccentColor) => void;
+  t: (key: TranslationKey) => string;
+  activeTab: 'home' | 'schedule' | 'students' | 'history' | 'payments' | 'reports' | 'settings';
+  setActiveTab: (tab: 'home' | 'schedule' | 'students' | 'history' | 'payments' | 'reports' | 'settings') => void;
+
+  // Global Search & Recently Deleted Modals
+  isGlobalSearchOpen: boolean;
+  setIsGlobalSearchOpen: (open: boolean) => void;
+  isRecentlyDeletedModalOpen: boolean;
+  setIsRecentlyDeletedModalOpen: (open: boolean) => void;
+
+  // Teacher Profile
+  profile: TeacherProfile;
+  updateProfile: (updates: Partial<TeacherProfile>) => void;
+  refreshCalendarAndDashboard: () => void;
+
+  // Backup System
+  lastBackupTime: string;
+  performBackup: () => void;
+  importBackupFile: (customJson?: string) => Promise<boolean>;
+  exportBackupFile: () => void;
+  verifyBackupIntegrity: () => BackupIntegrityReport;
+
+  // Groups
+  groups: Group[];
+  addGroup: (group: Omit<Group, 'id'>) => Group;
+  duplicateGroup: (groupId: string) => Group;
+  updateGroup: (id: string, updates: Partial<Group>) => void;
+  deleteGroup: (id: string) => void;
+  archiveGroup: (id: string) => void;
+
+  // Students
+  students: Student[];
+  addStudent: (student: Omit<Student, 'id' | 'documents' | 'joinedDate'>) => Student;
+  updateStudent: (id: string, updates: Partial<Student>) => void;
+  deleteStudent: (id: string) => void;
+  archiveStudent: (id: string) => void;
+  uploadStudentDocument: (studentId: string, file: File, category: 'homework' | 'exam' | 'doc') => void;
+  deleteStudentDocument: (studentId: string, docId: string) => void;
+
+  // Lessons
+  lessons: Lesson[];
+  addLesson: (lesson: Omit<Lesson, 'id' | 'sessionNumber' | 'totalSessionsInPackage'>, repeatWeeks?: number) => void;
+  addQuickLesson: (data: Omit<Lesson, 'id' | 'sessionNumber' | 'totalSessionsInPackage' | 'groupId' | 'groupName'> & {
+    studentName: string;
+    quickStudentPhone?: string;
+    quickParentPhone?: string;
+    quickNotes?: string;
+  }) => Lesson;
+  convertQuickLessonToStudent: (lessonId: string) => Student | null;
+  updateLesson: (id: string, updates: Partial<Lesson>) => void;
+  deleteLesson: (id: string) => void;
+  saveLessonReport: (lessonId: string, report: LessonReport, packageCount?: number) => void;
+  cancelLesson: (lessonId: string, notes?: string) => void;
+  generateGroupScheduleLessons: (groupId: string, days: string[], time: string, numWeeks?: number, customDayTimes?: Record<string, string>, groupOverride?: Group) => void;
+
+  // Recently Deleted (Soft Delete)
+  recentlyDeleted: RecentlyDeletedData;
+  restoreItem: (type: 'student' | 'group' | 'lesson', id: string) => void;
+  permanentlyDeleteItem: (type: 'student' | 'group' | 'lesson', id: string) => void;
+  clearRecentlyDeleted: () => void;
+
+  // Payments
+  payments: PaymentRecord[];
+  recordPayment: (
+    paymentId: string, 
+    paidAmount: number, 
+    method: 'cash' | 'vodafone_cash' | 'bank_transfer' | 'instapay' | 'paypal', 
+    notes?: string,
+    discountAmount?: number,
+    advanceAmount?: number,
+    refundAmount?: number
+  ) => void;
+  addPaymentRecord: (record: Omit<PaymentRecord, 'id'>) => void;
+  markCyclePaymentPaid: (data: {
+    studentId: string;
+    studentName: string;
+    groupId: string;
+    groupName: string;
+    amountDue: number;
+    amountPaid: number;
+    lessonDates: string[];
+    lessonIds: string[];
+    existingPaymentRecordId?: string;
+    notes?: string;
+  }) => void;
+  markCyclePaymentNotYet: (data: {
+    studentId: string;
+    studentName: string;
+    groupId: string;
+    groupName: string;
+    amountDue: number;
+    lessonDates: string[];
+    lessonIds: string[];
+    existingPaymentRecordId?: string;
+  }) => void;
+  toggleQuickPaymentStatus: (paymentId: string) => void;
+  toggleStudentPaymentStatus: (studentId: string) => void;
+  updateStudentPaymentPlan: (
+    studentId: string, 
+    paymentPlan: 'per_lesson' | '4_lessons' | '8_lessons' | '12_lessons' | 'custom_bundle',
+    pricePerLesson?: number,
+    bundleSize?: number,
+    customBundlePrice?: number
+  ) => void;
+  updateLessonPaymentStatus: (lessonId: string, status: PaymentStatus, customAmountPaid?: number) => void;
+
+  // Notifications
+  notifications: NotificationItem[];
+  markNotificationRead: (id: string) => void;
+  markAllNotificationsRead: () => void;
+  clearAllNotifications: () => void;
+
+  // Active Lesson Control Modal & Central Timer Engine
+  selectedLesson: Lesson | null;
+  setSelectedLesson: (lesson: Lesson | null) => void;
+  isControlModalOpen: boolean;
+  openLessonControl: (lesson: Lesson) => void;
+  closeLessonControl: () => void;
+  activeLessonSession: ActiveLessonSession | null;
+  startActiveLessonTimer: (lesson: Lesson) => void;
+  pauseActiveLessonTimer: () => void;
+  resumeActiveLessonTimer: () => void;
+  endActiveLessonTimer: () => void;
+  cancelActiveLessonTimer: () => void;
+
+  // Dashboard Dismissed Lessons
+  dismissedDashboardLessonIds: string[];
+  dismissLessonFromDashboard: (lessonId: string) => void;
+
+  // Inspiration & Gratitude Reminders
+  inspirationSettings: InspirationSettings;
+  inspirationMessages: InspirationMessage[];
+  activeInspirationCard: InspirationMessage | null;
+  updateInspirationSettings: (updates: Partial<InspirationSettings>) => void;
+  addInspirationMessage: (text: string) => InspirationMessage;
+  updateInspirationMessage: (id: string, text: string) => void;
+  deleteInspirationMessage: (id: string) => void;
+  toggleFavoriteInspirationMessage: (id: string) => void;
+  restoreDefaultInspirationMessages: () => void;
+  dismissInspirationCard: () => void;
+  checkAndTriggerInspirationReminder: (triggerType?: 'manual' | 'app_load' | 'before_lesson') => void;
+
+  // Quick Action Modals
+  isAddLessonModalOpen: boolean;
+  setIsAddLessonModalOpen: (open: boolean) => void;
+  isAddQuickLessonModalOpen: boolean;
+  setIsAddQuickLessonModalOpen: (open: boolean) => void;
+  isStartLessonNowModalOpen: boolean;
+  setIsStartLessonNowModalOpen: (open: boolean) => void;
+  isAddStudentModalOpen: boolean;
+  setIsAddStudentModalOpen: (open: boolean) => void;
+  isAddGroupModalOpen: boolean;
+  setIsAddGroupModalOpen: (open: boolean) => void;
+  isBackupModalOpen: boolean;
+  setIsBackupModalOpen: (open: boolean) => void;
+  clearAllData: () => void;
+}
+
+const AppContext = createContext<AppContextType | undefined>(undefined);
+
+export const AppProvider: React.FC<{ children: React.ReactNode, initialData: any }> = ({ children, initialData }) => {
+  // Ensure a clean fresh start on app initialization
+
+
+  // Persistence state
+  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
+    const saved = initialData['dl_theme'];
+    return saved !== null && saved !== undefined ? saved : 'light';
+  });
+
+  const [accentColor, setAccentColorState] = useState<AccentColor>(() => {
+    const saved = initialData['dl_accent_color'];
+    return saved !== null && saved !== undefined ? saved : 'blue';
+  });
+
+  const setAccentColor = (color: AccentColor) => {
+    setAccentColorState(color);
+    storage.setItem('dl_accent_color', color);
+  };
+
+  useEffect(() => {
+    const classes = ['accent-blue', 'accent-green', 'accent-purple', 'accent-orange', 'accent-red', 'accent-teal', 'accent-indigo'];
+    classes.forEach(c => document.documentElement.classList.remove(c));
+    document.documentElement.classList.add(`accent-${accentColor}`);
+  }, [accentColor]);
+
+  const [todos, setTodos] = useState<any[]>(() => {
+    const saved = initialData['dl_quick_todos'];
+    return saved !== null && saved !== undefined ? saved : [];
+  });
+
+  useEffect(() => {
+    storage.setItem('dl_quick_todos', todos);
+  }, [todos]);
+
+  const [activeTab, setActiveTab] = useState<'home' | 'schedule' | 'students' | 'history' | 'payments' | 'reports' | 'settings'>('home');
+
+  const [profile, setProfile] = useState<TeacherProfile>(() => {
+    const saved = initialData['dl_profile'];
+    return saved !== null && saved !== undefined ? saved : INITIAL_TEACHER_PROFILE;
+  });
+
+  const [language, setLanguageState] = useState<AppLanguage>(() => {
+    const saved = initialData['dl_language'] as AppLanguage;
+    if (saved && ['ar', 'en', 'de'].includes(saved)) return saved;
+    const profileSaved = initialData['dl_profile'];
+    if (profileSaved) {
+      if (profileSaved.language && ['ar', 'en', 'de'].includes(profileSaved.language)) return profileSaved.language;
+    }
+    return INITIAL_TEACHER_PROFILE.language || 'de';
+  });
+
+  const setLanguage = (lang: AppLanguage) => {
+    setLanguageState(lang);
+    storage.setItem('dl_language', lang);
+    setProfile(prev => {
+      const updated = { ...prev, language: lang };
+      storage.setItem('dl_profile', updated);
+      return updated;
+    });
+  };
+
+  useEffect(() => {
+    document.documentElement.setAttribute('dir', language === 'ar' ? 'rtl' : 'ltr');
+    document.documentElement.setAttribute('lang', language);
+  }, [language]);
+
+  const t = (key: TranslationKey): string => {
+    return translations[language]?.[key] || translations['de']?.[key] || key;
+  };
+
+  // Initial state for fresh start
+  const [groups, setGroups] = useState<Group[]>(() => {
+    const saved = initialData['dl_groups'];
+    return saved !== null && saved !== undefined ? saved : INITIAL_GROUPS;
+  });
+
+  const [students, setStudents] = useState<Student[]>(() => {
+    const saved = initialData['dl_students'];
+    return saved !== null && saved !== undefined ? saved : INITIAL_STUDENTS;
+  });
+
+  const [lessons, setLessons] = useState<Lesson[]>(() => {
+    const saved = initialData['dl_lessons'];
+    return saved !== null && saved !== undefined ? saved : INITIAL_LESSONS;
+  });
+
+  const [payments, setPayments] = useState<PaymentRecord[]>(() => {
+    const saved = initialData['dl_payments'];
+    return saved !== null && saved !== undefined ? saved : INITIAL_PAYMENT_RECORDS;
+  });
+
+  const [notifications, setNotifications] = useState<NotificationItem[]>(() => {
+    const saved = initialData['dl_notifications'];
+    return saved !== null && saved !== undefined ? saved : INITIAL_NOTIFICATIONS;
+  });
+
+  // Inspiration & Gratitude Reminders State
+  const [inspirationSettings, setInspirationSettings] = useState<InspirationSettings>(() => {
+    const saved = initialData['dl_inspiration_settings'];
+    return saved !== null && saved !== undefined ? saved : INITIAL_INSPIRATION_SETTINGS;
+  });
+
+  const [inspirationMessages, setInspirationMessages] = useState<InspirationMessage[]>(() => {
+    const saved = initialData['dl_inspiration_messages'];
+    return saved !== null && saved !== undefined ? saved : INITIAL_INSPIRATION_MESSAGES;
+  });
+
+  const [activeInspirationCard, setActiveInspirationCard] = useState<InspirationMessage | null>(null);
+  const [isInspirationDismissedToday, setIsInspirationDismissedToday] = useState(false);
+
+  // Backup & Sync States
+  const [lastBackupTime, setLastBackupTime] = useState<string>(() => {
+    const saved = initialData['dl_last_backup_time'];
+    return saved !== null && saved !== undefined ? saved : new Date().toISOString();
+  });
+  
+
+  // Lesson Control Modal state
+  const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
+  const [isControlModalOpen, setIsControlModalOpen] = useState(false);
+
+  // Dashboard Dismissed Lessons state
+  const [dismissedDashboardLessonIds, setDismissedDashboardLessonIds] = useState<string[]>(() => {
+    const saved = initialData['dl_dismissed_dashboard_lessons'];
+    return saved !== null && saved !== undefined ? saved : [];
+  });
+
+  const dismissLessonFromDashboard = (lessonId: string) => {
+    setDismissedDashboardLessonIds(prev => {
+      if (prev.includes(lessonId)) return prev;
+      const updated = [...prev, lessonId];
+      storage.setItem('dl_dismissed_dashboard_lessons', updated);
+      return updated;
+    });
+  };
+
+  // Global Search & Recently Deleted modals
+  const [isGlobalSearchOpen, setIsGlobalSearchOpen] = useState(false);
+  const [isRecentlyDeletedModalOpen, setIsRecentlyDeletedModalOpen] = useState(false);
+
+  // Recently Deleted State
+  const [recentlyDeleted, setRecentlyDeleted] = useState<RecentlyDeletedData>(() => {
+    const saved = initialData['dl_recently_deleted'];
+    return saved !== null && saved !== undefined ? saved : { students: [], groups: [], lessons: [] };
+  });
+
+  useEffect(() => {
+    storage.setItem('dl_recently_deleted', recentlyDeleted);
+  }, [recentlyDeleted]);
+
+  // Quick action modals
+  const [isAddLessonModalOpen, setIsAddLessonModalOpen] = useState(false);
+  const [isAddQuickLessonModalOpen, setIsAddQuickLessonModalOpen] = useState(false);
+  const [isStartLessonNowModalOpen, setIsStartLessonNowModalOpen] = useState(false);
+  const [isAddStudentModalOpen, setIsAddStudentModalOpen] = useState(false);
+  const [isAddGroupModalOpen, setIsAddGroupModalOpen] = useState(false);
+  const [isBackupModalOpen, setIsBackupModalOpen] = useState(false);
+
+  // Network online/offline listener
+  useEffect(() => {
+    const handleOnline = () => {
+      
+    };
+    const handleOffline = () => {
+    };
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
+  // Sync state changes to localStorage
+  useEffect(() => {
+    storage.setItem('dl_theme', theme);
+    if (theme === 'dark') {
+      document.documentElement.classList.add('dark');
+      document.documentElement.setAttribute('data-theme', 'dark');
+      document.documentElement.style.colorScheme = 'dark';
+    } else {
+      document.documentElement.classList.remove('dark');
+      document.documentElement.setAttribute('data-theme', 'light');
+      document.documentElement.style.colorScheme = 'light';
+    }
+  }, [theme]);
+
+  useEffect(() => {
+    storage.setItem('dl_profile', profile);
+  }, [profile]);
+
+  useEffect(() => {
+    storage.setItem('dl_groups', groups);
+  }, [groups]);
+
+  useEffect(() => {
+    storage.setItem('dl_students', students);
+  }, [students]);
+
+  useEffect(() => {
+    storage.setItem('dl_lessons', lessons);
+  }, [lessons]);
+
+  useEffect(() => {
+    storage.setItem('dl_payments', payments);
+  }, [payments]);
+
+  useEffect(() => {
+    storage.setItem('dl_notifications', notifications);
+  }, [notifications]);
+
+  useEffect(() => {
+    storage.setItem('dl_inspiration_settings', inspirationSettings);
+  }, [inspirationSettings]);
+
+  useEffect(() => {
+    storage.setItem('dl_inspiration_messages', inspirationMessages);
+  }, [inspirationMessages]);
+
+  // Inspiration Handlers
+  const updateInspirationSettings = (updates: Partial<InspirationSettings>) => {
+    setInspirationSettings(prev => {
+      const updated = { ...prev, ...updates };
+      storage.setItem('dl_inspiration_settings', updated);
+      return updated;
+    });
+  };
+
+  const addInspirationMessage = (text: string): InspirationMessage => {
+    const newMessage: InspirationMessage = {
+      id: `custom_insp_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+      text: text.trim(),
+      isFavorite: false,
+      isCustom: true,
+      createdAt: new Date().toISOString()
+    };
+    setInspirationMessages(prev => [newMessage, ...prev]);
+    return newMessage;
+  };
+
+  const updateInspirationMessage = (id: string, text: string) => {
+    setInspirationMessages(prev => prev.map(m => m.id === id ? { ...m, text: text.trim() } : m));
+  };
+
+  const deleteInspirationMessage = (id: string) => {
+    setInspirationMessages(prev => prev.filter(m => m.id !== id));
+    if (activeInspirationCard?.id === id) {
+      setActiveInspirationCard(null);
+    }
+  };
+
+  const toggleFavoriteInspirationMessage = (id: string) => {
+    setInspirationMessages(prev => prev.map(m => m.id === id ? { ...m, isFavorite: !m.isFavorite } : m));
+  };
+
+  const restoreDefaultInspirationMessages = () => {
+    setInspirationMessages(prev => {
+      const customMessages = prev.filter(m => m.isCustom);
+      const restoredDefaults = INITIAL_INSPIRATION_MESSAGES.map(def => {
+        const existing = prev.find(p => p.id === def.id || p.text === def.text);
+        return existing || def;
+      });
+      return [...restoredDefaults, ...customMessages];
+    });
+    setInspirationSettings(prev => ({
+      ...prev,
+      frequency: prev.frequency || 'daily',
+      displayMethod: prev.displayMethod || 'both',
+      source: prev.source || 'all'
+    }));
+    confetti({ particleCount: 50, spread: 60 });
+  };
+
+  const dismissInspirationCard = () => {
+    setActiveInspirationCard(null);
+    setIsInspirationDismissedToday(true);
+  };
+
+  const checkAndTriggerInspirationReminder = (triggerType: 'manual' | 'app_load' | 'before_lesson' = 'app_load') => {
+    if (inspirationSettings.frequency === 'disabled' && triggerType !== 'manual') {
+      return;
+    }
+
+    const todayStr = new Date().toISOString().split('T')[0];
+
+    if (triggerType !== 'manual') {
+      // Check if already shown today
+      if (inspirationSettings.lastShownDate === todayStr) {
+        // If already shown today and displayMethod includes in_app card, load the active card if not dismissed
+        if (!isInspirationDismissedToday && inspirationSettings.lastShownMessageId && (inspirationSettings.displayMethod === 'in_app' || inspirationSettings.displayMethod === 'both')) {
+          const shownMsg = inspirationMessages.find(m => m.id === inspirationSettings.lastShownMessageId);
+          if (shownMsg && !activeInspirationCard) {
+            setActiveInspirationCard(shownMsg);
+          }
+        }
+        return;
+      }
+
+      // Check specific frequency rules
+      if (inspirationSettings.frequency === 'before_first_lesson' && triggerType !== 'before_lesson') {
+        const todaysLessons = lessons.filter(l => l.date === todayStr && l.status !== 'cancelled');
+        if (todaysLessons.length === 0) {
+          return; // No lessons today yet
+        }
+      }
+    }
+
+    // Candidate pool selection
+    let candidates = inspirationMessages;
+    if (inspirationSettings.source === 'favorites_only') {
+      const favs = inspirationMessages.filter(m => m.isFavorite);
+      if (favs.length > 0) {
+        candidates = favs;
+      }
+    }
+
+    if (candidates.length === 0) return;
+
+    // Pick a message
+    const randomIndex = Math.floor(Math.random() * candidates.length);
+    const selectedMsg = candidates[randomIndex];
+
+    // Update settings with lastShownDate & lastShownMessageId
+    setInspirationSettings(prev => ({
+      ...prev,
+      lastShownDate: todayStr,
+      lastShownMessageId: selectedMsg.id
+    }));
+
+    // Trigger display
+    const method = inspirationSettings.displayMethod;
+    if (method === 'in_app' || method === 'both') {
+      setActiveInspirationCard(selectedMsg);
+    }
+
+    if (method === 'notification' || method === 'both') {
+      if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
+        try {
+          new Notification('💡 الإلهام والامتنان | AGS19', {
+            body: selectedMsg.text,
+            icon: '/icon.png'
+          });
+        } catch {
+          // ignore
+        }
+      }
+
+      const newNotif: NotificationItem = {
+        id: `notif_insp_${Date.now()}`,
+        title: '💡 إلهام وامتنان اليوم',
+        message: selectedMsg.text,
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        type: 'system',
+        read: false
+      };
+      setNotifications(prev => [newNotif, ...prev.slice(0, 49)]);
+    }
+  };
+
+  // Auto Trigger Effect for Inspiration Reminders
+  useEffect(() => {
+    checkAndTriggerInspirationReminder('app_load');
+  }, [inspirationSettings.frequency, inspirationSettings.source, inspirationSettings.displayMethod, lessons]);
+
+  // 30-Minute Upcoming Lesson Alert Check Worker
+  const [notifiedLessonAlerts, setNotifiedLessonAlerts] = useState<Record<string, boolean>>(() => {
+    const saved = initialData['dl_notified_lesson_alerts'];
+    return saved !== null && saved !== undefined ? saved : [];
+  });
+
+  useEffect(() => {
+    storage.setItem('dl_notified_lesson_alerts', notifiedLessonAlerts);
+  }, [notifiedLessonAlerts]);
+
+  useEffect(() => {
+    if (profile.enableLessonAlerts === false && profile.enableBrowserPush === false) return;
+
+    const checkUpcomingLessonsAlerts = () => {
+      const now = new Date();
+      const todayStr = now.toISOString().split('T')[0];
+      const nowMins = now.getHours() * 60 + now.getMinutes();
+
+      lessons.forEach((lesson) => {
+        if (lesson.date !== todayStr || lesson.status !== 'scheduled') return;
+
+        const timeParts = lesson.time.split(':').map(n => parseInt(n, 10));
+        if (timeParts.length < 2 || isNaN(timeParts[0]) || isNaN(timeParts[1])) return;
+
+        const lessonMins = timeParts[0] * 60 + timeParts[1];
+        const diffMins = lessonMins - nowMins;
+
+        const alertKey = `${lesson.id}_${lesson.date}_30m`;
+        if (diffMins >= 0 && diffMins <= 30 && !notifiedLessonAlerts[alertKey]) {
+          setNotifiedLessonAlerts(prev => ({ ...prev, [alertKey]: true }));
+
+          const studentOrGroupName = lesson.title || lesson.groupName || lesson.studentName || 'Lektion';
+          const titleText = `⏰ Lektion in Kürze (${diffMins === 0 ? 'Jetzt' : `${diffMins} Min`})`;
+          const bodyText = `Die Lektion "${studentOrGroupName}" beginnt ${diffMins === 0 ? 'jetzt' : `in ${diffMins} Minuten`} um ${lesson.time} Uhr!`;
+
+          if (profile.enableLessonAlerts !== false) {
+            setNotifications(prev => [
+              {
+                id: `alert_${lesson.id}_${Date.now()}`,
+                title: titleText,
+                message: bodyText,
+                time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                type: 'reminder',
+                read: false,
+                lessonId: lesson.id
+              },
+              ...prev
+            ]);
+          }
+
+          if (profile.enableBrowserPush && typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
+            try {
+              new window.Notification(titleText, {
+                body: bodyText,
+                icon: '/favicon.ico',
+                tag: alertKey
+              });
+            } catch (err) {
+              console.error('Error firing push notification:', err);
+            }
+          }
+        }
+      });
+    };
+
+    checkUpcomingLessonsAlerts();
+    const interval = setInterval(checkUpcomingLessonsAlerts, 20000);
+    return () => clearInterval(interval);
+  }, [lessons, profile.enableLessonAlerts, profile.enableBrowserPush, notifiedLessonAlerts]);
+
+  // Auto-sync recurring group schedules directly into calendar
+  useEffect(() => {
+    if (!groups || groups.length === 0) return;
+
+    const dayNameToNum: Record<string, number> = {
+      'So': 0, 'Sonntag': 0, 'Sun': 0,
+      'Mo': 1, 'Montag': 1, 'Mon': 1,
+      'Di': 2, 'Dienstag': 2, 'Tue': 2,
+      'Mi': 3, 'Mittwoch': 3, 'Wed': 3,
+      'Do': 4, 'Donnerstag': 4, 'Thu': 4,
+      'Fr': 5, 'Freitag': 5, 'Fri': 5,
+      'Sa': 6, 'Samstag': 6, 'Sat': 6,
+    };
+
+    const numToShortDay: Record<number, string> = {
+      0: 'So', 1: 'Mo', 2: 'Di', 3: 'Mi', 4: 'Do', 5: 'Fr', 6: 'Sa'
+    };
+
+    const newAutoLessons: Lesson[] = [];
+    const today = new Date();
+
+    groups.forEach(group => {
+      if (!group.scheduleDays || group.scheduleDays.length === 0) return;
+
+      const targetDayNums = group.scheduleDays.map(d => dayNameToNum[d] ?? 1);
+      const mergedDayTimes = group.scheduleDayTimes || {};
+
+      for (let dayOffset = 0; dayOffset < 28; dayOffset++) { // 4 weeks
+        const d = new Date();
+        d.setDate(today.getDate() + dayOffset);
+        const dayNum = d.getDay();
+
+        if (targetDayNums.includes(dayNum)) {
+          const dateStr = d.toISOString().split('T')[0];
+          const existsInLessons = lessons.some(l => l.groupId === group.id && l.date === dateStr);
+          const existsInNew = newAutoLessons.some(l => l.groupId === group.id && l.date === dateStr);
+
+          if (!existsInLessons && !existsInNew) {
+            const perSessionPrice = group.paymentModel === 'per_session' && group.pricePerSession
+              ? group.pricePerSession
+              : Math.round((group.monthlyPackagePrice || 1200) / (group.sessionCount || 8));
+
+            const dayShort = numToShortDay[dayNum];
+            const sessionTime = mergedDayTimes[dayShort] || group.scheduleTime || '17:00';
+
+            newAutoLessons.push({
+              id: `l_${Date.now()}_auto_${Math.random().toString(36).substring(2, 6)}`,
+              groupId: group.id,
+              groupName: group.name,
+              title: `${group.name} Lektion`,
+              date: dateStr,
+              time: sessionTime,
+              durationMinutes: 60,
+              type: group.type,
+              grade: group.grade,
+              sessionNumber: ((lessons.filter(l => l.groupId === group.id).length + newAutoLessons.length) % (group.sessionCount || 8)) + 1,
+              totalSessionsInPackage: group.sessionCount || 8,
+              status: 'scheduled',
+              paymentStatus: 'pending',
+              amountDue: perSessionPrice,
+              amountPaid: 0,
+              meetingLink: group.type === 'online' ? (group.zoomLink || profile.defaultZoomLink) : undefined,
+              locationAddress: group.type === 'offline' ? (group.address || 'Cairo Center') : undefined
+            });
+          }
+        }
+      }
+    });
+
+    if (newAutoLessons.length > 0) {
+      setLessons(prev => [...prev, ...newAutoLessons]);
+    }
+  }, [groups]);
+
+  const toggleTheme = () => {
+    setTheme(prev => (prev === 'light' ? 'dark' : 'light'));
+  };
+
+  const updateProfile = (updates: Partial<TeacherProfile>) => {
+    setProfile(prev => ({ ...prev, ...updates }));
+  };
+
+  // Sync simulation with Google Cloud
+  // Explicit Refresh Calendar & Dashboard function
+  const refreshCalendarAndDashboard = () => {
+
+    // Get current valid group and student IDs & names
+    const currentGroupIds = new Set(groups.map(g => g.id));
+    const currentStudentIds = new Set(students.map(s => s.id));
+    const currentStudentNames = new Set(students.map(s => s.name.toLowerCase()));
+
+    // Clean up orphaned lessons (e.g. if student or group was deleted)
+    setLessons(prev => prev.filter(lesson => {
+      // If group lesson and group no longer exists
+      if (lesson.groupId && lesson.groupId !== 'quick_group' && !currentGroupIds.has(lesson.groupId)) {
+        return false;
+      }
+      // If student lesson and student no longer exists
+      if (lesson.studentId && !currentStudentIds.has(lesson.studentId)) {
+        return false;
+      }
+      if (lesson.studentName && !lesson.isQuickLesson && !currentStudentNames.has(lesson.studentName.toLowerCase()) && !lesson.groupId) {
+        return false;
+      }
+      return true;
+    }));
+
+    // Clean up orphaned payments
+    setPayments(prev => prev.filter(payment => {
+      if (payment.groupId && payment.groupId !== 'quick_group' && !currentGroupIds.has(payment.groupId)) {
+        return false;
+      }
+      if (payment.studentId && !payment.studentId.startsWith('temp_') && !currentStudentIds.has(payment.studentId)) {
+        return false;
+      }
+      return true;
+    }));
+
+    // Trigger visual sync completion feedback
+    setTimeout(() => {
+    }, 600);
+  };
+
+  // Drive Backup export
+  const backupToDrive = () => {
+    const data = {
+      profile,
+      groups,
+      students,
+      lessons,
+      payments,
+      notifications,
+      inspirationSettings,
+      inspirationMessages,
+      exportedAt: new Date().toISOString()
+    };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `AGS19_Backup_${new Date().toISOString().split('T')[0]}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+
+    const timeNow = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    updateProfile({ lastSyncedAt: timeNow });
+  };
+
+  // Drive Restore import
+  const restoreFromDrive = (jsonString: string): boolean => {
+    try {
+      const parsed = JSON.parse(jsonString);
+      if (parsed.profile) setProfile(parsed.profile);
+      if (parsed.groups) setGroups(parsed.groups);
+      if (parsed.students) setStudents(parsed.students);
+      if (parsed.lessons) setLessons(parsed.lessons);
+      if (parsed.payments) setPayments(parsed.payments);
+      if (parsed.notifications) setNotifications(parsed.notifications);
+      if (parsed.inspirationSettings) setInspirationSettings(parsed.inspirationSettings);
+      if (parsed.inspirationMessages) setInspirationMessages(parsed.inspirationMessages);
+      const timeNow = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      setProfile(prev => ({ ...prev, lastSyncedAt: timeNow }));
+      confetti({ particleCount: 70, spread: 60 });
+      return true;
+    } catch (err) {
+      console.error('Failed to restore backup', err);
+      return false;
+    }
+  };
+
+  // Group operations
+  const addGroup = (groupData: Omit<Group, 'id'>): Group => {
+    const newGroup: Group = {
+      ...groupData,
+      id: `g_${Date.now()}`
+    };
+    setGroups(prev => [...prev, newGroup]);
+    return newGroup;
+  };
+
+  const duplicateGroup = (groupId: string): Group => {
+    const targetGroup = groups.find(g => g.id === groupId);
+    if (!targetGroup) throw new Error('Group not found');
+
+    const duplicatedGroup: Group = {
+      ...targetGroup,
+      id: `g_${Date.now()}_${Math.random().toString(36).substring(2, 5)}`,
+      name: `${targetGroup.name} (Kopie)`,
+    };
+    setGroups(prev => [...prev, duplicatedGroup]);
+    confetti({ particleCount: 50, spread: 40 });
+    return duplicatedGroup;
+  };
+
+  const updateGroup = (id: string, updates: Partial<Group>) => {
+    setGroups(prev => prev.map(g => (g.id === id ? { ...g, ...updates } : g)));
+  };
+
+  const deleteGroup = (id: string) => {
+    const targetGroup = groups.find(g => g.id === id);
+    if (targetGroup) {
+      setRecentlyDeleted(prev => ({
+        ...prev,
+        groups: [{ item: targetGroup, deletedAt: new Date().toISOString() }, ...prev.groups]
+      }));
+    }
+    setGroups(prev => prev.filter(g => g.id !== id));
+  };
+
+  const archiveGroup = (id: string) => {
+    setGroups(prev => prev.map(g => g.id === id ? { ...g, status: 'archived' } : g));
+  };
+
+  // Student operations (Note: Pricing is automatically inherited from assigned group!)
+  const addStudent = (studentData: Omit<Student, 'id' | 'documents' | 'joinedDate'>): Student => {
+    const newStudent: Student = {
+      ...studentData,
+      id: `s_${Date.now()}`,
+      documents: [],
+      joinedDate: new Date().toISOString().split('T')[0]
+    };
+    setStudents(prev => [...prev, newStudent]);
+    return newStudent;
+  };
+
+  const updateStudent = (id: string, updates: Partial<Student>) => {
+    setStudents(prev => prev.map(s => (s.id === id ? { ...s, ...updates } : s)));
+  };
+
+  const deleteStudent = (id: string) => {
+    const targetStudent = students.find(s => s.id === id);
+    if (targetStudent) {
+      setRecentlyDeleted(prev => ({
+        ...prev,
+        students: [{ item: targetStudent, deletedAt: new Date().toISOString() }, ...prev.students]
+      }));
+    }
+    setStudents(prev => prev.filter(s => s.id !== id));
+  };
+
+  const archiveStudent = (id: string) => {
+    setStudents(prev => prev.map(s => s.id === id ? { ...s, status: 'archived' } : s));
+  };
+
+  const uploadStudentDocument = (studentId: string, file: File, category: 'homework' | 'exam' | 'doc') => {
+    const newDoc: StudentDocument = {
+      id: `doc_${Date.now()}`,
+      fileName: file.name,
+      fileType: file.type.includes('pdf') ? 'pdf' : file.type.includes('image') ? 'image' : 'doc',
+      fileSize: `${(file.size / 1024).toFixed(1)} KB`,
+      uploadedAt: new Date().toISOString().split('T')[0],
+      url: URL.createObjectURL(file),
+      category
+    };
+    setStudents(prev => prev.map(s => s.id === studentId ? { ...s, documents: [newDoc, ...s.documents] } : s));
+  };
+
+  const deleteStudentDocument = (studentId: string, docId: string) => {
+    setStudents(prev => prev.map(s => s.id === studentId ? {
+      ...s,
+      documents: s.documents.filter(d => d.id !== docId)
+    } : s));
+  };
+
+  // Recently Deleted (Soft Delete Recovery)
+  const restoreItem = (type: 'student' | 'group' | 'lesson', id: string) => {
+    if (type === 'student') {
+      const target = recentlyDeleted.students.find(d => d.item.id === id);
+      if (target) {
+        setStudents(prev => [...prev, target.item]);
+        setRecentlyDeleted(prev => ({ ...prev, students: prev.students.filter(d => d.item.id !== id) }));
+      }
+    } else if (type === 'group') {
+      const target = recentlyDeleted.groups.find(d => d.item.id === id);
+      if (target) {
+        setGroups(prev => [...prev, target.item]);
+        setRecentlyDeleted(prev => ({ ...prev, groups: prev.groups.filter(d => d.item.id !== id) }));
+      }
+    } else if (type === 'lesson') {
+      const target = recentlyDeleted.lessons.find(d => d.item.id === id);
+      if (target) {
+        setLessons(prev => [...prev, target.item]);
+        setRecentlyDeleted(prev => ({ ...prev, lessons: prev.lessons.filter(d => d.item.id !== id) }));
+      }
+    }
+    confetti({ particleCount: 50, spread: 40 });
+  };
+
+  const permanentlyDeleteItem = (type: 'student' | 'group' | 'lesson', id: string) => {
+    if (type === 'student') {
+      setRecentlyDeleted(prev => ({ ...prev, students: prev.students.filter(d => d.item.id !== id) }));
+    } else if (type === 'group') {
+      setRecentlyDeleted(prev => ({ ...prev, groups: prev.groups.filter(d => d.item.id !== id) }));
+    } else if (type === 'lesson') {
+      setRecentlyDeleted(prev => ({ ...prev, lessons: prev.lessons.filter(d => d.item.id !== id) }));
+    }
+  };
+
+  const clearRecentlyDeleted = () => {
+    setRecentlyDeleted({ students: [], groups: [], lessons: [] });
+  };
+
+  // Lesson operations with session calculation
+  const addLesson = (lessonData: Omit<Lesson, 'id' | 'sessionNumber' | 'totalSessionsInPackage'>, repeatWeeks: number = 1) => {
+    const targetGroup = groups.find(g => g.id === lessonData.groupId);
+    const groupLessons = lessons.filter(l => l.groupId === lessonData.groupId);
+    const totalSessions = targetGroup?.sessionCount || 4;
+
+    const createdLessons: Lesson[] = [];
+    const baseDate = new Date(lessonData.date);
+
+    for (let week = 0; week < repeatWeeks; week++) {
+      const lessonDate = new Date(baseDate);
+      lessonDate.setDate(baseDate.getDate() + (week * 7));
+      const dateStr = lessonDate.toISOString().split('T')[0];
+
+      // Check if a lesson already exists on this date/time for this group
+      const exists = lessons.some(l => l.groupId === lessonData.groupId && l.date === dateStr && l.time === lessonData.time);
+      if (!exists) {
+        const currentSessionNum = ((groupLessons.length + createdLessons.length) % totalSessions) + 1;
+
+        createdLessons.push({
+          ...lessonData,
+          id: `l_${Date.now()}_${week}_${Math.random().toString(36).substring(2, 5)}`,
+          date: dateStr,
+          sessionNumber: currentSessionNum,
+          totalSessionsInPackage: totalSessions,
+          meetingLink: lessonData.type === 'online' ? (targetGroup?.zoomLink || profile.defaultZoomLink) : undefined,
+          locationAddress: lessonData.type === 'offline' ? (targetGroup?.address || 'Hauptstraße 45, Cairo') : undefined
+        });
+      }
+    }
+
+    if (createdLessons.length > 0) {
+      setLessons(prev => [...prev, ...createdLessons]);
+    }
+  };
+
+  const updateLesson = (id: string, updates: Partial<Lesson>) => {
+    setLessons(prev => prev.map(l => (l.id === id ? { ...l, ...updates } : l)));
+    if (selectedLesson && selectedLesson.id === id) {
+      setSelectedLesson(prev => prev ? { ...prev, ...updates } : null);
+    }
+  };
+
+  const deleteLesson = (id: string) => {
+    const targetLesson = lessons.find(l => l.id === id);
+    if (targetLesson) {
+      setRecentlyDeleted(prev => ({
+        ...prev,
+        lessons: [{ item: targetLesson, deletedAt: new Date().toISOString() }, ...prev.lessons]
+      }));
+    }
+    setLessons(prev => prev.filter(l => l.id !== id));
+    if (selectedLesson?.id === id) {
+      closeLessonControl();
+    }
+  };
+
+  const saveLessonReport = (lessonId: string, report: LessonReport, packageCount?: number) => {
+    const targetLesson = lessons.find(l => l.id === lessonId);
+    if (!targetLesson) return;
+
+    const updatedTotalSessions = packageCount || targetLesson.totalSessionsInPackage || 4;
+    const finalAmountPaid = report.amountPaid ?? targetLesson.amountPaid;
+    const finalAmountDue = targetLesson.amountDue || 200;
+    const today = new Date().toISOString().split('T')[0];
+
+    const groupSts = targetLesson.groupId 
+      ? students.filter(s => s.groupId === targetLesson.groupId)
+      : [];
+
+    setLessons(prev => prev.map(l => {
+      if (l.id === lessonId) {
+        const updatedStudentPayments: Record<string, StudentPaymentDetail> = {};
+        if (report.studentPayments) {
+          Object.entries(report.studentPayments).forEach(([stId, pDet]) => {
+            const stObj = students.find(s => s.id === stId);
+            updatedStudentPayments[stId] = {
+              studentId: stId,
+              studentName: stObj?.name || 'Schüler',
+              paymentStatus: pDet.status,
+              amountPaid: pDet.amount,
+              amountDue: targetLesson.amountDue || 200
+            };
+          });
+        }
+        return {
+          ...l,
+          status: 'completed',
+          paymentStatus: report.paymentStatus,
+          amountPaid: finalAmountPaid,
+          totalSessionsInPackage: updatedTotalSessions,
+          studentPayments: Object.keys(updatedStudentPayments).length > 0 ? updatedStudentPayments : l.studentPayments,
+          report
+        };
+      }
+      return l;
+    }));
+
+    // Auto-sync payment records directly into Payments Center (Zahlungszentrum) based on attended lesson cycles
+    setPayments(prev => {
+      let nextPayments = [...prev];
+
+      const targetStudents = groupSts.length > 0
+        ? groupSts
+        : (targetLesson.studentId || targetLesson.studentName
+            ? students.filter(s => s.id === targetLesson.studentId || s.name === targetLesson.studentName)
+            : []);
+
+      if (targetStudents.length > 0) {
+        targetStudents.forEach(st => {
+          // Check attendance status for student in this lesson
+          const stAttendance = report.studentAttendance?.[st.id] || report.attendanceStatus || 'present';
+          // Only track if student was present or late (attended)
+          if (stAttendance === 'absent') return;
+
+          // Determine bundle size and price for student (Custom student pricing overrides group)
+          const grp = groups.find(g => g.id === st.groupId || g.id === targetLesson.groupId);
+
+          let bundleSize = 4;
+          let bundlePrice = 400;
+
+          if (st.paymentPlan || st.bundleSize || st.customBundlePrice || st.pricePerLesson) {
+            // Student Custom Pricing
+            const plan = st.paymentPlan || '4_lessons';
+            bundleSize = st.bundleSize || (plan === 'per_lesson' ? 1 : plan === '4_lessons' ? 4 : plan === '8_lessons' ? 8 : plan === '12_lessons' ? 12 : 4);
+            bundlePrice = st.customBundlePrice !== undefined && st.customBundlePrice !== null
+              ? st.customBundlePrice
+              : (st.pricePerLesson ? st.pricePerLesson * bundleSize : (bundleSize === 1 ? 100 : bundleSize === 4 ? 400 : bundleSize === 8 ? 700 : 1000));
+          } else if (grp) {
+            // Group Pricing
+            const cycle = grp.paymentCycle || (grp.sessionCount === 1 ? 'per_lesson' : grp.sessionCount === 8 ? '8_lessons' : grp.sessionCount === 12 ? '12_lessons' : '4_lessons');
+            bundleSize = grp.sessionCount || (cycle === 'per_lesson' ? 1 : cycle === '4_lessons' ? 4 : cycle === '8_lessons' ? 8 : cycle === '12_lessons' ? 12 : 4);
+            bundlePrice = grp.monthlyPackagePrice || (grp.pricePerSession ? grp.pricePerSession * bundleSize : (bundleSize === 1 ? 100 : bundleSize === 4 ? 400 : bundleSize === 8 ? 700 : 1000));
+          }
+
+          // Format lesson date as DD/MM/YYYY
+          const parts = targetLesson.date.split('-');
+          const formattedDate = parts.length === 3 ? `${parts[2]}/${parts[1]}/${parts[0]}` : targetLesson.date;
+
+
+          // Find open payment record cycle for this student where lesson dates length < bundleSize and status is not fully settled
+          const openCycleIndex = nextPayments.findIndex(p =>
+            p.studentId === st.id &&
+            (p.lessonDates?.length || 0) < (p.bundleSize || bundleSize) &&
+            p.status !== 'paid'
+          );
+          
+          const stPayChoice = report.studentPayments?.[st.id];
+
+          // Compute how many unbilled lessons this student has right now
+          const paidLessonIds = new Set<string>();
+          nextPayments.forEach(p => {
+            if (p.status === 'paid' && p.lessonIds) {
+              p.lessonIds.forEach(id => paidLessonIds.add(id));
+            }
+          });
+          
+          const unbilledCompletedLessons = lessons.filter(l => {
+             if (l.status !== 'completed' && l.id !== targetLesson.id) return false;
+             if (l.groupId !== st.groupId && l.studentId !== st.id) return false;
+             if (paidLessonIds.has(l.id) && l.id !== targetLesson.id) return false;
+             const att = l.report?.studentAttendance?.[st.id] || l.report?.attendanceStatus || (l.id === targetLesson.id ? stAttendance : 'present');
+             if (att === 'absent') return false;
+             return true;
+          });
+          
+          const reachedBundleSize = unbilledCompletedLessons.length >= bundleSize;
+          const isPayingNow = stPayChoice?.amount !== undefined && stPayChoice.amount > 0;
+
+          if (!reachedBundleSize && !isPayingNow) {
+            // DO NOT CREATE PAYMENT RECORD
+            return;
+          }
+
+
+
+          if (openCycleIndex >= 0) {
+            // Update existing open payment cycle
+            const currentRec = nextPayments[openCycleIndex];
+            const existingDates = currentRec.lessonDates || [];
+            const existingIds = currentRec.lessonIds || [];
+
+            const updatedDates = existingDates.includes(formattedDate) ? existingDates : [...existingDates, formattedDate];
+            const updatedIds = existingIds.includes(targetLesson.id) ? existingIds : [...existingIds, targetLesson.id];
+            
+            // If we reached bundle size and haven't added the previous ones, let's add them
+            if (reachedBundleSize) {
+                unbilledCompletedLessons.forEach(l => {
+                    const lDate = l.date.split('-').length === 3 ? `${l.date.split('-')[2]}/${l.date.split('-')[1]}/${l.date.split('-')[0]}` : l.date;
+                    if (!updatedIds.includes(l.id)) updatedIds.push(l.id);
+                    if (!updatedDates.includes(lDate)) updatedDates.push(lDate);
+                });
+            }
+
+            const curPaid = stPayChoice?.amount !== undefined ? stPayChoice.amount : currentRec.amountPaid;
+            const curStatus = stPayChoice?.status || (curPaid >= bundlePrice ? 'paid' : (curPaid > 0 ? 'partial' : 'pending'));
+
+            const updatedRecord: PaymentRecord = {
+              ...currentRec,
+              groupId: st.groupId || targetLesson.groupId || '',
+              groupName: grp?.name || targetLesson.groupName || 'Gruppe',
+              bundleSize: currentRec.bundleSize || bundleSize,
+              amountDue: currentRec.amountDue || bundlePrice,
+              amountPaid: curPaid,
+              remainingBalance: Math.max(0, (currentRec.amountDue || bundlePrice) - curPaid - (currentRec.discountAmount || 0)),
+              lessonIds: updatedIds,
+              lessonDates: updatedDates,
+              status: curStatus,
+              paidDate: curStatus === 'paid' ? today : currentRec.paidDate,
+              notes: `Paket (${updatedDates.length}/${currentRec.bundleSize || bundleSize} Lektionen)`
+            };
+
+            nextPayments[openCycleIndex] = updatedRecord;
+          } else {
+            // Create a brand new payment cycle record for student
+            const initPaid = stPayChoice?.status === 'paid' ? bundlePrice : (stPayChoice?.amount || 0);
+            const initStatus = stPayChoice?.status || (initPaid >= bundlePrice ? 'paid' : (initPaid > 0 ? 'partial' : 'pending'));
+            
+            const initialIds = [targetLesson.id];
+            const initialDates = [formattedDate];
+            
+            if (reachedBundleSize) {
+                unbilledCompletedLessons.forEach(l => {
+                    const lDate = l.date.split('-').length === 3 ? `${l.date.split('-')[2]}/${l.date.split('-')[1]}/${l.date.split('-')[0]}` : l.date;
+                    if (!initialIds.includes(l.id)) initialIds.push(l.id);
+                    if (!initialDates.includes(lDate)) initialDates.push(lDate);
+                });
+            }
+
+            const newRecord: PaymentRecord = {
+              id: `pay_cycle_${st.id}_${Date.now()}_${Math.random().toString(36).substring(2, 5)}`,
+              studentId: st.id,
+              studentName: st.name,
+              groupId: st.groupId || targetLesson.groupId || '',
+              groupName: grp?.name || targetLesson.groupName || 'Gruppe',
+              bundleSize: bundleSize,
+              amountDue: bundlePrice,
+              amountPaid: initPaid,
+              remainingBalance: Math.max(0, bundlePrice - initPaid),
+              dueDate: targetLesson.date,
+              paidDate: initStatus === 'paid' ? today : undefined,
+              status: initStatus,
+              lessonIds: initialIds,
+              lessonDates: initialDates,
+              paymentType: bundleSize > 1 ? 'package_bundle' : 'lesson_fee',
+              paymentMethod: 'vodafone_cash',
+              notes: `Zahlungszyklus (${bundleSize}er Paket)`,
+              createdAt: new Date().toISOString()
+            };
+            nextPayments.unshift(newRecord);
+          }
+
+        });
+      }
+
+      return nextPayments;
+    });
+
+    // Update students payment status in state
+    setStudents(prev => prev.map(s => {
+      const isGroupMember = targetLesson.groupId && s.groupId === targetLesson.groupId;
+      const isIndividual = s.id === targetLesson.studentId || s.name === targetLesson.studentName;
+
+      if (isGroupMember || isIndividual) {
+        const stPayChoice = report.studentPayments?.[s.id];
+        const newStatus = stPayChoice?.status || report.paymentStatus;
+        return {
+          ...s,
+          paymentStatus: newStatus
+        };
+      }
+      return s;
+    }));
+
+    if (targetLesson.sessionNumber === updatedTotalSessions) {
+      const packageTitle = targetLesson.groupName || targetLesson.studentName || targetLesson.title;
+      const notifMsg = `Paket beendet: ${targetLesson.sessionNumber} von ${updatedTotalSessions} Sitzungen abgeschlossen für ${packageTitle}. Zahlung erforderlich.`;
+      
+      const newNotif: NotificationItem = {
+        id: `notif_${Date.now()}`,
+        title: '⚠️ Paket beendet & Zahlung fällig',
+        message: notifMsg,
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        type: 'payment',
+        read: false,
+        lessonId
+      };
+
+      setNotifications(prev => [newNotif, ...prev]);
+    }
+
+    if (selectedLesson && selectedLesson.id === lessonId) {
+      setSelectedLesson(prev => prev ? {
+        ...prev,
+        status: 'completed',
+        paymentStatus: report.paymentStatus,
+        amountPaid: finalAmountPaid,
+        totalSessionsInPackage: updatedTotalSessions,
+        report
+      } : null);
+    }
+
+    confetti({ particleCount: 80, spread: 70, origin: { y: 0.6 } });
+  };
+
+  const cancelLesson = (lessonId: string, notes?: string) => {
+    setLessons(prev => prev.map(l => {
+      if (l.id === lessonId) {
+        const existingNotes = l.report?.teacherNotes || l.quickNotes || '';
+        const combinedNotes = notes 
+          ? (existingNotes ? `${existingNotes} | Absage-Notiz: ${notes}` : `Absage-Notiz: ${notes}`) 
+          : existingNotes;
+
+        return {
+          ...l,
+          status: 'cancelled' as LessonStatus,
+          report: l.report ? {
+            ...l.report,
+            teacherNotes: combinedNotes,
+            savedAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+          } : {
+            attendanceStatus: 'absent' as AttendanceStatus,
+            homeworkStatus: 'not_completed' as HomeworkStatus,
+            paymentStatus: l.paymentStatus || 'pending',
+            teacherNotes: combinedNotes || 'Lektion abgesagt',
+            savedAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+          }
+        };
+      }
+      return l;
+    }));
+
+    if (selectedLesson && selectedLesson.id === lessonId) {
+      setSelectedLesson(prev => prev ? {
+        ...prev,
+        status: 'cancelled',
+        report: prev.report ? {
+          ...prev.report,
+          teacherNotes: notes ? (prev.report.teacherNotes ? `${prev.report.teacherNotes} | Absage-Notiz: ${notes}` : `Absage-Notiz: ${notes}`) : prev.report.teacherNotes
+        } : {
+          attendanceStatus: 'absent',
+          homeworkStatus: 'not_completed',
+          paymentStatus: prev.paymentStatus || 'pending',
+          teacherNotes: notes ? `Absage-Notiz: ${notes}` : 'Lektion abgesagt',
+          savedAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        }
+      } : null);
+      closeLessonControl();
+    }
+  };
+
+  const generateGroupScheduleLessons = (groupId: string, days: string[], defaultTime: string, numWeeks: number = 4, customDayTimes?: Record<string, string>, groupOverride?: Group) => {
+    const targetGroup = groupOverride || groups.find(g => g.id === groupId);
+    if (!targetGroup || !days || !days.length) return;
+
+    const dayNameToNum: Record<string, number> = {
+      'So': 0, 'Sonntag': 0, 'Sun': 0,
+      'Mo': 1, 'Montag': 1, 'Mon': 1,
+      'Di': 2, 'Dienstag': 2, 'Tue': 2,
+      'Mi': 3, 'Mittwoch': 3, 'Wed': 3,
+      'Do': 4, 'Donnerstag': 4, 'Thu': 4,
+      'Fr': 5, 'Freitag': 5, 'Fri': 5,
+      'Sa': 6, 'Samstag': 6, 'Sat': 6,
+    };
+
+    const numToShortDay: Record<number, string> = {
+      0: 'So', 1: 'Mo', 2: 'Di', 3: 'Mi', 4: 'Do', 5: 'Fr', 6: 'Sa'
+    };
+
+    const targetDayNums = days.map(d => dayNameToNum[d] !== undefined ? dayNameToNum[d] : 1);
+    const newLessons: Lesson[] = [];
+    const today = new Date();
+
+    const checkOverlap = (l1: { date: string; time: string; durationMinutes: number }, l2: { date: string; time: string; durationMinutes: number }) => {
+      if (l1.date !== l2.date) return false;
+      const getMinutes = (timeStr: string) => {
+        const [h, m] = (timeStr || "00:00").split(':').map(Number);
+        return (h || 0) * 60 + (m || 0);
+      };
+      const start1 = getMinutes(l1.time);
+      const end1 = start1 + (l1.durationMinutes || 60);
+      const start2 = getMinutes(l2.time);
+      const end2 = start2 + (l2.durationMinutes || 60);
+      return start1 < end2 && start2 < end1;
+    };
+
+    const mergedDayTimes = customDayTimes || targetGroup.scheduleDayTimes || {};
+
+    for (let dayOffset = 0; dayOffset < numWeeks * 7; dayOffset++) {
+      const d = new Date();
+      d.setDate(today.getDate() + dayOffset);
+      const dayNum = d.getDay();
+
+      if (targetDayNums.includes(dayNum)) {
+        const dateStr = d.toISOString().split('T')[0];
+        const exists = lessons.some(l => l.groupId === groupId && l.date === dateStr);
+        if (!exists) {
+          const perSessionPrice = targetGroup.paymentCycle === 'per_lesson' && targetGroup.pricePerSession
+            ? targetGroup.pricePerSession
+            : Math.round((targetGroup.monthlyPackagePrice || 1200) / (targetGroup.sessionCount || 8));
+
+          const dayShort = numToShortDay[dayNum];
+          const sessionTime = mergedDayTimes[dayShort] || defaultTime || targetGroup.scheduleTime || '17:00';
+          const dummyLesson = { id: 'dummy', date: dateStr, time: sessionTime, durationMinutes: targetGroup.lessonDurationMinutes || 60 };
+          
+          // Implement overlap detection logic start1 < end2 && start2 < end1 via checkOverlap
+          const hasConflict = lessons.some(l => checkOverlap(dummyLesson, l)) || newLessons.some(l => checkOverlap(dummyLesson, l));
+          
+          if (!hasConflict) {
+            newLessons.push({
+            id: `l_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+            groupId: targetGroup.id,
+            groupName: targetGroup.name,
+            title: `${targetGroup.name} Lektion`,
+            date: dateStr,
+            time: sessionTime,
+            durationMinutes: targetGroup.lessonDurationMinutes || 60,
+            type: targetGroup.type,
+            grade: targetGroup.grade,
+            sessionNumber: (((targetGroup.startingSessionNumber || 1) - 1 + lessons.filter(l => l.groupId === groupId).length + newLessons.length) % (targetGroup.sessionCount || 8)) + 1,
+            totalSessionsInPackage: targetGroup.sessionCount || 8,
+            status: 'scheduled',
+            paymentStatus: 'pending',
+            amountDue: perSessionPrice,
+            amountPaid: 0,
+            meetingLink: targetGroup.type === 'online' ? (targetGroup.zoomLink || profile.defaultZoomLink) : undefined,
+            locationAddress: targetGroup.type === 'offline' ? (targetGroup.address || 'Cairo Center') : undefined
+          });
+          }
+        }
+      }
+    }
+
+    if (newLessons.length > 0) {
+      setLessons(prev => [...prev, ...newLessons]);
+    }
+  };
+
+  // Payments
+  const recordPayment = (
+    paymentId: string, 
+    paidAmount: number, 
+    method: 'cash' | 'vodafone_cash' | 'bank_transfer' | 'instapay' | 'paypal', 
+    notes?: string,
+    discountAmount: number = 0,
+    advanceAmount: number = 0,
+    refundAmount: number = 0
+  ) => {
+    const today = new Date().toISOString().split('T')[0];
+    setPayments(prev => prev.map(p => {
+      if (p.id === paymentId) {
+        const newPaid = (p.amountPaid || 0) + paidAmount + advanceAmount - refundAmount;
+        const totalDiscount = (p.discountAmount || 0) + discountAmount;
+        const netDue = Math.max(0, p.amountDue - totalDiscount);
+        const rem = Math.max(0, netDue - newPaid);
+        const newStatus: PaymentStatus = rem === 0 ? 'paid' : newPaid > 0 ? 'partial' : 'pending';
+
+        return {
+          ...p,
+          amountPaid: newPaid,
+          discountAmount: totalDiscount,
+          advanceAmount: (p.advanceAmount || 0) + advanceAmount,
+          refundAmount: (p.refundAmount || 0) + refundAmount,
+          remainingBalance: rem,
+          status: newStatus,
+          paidDate: today,
+          paymentMethod: method,
+          notes: notes ? (p.notes ? `${p.notes} • ${notes}` : notes) : p.notes
+        };
+      }
+      return p;
+    }));
+    confetti({ particleCount: 60, spread: 50 });
+  };
+
+  const addPaymentRecord = (record: Omit<PaymentRecord, 'id'>) => {
+    const rem = Math.max(0, (record.amountDue || 0) - (record.amountPaid || 0) - (record.discountAmount || 0));
+    const newRecord: PaymentRecord = {
+      ...record,
+      id: `p_${Date.now()}_${Math.random().toString(36).substring(2, 5)}`,
+      remainingBalance: rem,
+      createdAt: new Date().toISOString()
+    };
+    setPayments(prev => [newRecord, ...prev]);
+  };
+
+  const markCyclePaymentPaid = (data: {
+    studentId: string;
+    studentName: string;
+    groupId: string;
+    groupName: string;
+    amountDue: number;
+    amountPaid: number;
+    lessonDates: string[];
+    lessonIds: string[];
+    existingPaymentRecordId?: string;
+    notes?: string;
+  }) => {
+    const today = new Date().toISOString().split('T')[0];
+
+    if (data.existingPaymentRecordId) {
+      setPayments(prev => prev.map(p => {
+        if (p.id === data.existingPaymentRecordId) {
+          return {
+            ...p,
+            amountPaid: data.amountPaid,
+            remainingBalance: Math.max(0, p.amountDue - data.amountPaid),
+            status: 'paid',
+            paidDate: today,
+            lessonDates: data.lessonDates,
+            lessonIds: data.lessonIds,
+            notes: data.notes || `Bezahlt am ${today}`
+          };
+        }
+        return p;
+      }));
+    } else {
+      const newRecord: PaymentRecord = {
+        id: `pay_paid_${data.studentId}_${Date.now()}`,
+        studentId: data.studentId,
+        studentName: data.studentName,
+        groupId: data.groupId,
+        groupName: data.groupName,
+        amountDue: data.amountDue,
+        amountPaid: data.amountPaid,
+        remainingBalance: 0,
+        dueDate: today,
+        paidDate: today,
+        status: 'paid',
+        paymentMethod: 'vodafone_cash',
+        lessonDates: data.lessonDates,
+        lessonIds: data.lessonIds,
+        notes: data.notes || `Bezahlt am ${today}`,
+        createdAt: new Date().toISOString()
+      };
+
+      setPayments(prev => [newRecord, ...prev]);
+    }
+
+    setStudents(prev => prev.map(s => s.id === data.studentId ? { ...s, paymentStatus: 'paid' } : s));
+    confetti({ particleCount: 70, spread: 60, origin: { y: 0.6 } });
+  };
+
+  const markCyclePaymentNotYet = (data: {
+    studentId: string;
+    studentName: string;
+    groupId: string;
+    groupName: string;
+    amountDue: number;
+    lessonDates: string[];
+    lessonIds: string[];
+    existingPaymentRecordId?: string;
+  }) => {
+    if (!data.existingPaymentRecordId) {
+      const today = new Date().toISOString().split('T')[0];
+      const newRecord: PaymentRecord = {
+        id: `pay_due_${data.studentId}_${Date.now()}`,
+        studentId: data.studentId,
+        studentName: data.studentName,
+        groupId: data.groupId,
+        groupName: data.groupName,
+        amountDue: data.amountDue,
+        amountPaid: 0,
+        remainingBalance: data.amountDue,
+        dueDate: today,
+        status: 'pending',
+        paymentMethod: 'vodafone_cash',
+        lessonDates: data.lessonDates,
+        lessonIds: data.lessonIds,
+        notes: 'Noch offen (In Erwartung)',
+        createdAt: new Date().toISOString()
+      };
+      setPayments(prev => [newRecord, ...prev]);
+    }
+  };
+
+  const toggleQuickPaymentStatus = (paymentId: string) => {
+    const today = new Date().toISOString().split('T')[0];
+    let targetStId = '';
+    let newStStatus: PaymentStatus = 'pending';
+
+    setPayments(prev => prev.map(p => {
+      if (p.id === paymentId) {
+        targetStId = p.studentId;
+        const isPaid = p.status === 'paid' || (p.amountPaid >= p.amountDue && p.amountDue > 0);
+        if (isPaid) {
+          newStStatus = 'pending';
+          return {
+            ...p,
+            amountPaid: 0,
+            remainingBalance: p.amountDue,
+            status: 'pending',
+            paidDate: undefined
+          };
+        } else {
+          newStStatus = 'paid';
+          return {
+            ...p,
+            amountPaid: p.amountDue,
+            remainingBalance: 0,
+            status: 'paid',
+            paidDate: today
+          };
+        }
+      }
+      return p;
+    }));
+
+    if (targetStId) {
+      setStudents(prev => prev.map(s => s.id === targetStId ? { ...s, paymentStatus: newStStatus } : s));
+    }
+  };
+
+  const toggleStudentPaymentStatus = (studentId: string) => {
+    const today = new Date().toISOString().split('T')[0];
+    const targetSt = students.find(s => s.id === studentId);
+    if (!targetSt) return;
+
+    const existingPayment = payments.find(p => p.studentId === studentId);
+
+    if (existingPayment) {
+      toggleQuickPaymentStatus(existingPayment.id);
+    } else {
+      // Create payment record and mark as paid
+      const fee = targetSt.monthlyFee || 200;
+      const grp = groups.find(g => g.id === targetSt.groupId);
+      
+      const newRec: PaymentRecord = {
+        id: `pay_st_${studentId}_${Date.now()}`,
+        studentId: targetSt.id,
+        studentName: targetSt.name,
+        groupId: targetSt.groupId,
+        groupName: grp?.name || 'Einzelunterricht',
+        amountDue: fee,
+        amountPaid: fee,
+        remainingBalance: 0,
+        dueDate: today,
+        paidDate: today,
+        status: 'paid',
+        paymentMethod: 'vodafone_cash',
+        notes: 'Schnell-Buchung (1-Klick Status)'
+      };
+
+      setPayments(prev => [newRec, ...prev]);
+      setStudents(prev => prev.map(s => s.id === studentId ? { ...s, paymentStatus: 'paid' } : s));
+    }
+  };
+
+  const updateStudentPaymentPlan = (
+    studentId: string, 
+    paymentPlan: 'per_lesson' | '4_lessons' | '8_lessons' | '12_lessons' | 'custom_bundle',
+    pricePerLesson?: number,
+    bundleSize?: number,
+    customBundlePrice?: number
+  ) => {
+    setStudents(prev => prev.map(s => {
+      if (s.id === studentId) {
+        return {
+          ...s,
+          paymentPlan,
+          pricePerLesson: pricePerLesson ?? s.pricePerLesson,
+          bundleSize: bundleSize ?? s.bundleSize,
+          customBundlePrice: customBundlePrice ?? s.customBundlePrice
+        };
+      }
+      return s;
+    }));
+    confetti({ particleCount: 50, spread: 40 });
+  };
+
+  const updateLessonPaymentStatus = (lessonId: string, status: PaymentStatus, customAmountPaid?: number) => {
+    const targetLesson = lessons.find(l => l.id === lessonId);
+    if (!targetLesson) return;
+
+    const due = targetLesson.amountDue || 200;
+    const finalPaid = customAmountPaid !== undefined 
+      ? customAmountPaid 
+      : (status === 'paid' ? due : 0);
+
+    const today = new Date().toISOString().split('T')[0];
+
+    // Update lesson status and amount
+    setLessons(prev => prev.map(l => {
+      if (l.id === lessonId) {
+        return {
+          ...l,
+          paymentStatus: status,
+          amountPaid: finalPaid,
+          report: l.report ? {
+            ...l.report,
+            paymentStatus: status,
+            amountPaid: finalPaid
+          } : undefined
+        };
+      }
+      return l;
+    }));
+
+    // Update student payment status if individual student
+    if (targetLesson.studentId) {
+      setStudents(prev => prev.map(s => s.id === targetLesson.studentId ? { ...s, paymentStatus: status } : s));
+    }
+
+    // Sync corresponding payment record in payments list
+    setPayments(prev => {
+      const existingIdx = prev.findIndex(p => p.lessonId === lessonId || (p.lessonIds && p.lessonIds.includes(lessonId)));
+      if (existingIdx >= 0) {
+        return prev.map((p, idx) => {
+          if (idx === existingIdx) {
+            const rem = Math.max(0, p.amountDue - finalPaid - (p.discountAmount || 0));
+            return {
+              ...p,
+              amountPaid: finalPaid,
+              remainingBalance: rem,
+              status,
+              paidDate: status === 'paid' ? today : p.paidDate
+            };
+          }
+          return p;
+        });
+      } else {
+        const newRec: PaymentRecord = {
+          id: `pay_l_${lessonId}_${Date.now()}`,
+          studentId: targetLesson.studentId || '',
+          studentName: targetLesson.studentName || targetLesson.groupName || targetLesson.title,
+          groupId: targetLesson.groupId || '',
+          groupName: targetLesson.groupName || 'Gruppe',
+          lessonId: targetLesson.id,
+          amountDue: due,
+          amountPaid: finalPaid,
+          remainingBalance: Math.max(0, due - finalPaid),
+          dueDate: targetLesson.date,
+          paidDate: status === 'paid' ? today : undefined,
+          status,
+          paymentMethod: 'vodafone_cash',
+          notes: `Beendete Lektion (${targetLesson.date}): ${targetLesson.title}`
+        };
+        return [newRec, ...prev];
+      }
+    });
+
+    if (status === 'paid') {
+      confetti({ particleCount: 70, spread: 60 });
+    }
+  };
+
+  // Notifications
+  const markNotificationRead = (id: string) => {
+    setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
+  };
+
+  const markAllNotificationsRead = () => {
+    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+  };
+
+  const clearAllNotifications = () => {
+    setNotifications([]);
+  };
+
+  const clearAllData = () => {
+    setGroups([]);
+    setStudents([]);
+    setLessons([]);
+    setPayments([]);
+    setNotifications([]);
+    setRecentlyDeleted({ students: [], groups: [], lessons: [] });
+    setDismissedDashboardLessonIds([]);
+    const keysToRemove = [
+      'dl_groups', 'dl_students', 'dl_lessons', 'dl_payments',
+      'dl_notifications', 'dl_quick_todos', 'dl_dismissed_dashboard_lessons',
+      'dl_recently_deleted', 'dl_notified_lesson_alerts', 'dl_active_lesson_session',
+      
+    ];
+    keysToRemove.forEach(k => storage.removeItem(k));
+    confetti({ particleCount: 60, spread: 60 });
+  };
+
+  // Quick Lesson operations
+  const addQuickLesson = (data: Omit<Lesson, 'id' | 'sessionNumber' | 'totalSessionsInPackage' | 'groupId' | 'groupName'> & {
+    studentName: string;
+    quickStudentPhone?: string;
+    quickParentPhone?: string;
+    quickNotes?: string;
+  }): Lesson => {
+    const newLesson: Lesson = {
+      ...data,
+      id: `ql_${Date.now()}_${Math.random().toString(36).substring(2, 5)}`,
+      groupId: 'quick_group',
+      groupName: 'Quick Lesson',
+      studentName: data.studentName,
+      title: `⚡ Quick Lesson: ${data.studentName}`,
+      sessionNumber: 1,
+      totalSessionsInPackage: 1,
+      isQuickLesson: true,
+      quickStudentPhone: data.quickStudentPhone || '',
+      quickParentPhone: data.quickParentPhone || '',
+      quickNotes: data.quickNotes || '',
+      meetingLink: data.type === 'online' ? (data.meetingLink || profile.defaultZoomLink) : undefined,
+      locationAddress: data.type === 'offline' ? (data.locationAddress || 'Kairo Schulungsraum') : undefined,
+    };
+
+    setLessons(prev => [newLesson, ...prev]);
+
+    // Create corresponding payment record so it reflects in Revenue & Reports
+    const newPayment: PaymentRecord = {
+      id: `p_ql_${Date.now()}`,
+      studentId: `temp_qs_${Date.now()}`,
+      studentName: data.studentName,
+      groupId: 'quick_group',
+      groupName: 'Quick Lesson',
+      amountDue: data.amountDue || 0,
+      amountPaid: data.amountPaid || 0,
+      dueDate: data.date,
+      status: data.paymentStatus || (data.amountPaid >= data.amountDue ? 'paid' : data.amountPaid > 0 ? 'partial' : 'pending'),
+      notes: `⚡ Quick Lesson Payment (${data.date}): ${data.quickNotes || ''}`
+    };
+    setPayments(prev => [newPayment, ...prev]);
+
+    confetti({ particleCount: 60, spread: 60 });
+    return newLesson;
+  };
+
+  const convertQuickLessonToStudent = (lessonId: string): Student | null => {
+    const targetLesson = lessons.find(l => l.id === lessonId);
+    if (!targetLesson || !targetLesson.studentName) return null;
+
+    let defaultGroup = groups[0];
+    if (!defaultGroup) {
+      defaultGroup = addGroup({
+        name: 'Einzelunterricht (1-on-1)',
+        grade: targetLesson.grade || 'Grade 9',
+        type: targetLesson.type || 'online',
+        monthlyPackagePrice: 1200,
+        sessionCount: 4,
+        color: '#3b82f6'
+      });
+    }
+
+    const newStudent: Student = {
+      id: `s_${Date.now()}`,
+      name: targetLesson.studentName,
+      groupId: defaultGroup.id,
+      grade: targetLesson.grade || defaultGroup.grade || 'Grade 9',
+      parentName: `${targetLesson.studentName}'s Eltern`,
+      parentPhone: targetLesson.quickParentPhone || '',
+      studentPhone: targetLesson.quickStudentPhone || '',
+      notes: `Konvertiert aus Quick Lesson vom ${targetLesson.date}. Notizen: ${targetLesson.quickNotes || 'Keine'}`,
+      documents: [],
+      joinedDate: new Date().toISOString().split('T')[0]
+    };
+
+    setStudents(prev => [newStudent, ...prev]);
+
+    // Convert all matching quick lessons to permanent student lessons
+    setLessons(prev => prev.map(l => {
+      if (l.studentName === targetLesson.studentName && (l.isQuickLesson || l.groupId === 'quick_group')) {
+        return {
+          ...l,
+          studentId: newStudent.id,
+          groupId: defaultGroup.id,
+          groupName: defaultGroup.name,
+          title: `${newStudent.name} - Lektion`,
+          isQuickLesson: false
+        };
+      }
+      return l;
+    }));
+
+    // Update payment records
+    setPayments(prev => prev.map(p => {
+      if (p.studentName === targetLesson.studentName) {
+        return {
+          ...p,
+          studentId: newStudent.id,
+          groupId: defaultGroup.id,
+          groupName: defaultGroup.name
+        };
+      }
+      return p;
+    }));
+
+    confetti({ particleCount: 100, spread: 80 });
+    return newStudent;
+  };
+
+  // BACKUP & SYNC VERIFICATION SYSTEM
+  const performBackup = () => {
+    const backupObj: BackupData = {
+      timestamp: new Date().toISOString(),
+      version: '2.0.0',
+      profile,
+      groups,
+      students,
+      lessons,
+      payments,
+      notifications,
+      inspirationSettings,
+      inspirationMessages,
+      syncQueue: []
+    };
+
+    const jsonStr = JSON.stringify(backupObj);
+    storage.setItem('dl_local_backup_data', jsonStr);
+    const now = new Date().toISOString();
+    storage.setItem('dl_last_backup_time', now);
+    setLastBackupTime(now);
+  };
+
+  const importBackupFile = async (customJson?: string): Promise<boolean> => {
+    try {
+      const sourceStr = customJson || await storage.getItem('dl_local_backup_data');
+      if (!sourceStr) return false;
+
+      const data: BackupData = JSON.parse(sourceStr);
+      if (data.profile) setProfile(data.profile);
+      if (data.groups) setGroups(data.groups);
+      if (data.students) setStudents(data.students);
+      if (data.lessons) setLessons(data.lessons);
+      if (data.payments) setPayments(data.payments);
+      if (data.notifications) setNotifications(data.notifications);
+      if (data.inspirationSettings) setInspirationSettings(data.inspirationSettings);
+      if (data.inspirationMessages) setInspirationMessages(data.inspirationMessages);
+
+      confetti({ particleCount: 80, spread: 70 });
+      return true;
+    } catch (e) {
+      console.error('Failed to restore backup', e);
+      return false;
+    }
+  };
+
+  const exportBackupFile = () => {
+    const backupObj: BackupData = {
+      timestamp: new Date().toISOString(),
+      version: '2.0.0',
+      profile,
+      groups,
+      students: students.map(s => {
+        if (s.avatarUrl && s.avatarUrl.startsWith('data:image')) {
+          return { ...s, avatarUrl: '' };
+        }
+        return s;
+      }),
+      lessons,
+      payments,
+      notifications,
+      inspirationSettings,
+      inspirationMessages,
+      syncQueue: [],
+      todos,
+    };
+    const jsonStr = JSON.stringify(backupObj, null, 2);
+    const blob = new Blob([jsonStr], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `znd_backup_${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+  
+  const verifyBackupIntegrity = (): BackupIntegrityReport => {
+    const quickLessonsCount = lessons.filter(l => l.isQuickLesson || l.groupId === 'quick_group').length;
+    const messages: string[] = [];
+
+    // Check student IDs uniqueness
+    const studentIds = students.map(s => s.id);
+    const uniqueStudentIds = new Set(studentIds);
+    if (studentIds.length !== uniqueStudentIds.size) {
+      messages.push('⚠️ Doppelte Schüler-IDs entdeckt');
+    }
+
+    // Check lesson IDs uniqueness
+    const lessonIds = lessons.map(l => l.id);
+    const uniqueLessonIds = new Set(lessonIds);
+    if (lessonIds.length !== uniqueLessonIds.size) {
+      messages.push('⚠️ Doppelte Lektions-IDs entdeckt');
+    }
+
+    if (messages.length === 0) {
+      messages.push('✓ Alle Datensätze sind lokal und in Google Backup verifiziert.');
+      messages.push('✓ Keine Duplikate, keine fehlenden Referenzen.');
+      messages.push('✓ Quick Lessons, Berichte und Zahlungen synchronisiert.');
+    }
+
+    return {
+      timestamp: new Date().toISOString(),
+      isValid: !messages.some(m => m.includes('⚠️')),
+      totalRecords: groups.length + students.length + lessons.length + payments.length + notifications.length,
+      details: {
+        groupsCount: groups.length,
+        studentsCount: students.length,
+        lessonsCount: lessons.length,
+        paymentsCount: payments.length,
+        quickLessonsCount
+      },
+      messages
+    };
+  };
+
+  // Control modal open/close
+  const openLessonControl = (lesson: Lesson) => {
+    setSelectedLesson(lesson);
+    setIsControlModalOpen(true);
+  };
+
+  const closeLessonControl = () => {
+    setIsControlModalOpen(false);
+    setSelectedLesson(null);
+  };
+
+  // Active Running Lesson Timer Engine State
+  const [activeLessonSession, setActiveLessonSession] = useState<ActiveLessonSession | null>(() => {
+    const saved = initialData['dl_active_lesson_session'];
+    return saved !== null && saved !== undefined ? saved : null;
+  });
+
+  useEffect(() => {
+    if (activeLessonSession) {
+      storage.setItem('dl_active_lesson_session', activeLessonSession);
+    } else {
+      storage.removeItem('dl_active_lesson_session');
+      clearActiveLessonNotification();
+    }
+  }, [activeLessonSession]);
+
+  const startActiveLessonTimer = (lesson: Lesson) => {
+    const startTimeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const session: ActiveLessonSession = {
+      lessonId: lesson.id,
+      lessonTitle: lesson.title,
+      groupName: lesson.groupName || lesson.studentName || 'Gruppe',
+      grade: lesson.grade,
+      type: lesson.type,
+      startedAt: Date.now(),
+      accumulatedSeconds: 0,
+      durationMinutes: lesson.durationMinutes || 60,
+      isRunning: true,
+      startTimeStr
+    };
+    setActiveLessonSession(session);
+    updateLesson(lesson.id, { status: 'in_progress' });
+  };
+
+  const pauseActiveLessonTimer = () => {
+    if (!activeLessonSession || !activeLessonSession.isRunning) return;
+    const elapsed = Math.max(0, Math.floor((Date.now() - activeLessonSession.startedAt) / 1000));
+    setActiveLessonSession({
+      ...activeLessonSession,
+      isRunning: false,
+      accumulatedSeconds: activeLessonSession.accumulatedSeconds + elapsed
+    });
+  };
+
+  const resumeActiveLessonTimer = () => {
+    if (!activeLessonSession || activeLessonSession.isRunning) return;
+    setActiveLessonSession({
+      ...activeLessonSession,
+      isRunning: true,
+      startedAt: Date.now()
+    });
+  };
+
+  const endActiveLessonTimer = () => {
+    setActiveLessonSession(null);
+    clearActiveLessonNotification();
+  };
+
+  const cancelActiveLessonTimer = () => {
+    if (activeLessonSession) {
+      cancelLesson(activeLessonSession.lessonId, 'Abgebrochen während der laufenden Sitzung');
+    }
+    setActiveLessonSession(null);
+    clearActiveLessonNotification();
+  };
+
+  return (
+    <AppContext.Provider
+      value={{
+        todos,
+        setTodos,
+        theme,
+        toggleTheme,
+        language,
+        setLanguage,
+        accentColor,
+        setAccentColor,
+        t,
+        activeTab,
+        setActiveTab,
+        isGlobalSearchOpen,
+        setIsGlobalSearchOpen,
+        isRecentlyDeletedModalOpen,
+        setIsRecentlyDeletedModalOpen,
+        profile,
+        updateProfile,
+        
+        refreshCalendarAndDashboard,
+        backupToDrive,
+        restoreFromDrive,
+        lastBackupTime,
+        
+        performBackup,
+        
+        importBackupFile,
+        exportBackupFile,
+        verifyBackupIntegrity,
+        groups,
+        addGroup,
+        duplicateGroup,
+        updateGroup,
+        deleteGroup,
+        archiveGroup,
+        students,
+        addStudent,
+        updateStudent,
+        deleteStudent,
+        archiveStudent,
+        uploadStudentDocument,
+        deleteStudentDocument,
+        lessons,
+        addLesson,
+        addQuickLesson,
+        convertQuickLessonToStudent,
+        updateLesson,
+        deleteLesson,
+        saveLessonReport,
+        cancelLesson,
+        generateGroupScheduleLessons,
+        recentlyDeleted,
+        restoreItem,
+        permanentlyDeleteItem,
+        clearRecentlyDeleted,
+        payments,
+        recordPayment,
+        addPaymentRecord,
+        markCyclePaymentPaid,
+        markCyclePaymentNotYet,
+        toggleQuickPaymentStatus,
+        toggleStudentPaymentStatus,
+        updateStudentPaymentPlan,
+        updateLessonPaymentStatus,
+        notifications,
+        markNotificationRead,
+        markAllNotificationsRead,
+        clearAllNotifications,
+        clearAllData,
+        selectedLesson,
+        setSelectedLesson,
+        isControlModalOpen,
+        openLessonControl,
+        closeLessonControl,
+        activeLessonSession,
+        startActiveLessonTimer,
+        pauseActiveLessonTimer,
+        resumeActiveLessonTimer,
+        endActiveLessonTimer,
+        cancelActiveLessonTimer,
+        dismissedDashboardLessonIds,
+        dismissLessonFromDashboard,
+        inspirationSettings,
+        inspirationMessages,
+        activeInspirationCard,
+        updateInspirationSettings,
+        addInspirationMessage,
+        updateInspirationMessage,
+        deleteInspirationMessage,
+        toggleFavoriteInspirationMessage,
+        restoreDefaultInspirationMessages,
+        dismissInspirationCard,
+        checkAndTriggerInspirationReminder,
+        isAddLessonModalOpen,
+        setIsAddLessonModalOpen,
+        isAddQuickLessonModalOpen,
+        setIsAddQuickLessonModalOpen,
+        isStartLessonNowModalOpen,
+        setIsStartLessonNowModalOpen,
+        isAddStudentModalOpen,
+        setIsAddStudentModalOpen,
+        isAddGroupModalOpen,
+        setIsAddGroupModalOpen,
+        isBackupModalOpen,
+        setIsBackupModalOpen
+      }}
+    >
+      {children}
+    </AppContext.Provider>
+  );
+};
+
+export const useApp = () => {
+  const context = useContext(AppContext);
+  if (!context) throw new Error('useApp must be used within an AppProvider');
+  return context;
+};

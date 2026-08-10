@@ -1,0 +1,114 @@
+import React, { useState, useEffect } from 'react';
+import { useApp } from '../context/AppContext';
+import { ListTodo, ChevronDown, ChevronUp, Plus, X } from 'lucide-react';
+import { TodoItem } from "../types";
+
+export const QuickTodoWidget: React.FC = () => {
+  const { t, todos, setTodos } = useApp();
+
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [newTaskText, setNewTaskText] = useState('');
+
+  const handleAddTodo = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    const trimmed = newTaskText.trim();
+    if (!trimmed) return;
+
+    const newTodo: TodoItem = {
+      id: Date.now().toString(),
+      text: trimmed,
+      createdAt: Date.now()
+    };
+
+    setTodos(prev => [newTodo, ...prev]);
+    setNewTaskText('');
+  };
+
+  const handleRemoveTodo = (id: string) => {
+    setTodos(prev => prev.filter(item => item.id !== id));
+  };
+
+  return (
+    <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-lg shadow-2xs overflow-hidden transition-all">
+      {/* Collapsible Header */}
+      <button
+        type="button"
+        onClick={() => setIsExpanded(!isExpanded)}
+        className="w-full px-4 py-3 flex items-center justify-between gap-3 text-left hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors cursor-pointer"
+        aria-expanded={isExpanded}
+      >
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div className="p-1.5 rounded-lg bg-blue-50 dark:bg-blue-950/80 text-blue-600 dark:text-blue-400 shrink-0">
+            <ListTodo className="w-4 h-4" />
+          </div>
+          <span className="text-xs font-black uppercase tracking-wider text-slate-800 dark:text-slate-200 truncate">
+            {t('todo_widget_title') || 'Quick Todos'}
+          </span>
+          <span className="text-[11px] font-bold bg-blue-100 text-blue-700 dark:bg-blue-900/80 dark:text-blue-300 px-1.5 py-0.5 rounded-md shrink-0">
+            {todos.length}
+          </span>
+        </div>
+        <div className="flex items-center gap-1 text-slate-400 shrink-0">
+          {isExpanded ? (
+            <ChevronUp className="w-4 h-4" />
+          ) : (
+            <ChevronDown className="w-4 h-4" />
+          )}
+        </div>
+      </button>
+
+      {/* Expanded Content Area */}
+      {isExpanded && (
+        <div className="px-4 pb-4 pt-1 border-t border-slate-100 dark:border-slate-800/80 space-y-3">
+          {/* Add Task Form */}
+          <form onSubmit={handleAddTodo} className="flex items-center gap-2">
+            <input
+              type="text"
+              value={newTaskText}
+              onChange={(e) => setNewTaskText(e.target.value)}
+              placeholder={t('todo_add_placeholder') || 'Neue Aufgabe...'}
+              className="flex-1 px-3 py-1.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-medium text-slate-800 dark:text-slate-200 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+            />
+            <button
+              type="submit"
+              disabled={!newTaskText.trim()}
+              className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-xl text-xs font-bold transition-colors flex items-center gap-1 shrink-0 cursor-pointer"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>{t('todo_add_btn') || 'Hinzufügen'}</span>
+            </button>
+          </form>
+
+          {/* Task List */}
+          {todos.length === 0 ? (
+            <div className="text-center py-2 text-xs font-medium text-slate-400 dark:text-slate-500">
+              {t('todo_no_tasks') || 'Keine offenen Todos'}
+            </div>
+          ) : (
+            <ul className="space-y-1.5 max-h-56 overflow-y-auto pr-0.5">
+              {(todos || []).map((todo) => (
+                <li
+                  key={todo.id}
+                  className="flex items-center justify-between gap-2.5 px-3 py-2 bg-slate-50/90 dark:bg-slate-800/60 rounded-xl border border-slate-100 dark:border-slate-700/50 group transition-colors"
+                >
+                  <span className="text-xs font-medium text-slate-700 dark:text-slate-200 break-words flex-1">
+                    {todo.text}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveTodo(todo.id)}
+                    className="p-1 text-slate-400 hover:text-emerald-600 hover:bg-emerald-100/80 dark:hover:bg-emerald-950/80 rounded-lg transition-colors cursor-pointer shrink-0"
+                    title="Complete & Remove"
+                    aria-label="Remove task"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
