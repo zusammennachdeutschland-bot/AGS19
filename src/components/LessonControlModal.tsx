@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
+import { storage } from '../services/storageService';
 import { Lesson, AttendanceStatus, HomeworkStatus, PaymentStatus, LessonReport } from '../types';
 import { 
   X, Play, Pause, Square, Video, MapPin, Send, Phone, CheckCircle2, 
@@ -127,8 +128,39 @@ export const LessonControlModal: React.FC = () => {
       }
       setShowReportForm(false);
       setIsEditingReport(false);
+
+      // Check for report draft if no finalized report yet
+      async function checkDraft() {
+        if (selectedLesson) {
+          const draft = await storage.getItem<any>(`dl_draft_report_${selectedLesson.id}`);
+          if (draft) {
+            if (draft.attendance) setAttendance(draft.attendance);
+            if (draft.studentAttendance) setStudentAttendance(draft.studentAttendance);
+            if (draft.homeworkStatus) setHomeworkStatus(draft.homeworkStatus);
+            if (draft.homeworkTitle) setHomeworkTitle(draft.homeworkTitle);
+            if (draft.homeworkDescription) setHomeworkDescription(draft.homeworkDescription);
+            if (draft.quizScore !== undefined) setQuizScore(draft.quizScore);
+            if (draft.examScore !== undefined) setExamScore(draft.examScore);
+            if (draft.participationScore !== undefined) setParticipationScore(draft.participationScore);
+            if (draft.teacherNotes) setTeacherNotes(draft.teacherNotes);
+            setShowReportForm(true);
+            setIsEditingReport(true);
+          }
+        }
+      }
+      checkDraft();
     }
   }, [selectedLesson, students]);
+
+  // Auto-save report draft as teacher types
+  useEffect(() => {
+    if (selectedLesson && (teacherNotes || homeworkTitle || homeworkDescription)) {
+      storage.setItem(`dl_draft_report_${selectedLesson.id}`, {
+        attendance, studentAttendance, homeworkStatus, homeworkTitle, homeworkDescription,
+        quizScore, examScore, participationScore, teacherNotes
+      });
+    }
+  }, [selectedLesson?.id, attendance, studentAttendance, homeworkStatus, homeworkTitle, homeworkDescription, quizScore, examScore, participationScore, teacherNotes]);
 
   const handleSendPaymentReminder = () => {
     const text = `السلام عليكم ورحمة الله وبركاته.\nتم الانتهاء من عدد الحصص المتفق عليها. برجاء تحويل الرسوم المستحقة.\n\nبيانات التحويل:\n📱 رقم الهاتف: ${profile.phone || '01012345678'}\n💳 InstaPay: ${profile.instaPayId || 'abdulrahman@instapay'}\n\nمع الشكر والتقدير\n${profile.displayName}`;
@@ -250,6 +282,7 @@ export const LessonControlModal: React.FC = () => {
     };
 
     saveLessonReport(selectedLesson.id, reportData, packageChoice);
+    storage.removeItem(`dl_draft_report_${selectedLesson.id}`);
     setIsEditingReport(false);
     setShowParentSummaryModal(true);
   };

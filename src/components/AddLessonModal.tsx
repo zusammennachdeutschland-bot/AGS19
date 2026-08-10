@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { checkOverlap } from '../utils/lessonUtils';
 import { useApp } from '../context/AppContext';
+import { storage } from '../services/storageService';
 import { PREDEFINED_GRADES } from '../data/initialData';
 import { GradeLevel, LessonType } from '../types';
 import { X, Calendar, Clock, AlertTriangle, Sparkles, Check, Video, MapPin, Repeat } from 'lucide-react';
@@ -47,6 +48,30 @@ export const AddLessonModal: React.FC<AddLessonModalProps> = ({ onClose }) => {
 
   const availableSlots = generateAvailableSlots();
 
+  // Load draft on mount
+  useEffect(() => {
+    async function loadDraft() {
+      const draft = await storage.getItem<any>('dl_draft_add_lesson');
+      if (draft) {
+        if (draft.groupId) setGroupId(draft.groupId);
+        if (draft.studentId) setStudentId(draft.studentId);
+        if (draft.date) setDate(draft.date);
+        if (draft.time) setTime(draft.time);
+        if (draft.durationMinutes) setDurationMinutes(draft.durationMinutes);
+        if (draft.type) setType(draft.type);
+        if (draft.grade) setGrade(draft.grade);
+      }
+    }
+    loadDraft();
+  }, []);
+
+  // Save draft on changes
+  useEffect(() => {
+    storage.setItem('dl_draft_add_lesson', {
+      groupId, studentId, date, time, durationMinutes, type, grade, isWeeklyRecurring, repeatWeeks
+    });
+  }, [groupId, studentId, date, time, durationMinutes, type, grade, isWeeklyRecurring, repeatWeeks]);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!groupId || hasConflict) return;
@@ -70,6 +95,7 @@ export const AddLessonModal: React.FC<AddLessonModalProps> = ({ onClose }) => {
       amountPaid: 0
     }, isWeeklyRecurring ? Number(repeatWeeks) : 1);
 
+    storage.removeItem('dl_draft_add_lesson');
     confetti({ particleCount: 70, spread: 50 });
     onClose();
   };

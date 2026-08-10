@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
+import { storage } from '../services/storageService';
 import { PREDEFINED_GRADES } from '../data/initialData';
 import { CARTOON_AVATARS } from '../data/avatarPresets';
 import { GradeLevel } from '../types';
@@ -65,6 +66,32 @@ export const AddStudentModal: React.FC<AddStudentModalProps> = ({ onClose }) => 
     }
   };
 
+  // Load draft on mount
+  useEffect(() => {
+    async function loadDraft() {
+      const draft = await storage.getItem<any>('dl_draft_add_student');
+      if (draft) {
+        if (draft.name) setName(draft.name);
+        if (draft.groupId) setGroupId(draft.groupId);
+        if (draft.grade) setGrade(draft.grade);
+        if (draft.parentName) setParentName(draft.parentName);
+        if (draft.parentPhone) setParentPhone(draft.parentPhone);
+        if (draft.studentPhone) setStudentPhone(draft.studentPhone);
+        if (draft.notes) setNotes(draft.notes);
+      }
+    }
+    loadDraft();
+  }, []);
+
+  // Save draft on state changes
+  useEffect(() => {
+    if (name || parentName || parentPhone || studentPhone || notes) {
+      storage.setItem('dl_draft_add_student', {
+        name, groupId, grade, parentName, parentPhone, studentPhone, notes
+      });
+    }
+  }, [name, groupId, grade, parentName, parentPhone, studentPhone, notes]);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name || !groupId) return;
@@ -84,6 +111,7 @@ export const AddStudentModal: React.FC<AddStudentModalProps> = ({ onClose }) => 
       avatarUrl: avatarUrl || CARTOON_AVATARS[0].url
     });
 
+    storage.removeItem('dl_draft_add_student');
     confetti({ particleCount: 60, spread: 50 });
     onClose();
   };

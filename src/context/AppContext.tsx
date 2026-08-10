@@ -13,6 +13,9 @@ import {
   INITIAL_INSPIRATION_SETTINGS, INITIAL_INSPIRATION_MESSAGES
 } from '../data/initialData';
 import confetti from 'canvas-confetti';
+import { Capacitor } from '@capacitor/core';
+import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
+import { Share } from '@capacitor/share';
 
 interface AppContextType {
   todos: any[];
@@ -1854,7 +1857,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode, initialData: any
     }
   };
 
-  const exportBackupFile = () => {
+  const exportBackupFile = async () => {
     const backupObj: BackupData = {
       timestamp: new Date().toISOString(),
       version: '2.0.0',
@@ -1875,11 +1878,33 @@ export const AppProvider: React.FC<{ children: React.ReactNode, initialData: any
       todos,
     };
     const jsonStr = JSON.stringify(backupObj, null, 2);
+    const fileName = `znd_backup_${new Date().toISOString().split('T')[0]}.json`;
+
+    if (Capacitor.isNativePlatform()) {
+      try {
+        const savedFile = await Filesystem.writeFile({
+          path: fileName,
+          data: jsonStr,
+          directory: Directory.Cache,
+          encoding: Encoding.UTF8
+        });
+        await Share.share({
+          title: 'AGS19 Teacher App Backup',
+          text: 'Backup Export Data (AGS19 Teacher App)',
+          url: savedFile.uri,
+          dialogTitle: 'Export Backup JSON'
+        });
+        return;
+      } catch (err) {
+        console.warn('Native export via Filesystem failed, falling back to download blob:', err);
+      }
+    }
+
     const blob = new Blob([jsonStr], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `znd_backup_${new Date().toISOString().split('T')[0]}.json`;
+    a.download = fileName;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);

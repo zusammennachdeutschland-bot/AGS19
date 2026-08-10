@@ -9,10 +9,12 @@ export const useLessonReminders = () => {
   useEffect(() => {
     try {
       if (!profile || (profile.enableLessonAlerts === false && profile.enableBrowserPush === false)) return;
-      if (getNotificationPermission() !== 'granted') return;
 
-      const checkReminders = () => {
+      const checkReminders = async () => {
         try {
+          const perm = await getNotificationPermission();
+          if (perm !== 'granted') return;
+
           const now = new Date();
           const todayStr = now.toISOString().split('T')[0];
           const nowMins = now.getHours() * 60 + now.getMinutes();
