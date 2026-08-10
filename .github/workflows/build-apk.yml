@@ -22,7 +22,7 @@ jobs:
         uses: actions/setup-java@v5
         with:
           distribution: 'zulu'
-          java-version: '17'
+          java-version: '21'   # <--- CHANGED FROM 17 TO 21
 
       - name: Install Project Dependencies
         run: npm install --legacy-peer-deps
