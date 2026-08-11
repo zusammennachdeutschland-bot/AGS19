@@ -73,6 +73,16 @@ export const INITIAL_TEACHER_PROFILE: TeacherProfile = {
   whatsappNumber: '',
   isGoogleConnected: false,
   lastSyncedAt: '',
+
+  weeklyWorkingHours: {
+    0: { isOff: true, startTime: '09:00', endTime: '21:00' },
+    1: { isOff: false, startTime: '09:00', endTime: '21:00' },
+    2: { isOff: false, startTime: '09:00', endTime: '21:00' },
+    3: { isOff: false, startTime: '09:00', endTime: '21:00' },
+    4: { isOff: false, startTime: '09:00', endTime: '21:00' },
+    5: { isOff: false, startTime: '09:00', endTime: '21:00' },
+    6: { isOff: false, startTime: '09:00', endTime: '21:00' },
+  },
   workingHours: {
     workingDays: [1, 2, 3, 4, 5, 6], // Mon - Sat
     startTime: '09:00',

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { Student, GradeLevel } from '../types';
 import { getStudentCyclePricing } from '../utils/paymentUtils';
-import { CARTOON_AVATARS } from '../data/avatarPresets';
+import { CARTOON_AVATARS, DEFAULT_OFFLINE_AVATAR } from '../data/avatarPresets';
 import { 
   X, Phone, Send, FileText, Upload, Trash2, Calendar, Award, DollarSign, 
   BookOpen, CheckCircle2, AlertCircle, Download, FileCheck, User, Camera, Edit3, Save, Check, Sparkles
@@ -62,9 +62,9 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({ studen
   const currentCycleProgress = unbilledCompletedCount === 0 ? 0 : (unbilledCompletedCount % cycleLength || cycleLength);
 
   // Attendance stats
-  const presentCount = studentLessons.filter(l => l.report?.attendanceStatus === 'present' || l.report?.studentAttendance?.[student.id] === 'present').length;
-  const lateCount = studentLessons.filter(l => l.report?.attendanceStatus === 'late' || l.report?.studentAttendance?.[student.id] === 'late').length;
-  const absentCount = studentLessons.filter(l => l.report?.attendanceStatus === 'absent' || l.report?.studentAttendance?.[student.id] === 'absent').length;
+  const presentCount = studentLessons.filter(l => l.status === 'completed' && l.report && (l.report.studentAttendance?.[student.id] || l.report.attendanceStatus || 'present') === 'present').length;
+  const lateCount = studentLessons.filter(l => l.status === 'completed' && l.report && (l.report.studentAttendance?.[student.id] || l.report.attendanceStatus || 'present') === 'late').length;
+  const absentCount = studentLessons.filter(l => l.status === 'completed' && l.report && (l.report.studentAttendance?.[student.id] || l.report.attendanceStatus || 'present') === 'absent').length;
 
   const handleSaveStudent = (e: React.FormEvent) => {
     e.preventDefault();
@@ -163,7 +163,8 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({ studen
             <div className="flex items-center gap-3.5">
               <div className="relative shrink-0 group">
                 <img
-                  src={student.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200'}
+                  src={student.avatarUrl || DEFAULT_OFFLINE_AVATAR}
+                  onError={(e) => { e.currentTarget.src = DEFAULT_OFFLINE_AVATAR; }}
                   alt={student.name}
                   className="w-16 h-16 rounded-xl object-cover ring-2 ring-primary/30 shadow-md"
                 />

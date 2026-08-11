@@ -9,7 +9,7 @@ try {
   localforage.config({
     name: 'AGS19_DB',
     storeName: 'ags19_store',
-    description: 'Data storage for AGS19 Teacher App'
+    description: 'Data storage for AGS19'
   });
   isLocalforageSupported = true;
 } catch (e) {

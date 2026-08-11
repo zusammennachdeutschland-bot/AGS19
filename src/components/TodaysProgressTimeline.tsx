@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { Lesson } from '../types';
 import { 
-  CheckCircle2, Clock, PlayCircle, ChevronRight, AlertCircle, XCircle, X
+  CheckCircle2, Clock, PlayCircle, ChevronRight, AlertCircle, XCircle, X, Video, MapPin
 } from 'lucide-react';
 
 export const TodaysProgressTimeline: React.FC = () => {
@@ -225,14 +225,6 @@ export const TodaysProgressTimeline: React.FC = () => {
                           {lesson.time}
                         </span>
 
-                        <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${
-                          isGroup 
-                            ? 'bg-primary-soft text-primary dark:bg-primary-soft dark:text-primary' 
-                            : 'bg-primary-soft text-primary dark:bg-primary-soft/40 dark:text-primary/70'
-                        }`}>
-                          {isGroup ? t('timeline_group') : t('timeline_individual')}
-                        </span>
-
                         {state === 'active' && !isCompletedState && !isCancelledState && (
                           <span className="text-[9px] font-bold bg-primary text-white px-1.5 py-0.5 rounded flex items-center gap-1 active:scale-95 hover:shadow-lg hover:shadow-primary/30 transition-all hover:bg-primary-hover">
                             <span className="w-1 h-1 bg-surface rounded-full animate-ping"></span>
@@ -263,6 +255,24 @@ export const TodaysProgressTimeline: React.FC = () => {
                       }`}>
                         {lesson.studentName || lesson.groupName || lesson.title}
                       </h4>
+                      <div className="flex items-center gap-1.5 text-[10px] text-text-muted mt-1 flex-wrap font-medium">
+                        {lesson.grade && <span>{lesson.grade}</span>}
+                        {lesson.grade && <span>•</span>}
+                        <span className="font-semibold text-primary dark:text-primary">
+                          Session {lesson.sessionNumber}/{lesson.totalSessionsInPackage}
+                        </span>
+                        <span>•</span>
+                        {lesson.type === 'online' ? (
+                          <span className="flex items-center gap-0.5 text-primary dark:text-primary">
+                            <Video className="w-2.5 h-2.5" /> {t('next_action_online')}
+                          </span>
+                        ) : (
+                          <span className="flex items-center gap-0.5 text-primary dark:text-primary">
+                            <MapPin className="w-2.5 h-2.5" /> {t('next_action_offline')}
+                          </span>
+                        )}
+                        
+                      </div>
                     </div>
 
                     <div className="flex items-center gap-1 shrink-0">

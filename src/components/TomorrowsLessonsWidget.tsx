@@ -106,9 +106,12 @@ export const TomorrowsLessonsWidget: React.FC = () => {
                     <Clock className="w-3 h-3 text-primary" />
                     <span>{lesson.time}</span>
                   </div>
-                  <span className="text-xs font-bold text-slate-900 dark:text-slate-100 truncate">
-                    {displayName}
-                  </span>
+                  <div className="flex flex-col truncate">
+                    <span className="text-xs font-bold text-slate-900 dark:text-slate-100 truncate">
+                      {displayName}
+                    </span>
+                    
+                  </div>
                 </div>
 
                 {/* Right: Type Badge & Arrow */}

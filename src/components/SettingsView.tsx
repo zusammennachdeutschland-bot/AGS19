@@ -2,13 +2,15 @@ import React, { useState, useRef } from 'react';
 import { useApp } from '../context/AppContext';
 import { AppLanguage } from '../types';
 import { 
-  Settings, User, Globe, Moon, Sun, Clock, DollarSign, Check, Camera, CheckCircle2,
+  Settings, Search, User, Globe, Moon, Sun, Clock, DollarSign, Check, Camera, CheckCircle2,
   HardDrive, Download, Upload, Trash2, AlertTriangle, MessageSquare, ChevronRight,
   ArrowLeft, ArrowRight, Calendar, ShieldAlert, Info, Copy, Save, Phone, ExternalLink,
   BookOpen, FileText, Bell, CheckSquare, XCircle, Award, Sparkles, Star, Plus, Pencil, RotateCcw, Heart
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { NotificationSettingsSection } from './NotificationSettingsSection';
+import { SmartBackupCenter } from './SmartBackupCenter';
+import { DEFAULT_OFFLINE_AVATAR } from '../data/avatarPresets';
 
 type SettingsCategory = 
   | 'language'
@@ -16,7 +18,6 @@ type SettingsCategory =
   | 'profile'
   | 'payment'
   | 'messages'
-  | 'calendar'
   | 'inspiration'
   | 'backup'
   | 'about'
@@ -34,15 +35,17 @@ const DEFAULT_PARENT_TEMPLATES: Record<string, string> = {
 export const SettingsView: React.FC = () => {
   const { 
     profile, updateProfile, theme, toggleTheme, language, setLanguage, t, 
-    exportBackupFile, importBackupFile, clearAllData, groups, updateGroup,
+    exportBackupFile, importBackupFile, clearAllData,
     inspirationSettings, inspirationMessages, updateInspirationSettings,
     addInspirationMessage, updateInspirationMessage, deleteInspirationMessage,
     toggleFavoriteInspirationMessage, restoreDefaultInspirationMessages,
     checkAndTriggerInspirationReminder, accentColor, setAccentColor,
+    darkThemeVariant, setDarkThemeVariant,
     notificationSettings
   } = useApp();
 
   const [activeCategory, setActiveCategory] = useState<SettingsCategory | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
 
   // Inspiration Messages UI States
   const [isManagingMessages, setIsManagingMessages] = useState(false);
@@ -58,9 +61,15 @@ export const SettingsView: React.FC = () => {
   const [displayName, setDisplayName] = useState(profile.displayName);
   const [email, setEmail] = useState(profile.email || '');
   const [currency, setCurrency] = useState(profile.currency || 'EGP');
-  const [startTime, setStartTime] = useState(profile.workingHours?.startTime || '08:00');
-  const [endTime, setEndTime] = useState(profile.workingHours?.endTime || '20:00');
-  const [workingDays, setWorkingDays] = useState<number[]>(profile.workingHours?.workingDays || [1, 2, 3, 4, 5, 6, 7]);
+  const [weeklyWorkingHours, setWeeklyWorkingHours] = useState(profile.weeklyWorkingHours || {
+    0: { isOff: true, startTime: '09:00', endTime: '21:00' },
+    1: { isOff: false, startTime: '09:00', endTime: '21:00' },
+    2: { isOff: false, startTime: '09:00', endTime: '21:00' },
+    3: { isOff: false, startTime: '09:00', endTime: '21:00' },
+    4: { isOff: false, startTime: '09:00', endTime: '21:00' },
+    5: { isOff: false, startTime: '09:00', endTime: '21:00' },
+    6: { isOff: false, startTime: '09:00', endTime: '21:00' },
+  });
 
   // Payment Profile Fields
   const [phone, setPhone] = useState(profile.phone || '');
@@ -180,11 +189,7 @@ export const SettingsView: React.FC = () => {
       displayName, 
       email, 
       currency,
-      workingHours: {
-        workingDays,
-        startTime,
-        endTime
-      }
+      weeklyWorkingHours
     });
     triggerSaveToast();
   };
@@ -212,22 +217,13 @@ export const SettingsView: React.FC = () => {
   const handleSaveCalendarSettings = (e: React.FormEvent) => {
     e.preventDefault();
     updateProfile({
-      workingHours: {
-        workingDays,
-        startTime,
-        endTime
-      },
+      weeklyWorkingHours,
       enableLessonAlerts,
       enableBrowserPush
     });
     triggerSaveToast();
   };
 
-  const toggleWorkingDay = (dayNum: number) => {
-    setWorkingDays(prev => 
-      prev.includes(dayNum) ? prev.filter(d => d !== dayNum) : [...prev, dayNum].sort()
-    );
-  };
 
   const languagesList: { id: AppLanguage; label: string; flag: string }[] = [
     { id: 'ar', label: 'العربية', flag: '🇪🇬' },
@@ -237,17 +233,33 @@ export const SettingsView: React.FC = () => {
 
   const categoryCards = [
     {
-      id: 'language' as SettingsCategory,
-      title: _t('اللغة والمظهر', 'Language & Appearance', 'Sprache & Erscheinungsbild'),
-      description: _t('لغة الواجهة ووضع المظهر الداكن/الفاتح', 'Interface language & light/dark theme', 'Oberflächensprache & Dunkelmodus'),
-      icon: Globe,
-      color: 'bg-primary/10 text-primary dark:text-primary border-primary-border/50 dark:border-primary-border/50',
-      badge: languagesList.find(l => l.id === language)?.label
+      id: 'profile' as SettingsCategory,
+      title: _t('الملف الشخصي للمعلم', 'Profile & Work Schedule', 'Lehrerprofil'),
+      description: _t('الاسم، البريد، ساعات العمل والعملة', 'Personal information, contact details & weekly availability', 'Name, E-Mail, Arbeitszeiten & Währung'),
+      icon: User,
+      color: 'bg-primary/10 text-primary dark:text-primary border-primary-border dark:border-primary-border',
+      badge: profile.displayName
+    },
+    {
+      id: 'payment' as SettingsCategory,
+      title: _t('بيانات التحويل والدفع', 'Payments & Finance', 'Zahlungsinformationen'),
+      description: _t('رقم الهاتف، انستا باي، فودافون كاش والروابط', 'Financial information, transfer methods & payment sharing', 'Telefon, InstaPay, Vodafone Cash & Bank'),
+      icon: DollarSign,
+      color: 'bg-primary/10 text-primary dark:text-primary border-primary-border dark:border-primary-border',
+      badge: phone || 'InstaPay'
+    },
+    {
+      id: 'messages' as SettingsCategory,
+      title: _t('قوالب رسائل أولياء الأمور', 'Messages & Communication', 'Elternnachrichten Vorlagen'),
+      description: _t('إدارة قوالب الواجبات، الحضور، الغياب والتقارير', 'Automated parent communication templates', 'Vorlagen für Hausaufgaben, Anwesenheit & Berichte'),
+      icon: MessageSquare,
+      color: 'bg-primary/10 text-primary dark:text-primary border-primary-border dark:border-primary-border',
+      badge: _t('6 قوالب', '6 Templates')
     },
     {
       id: 'notifications' as SettingsCategory,
       title: _t('الإشعارات والتنبيهات', 'Notifications & Alerts', 'Benachrichtigungen & Alarme'),
-      description: _t('التحكم الشامل بإشعارات الحصص، المواعيد، المستحقات والملخص اليومي', 'Full control over lesson reminders, start alerts, payments & daily summary', 'Umfassende Steuerung für Lektionserinnerungen, Zahlungen & Berichte'),
+      description: _t('التحكم الشامل بإشعارات الحصص، المواعيد، المستحقات والملخص اليومي', 'Reminders, lesson alerts & daily summaries', 'Umfassende Steuerung für Lektionserinnerungen, Zahlungen & Berichte'),
       icon: Bell,
       color: 'bg-primary/10 text-primary dark:text-primary border-primary-border dark:border-primary-border',
       badge: notificationSettings?.masterEnabled 
@@ -255,41 +267,17 @@ export const SettingsView: React.FC = () => {
         : (_t('معطلة', 'Disabled'))
     },
     {
-      id: 'profile' as SettingsCategory,
-      title: _t('الملف الشخصي للمعلم', 'Teacher Profile', 'Lehrerprofil'),
-      description: _t('الاسم، البريد، ساعات العمل والعملة', 'Name, email, working hours & currency', 'Name, E-Mail, Arbeitszeiten & Währung'),
-      icon: User,
-      color: 'bg-primary/10 text-primary dark:text-primary border-primary-border dark:border-primary-border',
-      badge: profile.displayName
-    },
-    {
-      id: 'payment' as SettingsCategory,
-      title: _t('بيانات التحويل والدفع', 'Payment Information', 'Zahlungsinformationen'),
-      description: _t('رقم الهاتف، انستا باي، فودافون كاش والروابط', 'Phone, InstaPay, Vodafone Cash & links', 'Telefon, InstaPay, Vodafone Cash & Bank'),
-      icon: DollarSign,
-      color: 'bg-primary/10 text-primary dark:text-primary border-primary-border dark:border-primary-border',
-      badge: phone || 'InstaPay'
-    },
-    {
-      id: 'messages' as SettingsCategory,
-      title: _t('قوالب رسائل أولياء الأمور', 'Parent Messages', 'Elternnachrichten Vorlagen'),
-      description: _t('إدارة قوالب الواجبات، الحضور، الغياب والتقارير', 'Manage templates for homework, attendance & reports', 'Vorlagen für Hausaufgaben, Anwesenheit & Berichte'),
-      icon: MessageSquare,
-      color: 'bg-primary/10 text-primary dark:text-primary border-primary-border dark:border-primary-border',
-      badge: _t('6 قوالب', '6 Templates')
-    },
-    {
-      id: 'calendar' as SettingsCategory,
-      title: _t('التقويم ومدة الحصص', 'Calendar & Lessons', 'Kalender & Lektionsdauer'),
-      description: _t('تحديد مدة حصص كل مجموعة، أيام وساعات العمل والتنبيهات', 'Group lesson durations, working days & reminders', 'Dauer pro Gruppe, Arbeitstage & Erinnerungen'),
-      icon: Calendar,
-      color: 'bg-primary/10 text-primary dark:text-primary border-primary-border dark:border-primary-border',
-      badge: `${groups.length} ${_t('مجموعات', 'Groups')}`
+      id: 'language' as SettingsCategory,
+      title: _t('اللغة والمظهر', 'Appearance & Language', 'Sprache & Erscheinungsbild'),
+      description: _t('لغة الواجهة ووضع المظهر الداكن/الفاتح', 'Personalize the interface experience', 'Oberflächensprache & Dunkelmodus'),
+      icon: Globe,
+      color: 'bg-primary/10 text-primary dark:text-primary border-primary-border/50 dark:border-primary-border/50',
+      badge: languagesList.find(l => l.id === language)?.label
     },
     {
       id: 'inspiration' as SettingsCategory,
-      title: _t('الإلهام والامتنان', 'Inspiration & Gratitude', 'Inspiration & Dankbarkeit'),
-      description: _t('تذكيرات وأدعية للمعلم عن العلم والرزق والتعليم', 'Daily motivational & gratitude reminders', 'Tägliche Motivation & Dankbarkeits-Erinnerungen'),
+      title: _t('الإلهام والامتنان', 'Motivation & Gratitude', 'Inspiration & Dankbarkeit'),
+      description: _t('تذكيرات وأدعية للمعلم عن العلم والرزق والتعليم', 'Daily inspiration and positive reminders', 'Tägliche Motivation & Dankbarkeits-Erinnerungen'),
       icon: Sparkles,
       color: 'bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-200/50 dark:border-orange-800/50',
       badge: inspirationSettings.frequency === 'disabled' 
@@ -302,8 +290,8 @@ export const SettingsView: React.FC = () => {
     },
     {
       id: 'backup' as SettingsCategory,
-      title: _t('النسخ الاحتياطي والبيانات', 'Backup & Restore', 'Sicherung & Daten'),
-      description: _t('تنزيل واستعادة النسخة الاحتياطية وإعادة ضبط البيانات', 'Download, restore backups & reset data', 'Sicherung herunterladen, wiederherstellen & zurücksetzen'),
+      title: _t('النسخ الاحتياطي والبيانات', 'Data & Backup', 'Sicherung & Daten'),
+      description: _t('تنزيل واستعادة النسخة الاحتياطية وإعادة ضبط البيانات', 'Backup, restore and data management', 'Sicherung herunterladen, wiederherstellen & zurücksetzen'),
       icon: HardDrive,
       color: 'bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border-cyan-200/50 dark:border-cyan-800/50',
       badge: 'Backup & Reset'
@@ -311,7 +299,7 @@ export const SettingsView: React.FC = () => {
     {
       id: 'about' as SettingsCategory,
       title: _t('حول التطبيق', 'About', 'Über die App'),
-      description: _t('تفاصيل التطبيق، الميزات، المطور والتواصل', 'App details, features, developer & version', 'App-Info, Entwickler & Version'),
+      description: _t('تفاصيل التطبيق، الميزات، المطور والتواصل', 'Application information and version details', 'App-Info, Entwickler & Version'),
       icon: Info,
       color: 'bg-primary/10 text-primary dark:text-primary border-primary-border dark:border-primary-border',
       badge: 'v2.5.0'
@@ -319,84 +307,127 @@ export const SettingsView: React.FC = () => {
   ];
 
   // Helper Header Component for Subpages
-  const renderSubPageHeader = (title: string, subtitle?: string) => (
-    <div className="flex items-center justify-between pb-3 mb-4 border-b border-surface-border/80 dark:border-surface-border">
-      <div className="flex items-center gap-3">
-        <button
-          type="button"
-          onClick={() => setActiveCategory(null)}
-          className="p-2.5 rounded-xl bg-surface-hover hover:bg-slate-200 dark:hover:bg-slate-700 text-text-main transition-all cursor-pointer flex items-center justify-center shrink-0 shadow-2xs"
-          title={_t('العودة للإعدادات', 'Back to Settings')}
-        >
-          <BackIcon className="w-5 h-5" />
-        </button>
-        <div>
-          <h2 className="text-base sm:text-lg font-black text-text-main">
+  const renderSubPageHeader = (title: string, subtitle?: string, icon?: React.ElementType) => {
+    const IconComponent = icon;
+    return (
+      <div className="pb-3.5 mb-5 border-b border-surface-border/80 dark:border-surface-border">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <button
+            type="button"
+            onClick={() => setActiveCategory(null)}
+            className="lg:hidden p-2 rounded-xl bg-surface-hover hover:bg-slate-200 dark:hover:bg-slate-700 text-text-main hover:text-primary transition-all cursor-pointer flex items-center justify-center shrink-0 shadow-2xs border border-surface-border/60 active:scale-95"
+            title={_t('العودة للإعدادات', 'Back to Settings')}
+          >
+            <BackIcon className="w-4 h-4" />
+          </button>
+
+          {IconComponent && (
+            <div className="p-2 rounded-xl bg-primary-soft text-primary dark:text-primary border border-primary-border/50 shrink-0">
+              <IconComponent className="w-4.5 h-4.5" />
+            </div>
+          )}
+
+          <h2 className="text-base sm:text-lg font-black text-text-main truncate">
             {title}
           </h2>
-          {subtitle && (
-            <p className="text-xs text-text-muted mt-0.5">
-              {subtitle}
-            </p>
-          )}
         </div>
+
+        {subtitle && (
+          <p className="text-xs text-text-muted mt-1.5 leading-relaxed">
+            {subtitle}
+          </p>
+        )}
       </div>
-    </div>
+    );
+  };
+
+  const filteredCategories = categoryCards.filter(cat => 
+    cat.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+    cat.description.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (
-    <div className="space-y-4 pb-28">
-      {/* ==========================================
-          HOME SETTINGS VIEW (CATEGORY CARDS)
-      ========================================== */}
-      {activeCategory === null && (
-        <div className="space-y-4 animate-scale-up">
-          {/* Main Title Header */}
-          <div>
-            <h2 className="text-lg font-black text-text-main flex items-center gap-2">
-              <Settings className="w-5 h-5 text-primary" />
-              <span>{t('settings_title')}</span>
-            </h2>
-            <p className="text-xs text-slate-500">
-              {_t('اختر قسماً لإدارة إعدادات التطبيق', 'Select a section to manage application settings', 'Wählen Sie einen Bereich zur Verwaltung aus')}
+    <div className="flex flex-col lg:flex-row gap-6 pb-28 items-start">
+      {/* Sidebar / List View */}
+      <div className={`w-full lg:w-1/3 shrink-0 lg:sticky lg:top-20 space-y-4 ${activeCategory !== null ? 'hidden lg:block' : 'block'}`}>
+        {/* Main Title Header */}
+        <div>
+          <h2 className="text-xl font-black text-text-main flex items-center gap-2">
+            <Settings className="w-6 h-6 text-primary" />
+            <span>{t('settings_title')}</span>
+          </h2>
+          <p className="text-xs text-slate-500 mt-1">
+            {_t('اختر قسماً لإدارة إعدادات التطبيق', 'Select a section to manage application settings', 'Wählen Sie einen Bereich zur Verwaltung aus')}
+          </p>
+        </div>
+
+        {/* Search Bar */}
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+          <input
+            type="text"
+            placeholder={_t('ابحث في الإعدادات...', 'Search settings...', 'Einstellungen durchsuchen...')}
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full bg-surface border border-surface-border rounded-xl py-2.5 pl-9 pr-4 text-sm focus:outline-none focus:border-primary transition-colors"
+          />
+        </div>
+
+        {/* Categories List */}
+        <div className="space-y-2">
+          {filteredCategories.map((cat) => {
+            const IconComponent = cat.icon;
+            const isActive = activeCategory === cat.id;
+            return (
+              <button
+                key={cat.id}
+                type="button"
+                onClick={() => setActiveCategory(cat.id)}
+                className={`w-full bg-surface border rounded-xl p-3 shadow-2xs hover:shadow-md transition-all cursor-pointer flex items-center justify-between text-start group ${
+                  isActive 
+                    ? 'border-primary dark:border-primary bg-primary/5' 
+                    : 'border-surface-border/90 dark:border-surface-border hover:border-primary/50'
+                }`}
+              >
+                <div className="flex items-center gap-3.5 flex-1 min-w-0 pr-2">
+                  <div className={`p-2.5 rounded-lg border shrink-0 ${cat.color} ${isActive ? 'ring-2 ring-primary/20' : ''}`}>
+                    <IconComponent className="w-5 h-5" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <h3 className={`text-sm font-extrabold truncate transition-colors ${isActive ? 'text-primary' : 'text-text-main group-hover:text-primary'}`}>
+                      {cat.title}
+                    </h3>
+                    <p className="text-[10px] text-slate-500 truncate mt-0.5">{cat.description}</p>
+                  </div>
+                </div>
+                <div className={`p-2 transition-all shrink-0 ${isActive ? 'text-primary translate-x-1' : 'text-text-muted/50 group-hover:text-primary group-hover:translate-x-1'}`}>
+                  <ForwardIcon className="w-4 h-4" />
+                </div>
+              </button>
+            );
+          })}
+          {filteredCategories.length === 0 && (
+            <div className="text-center py-6 text-slate-500 text-sm">
+               {_t('لا توجد نتائج', 'No results found', 'Keine Ergebnisse')}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Detail View */}
+      <div className={`w-full lg:w-2/3 ${activeCategory === null ? 'hidden lg:block' : 'block'}`}>
+        {activeCategory === null ? (
+          <div className="hidden lg:flex flex-col items-center justify-center h-[60vh] bg-surface rounded-2xl border border-surface-border text-center p-8 animate-fade-in shadow-sm">
+            <Settings className="w-16 h-16 text-slate-200 dark:text-slate-700 mb-4" />
+            <h3 className="text-xl font-black text-slate-400 dark:text-slate-500">
+               {_t('اختر قسماً', 'Select a Category', 'Wählen Sie eine Kategorie')}
+            </h3>
+            <p className="text-sm text-slate-400 mt-2 max-w-sm">
+               {_t('اختر قسماً من القائمة الجانبية لعرض وإدارة الإعدادات الخاصة به.', 'Choose a category from the sidebar to view and manage its settings.', 'Wählen Sie eine Kategorie aus der Seitenleiste aus, um die Einstellungen anzuzeigen und zu verwalten.')}
             </p>
           </div>
-
-          {/* Main Category Cards List */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-            {categoryCards.map((cat) => {
-              const IconComponent = cat.icon;
-              return (
-                <button
-                  key={cat.id}
-                  type="button"
-                  onClick={() => setActiveCategory(cat.id)}
-                  className="bg-surface border border-surface-border/90 dark:border-surface-border hover:border-primary dark:hover:border-primary rounded-lg p-4 shadow-2xs hover:shadow-md transition-all cursor-pointer flex items-center justify-between text-start group"
-                >
-                  <div className="flex items-center gap-3.5 flex-1 min-w-0 pr-2">
-                    <div className={`p-3 rounded-lg border shrink-0 ${cat.color}`}>
-                      <IconComponent className="w-5 h-5" />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2">
-                        <h3 className="text-xs sm:text-sm font-extrabold text-text-main truncate group-hover:text-primary dark:group-hover:text-primary transition-colors">
-                          {cat.title}
-                        </h3>
-                      </div>
-                      
-                    </div>
-                  </div>
-
-                  <div className="p-2 text-text-muted/70 group-hover:text-primary dark:group-hover:text-primary group-hover:translate-x-1 transition-all shrink-0">
-                    <ForwardIcon className="w-5 h-5" />
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
+        ) : (
+          <div className="animate-fade-in bg-surface rounded-2xl border border-surface-border shadow-2xs p-4 sm:p-6 min-h-[60vh]">
       {/* ==========================================
           SUBPAGE 0: NOTIFICATION SETTINGS
       ========================================== */}
@@ -411,7 +442,8 @@ export const SettingsView: React.FC = () => {
         <div className="space-y-4 animate-scale-up">
           {renderSubPageHeader(
             _t('اللغة والمظهر', 'Language & Appearance', 'Sprache & Erscheinungsbild'),
-            _t('اختر لغة التطبيق ومظهر الشاشة', 'Choose application language and theme mode')
+            _t('اختر لغة التطبيق ومظهر الشاشة', 'Choose application language and theme mode'),
+            Globe
           )}
 
           {/* Interface Language Card */}
@@ -464,7 +496,7 @@ export const SettingsView: React.FC = () => {
           </div>
 
           {/* Theme Section */}
-          <div className="bg-surface border border-surface-border/90 dark:border-surface-border rounded-xl p-5 shadow-2xs space-y-3">
+          <div className="bg-surface border border-surface-border/90 dark:border-surface-border rounded-xl p-5 shadow-2xs space-y-4">
             <div className="flex items-center justify-between">
               <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
                 {theme === 'dark' ? <Moon className="w-4 h-4 text-primary" /> : <Sun className="w-4 h-4 text-primary" />}
@@ -476,7 +508,7 @@ export const SettingsView: React.FC = () => {
               <button
                 type="button"
                 onClick={() => theme !== 'light' && toggleTheme()}
-                className={`p-4 rounded-lg font-bold flex items-center justify-center gap-2 transition-all cursor-pointer border ${
+                className={`p-4 rounded-xl font-bold flex items-center justify-center gap-2 transition-all cursor-pointer border ${
                   theme === 'light'
                     ? 'bg-primary text-white border-primary-border shadow-sm'
                     : 'bg-surface-hover text-text-main border-surface-border dark:border-surface-border-soft hover:bg-slate-100 dark:hover:bg-slate-700'
@@ -489,7 +521,7 @@ export const SettingsView: React.FC = () => {
               <button
                 type="button"
                 onClick={() => theme !== 'dark' && toggleTheme()}
-                className={`p-4 rounded-lg font-bold flex items-center justify-center gap-2 transition-all cursor-pointer border ${
+                className={`p-4 rounded-xl font-bold flex items-center justify-center gap-2 transition-all cursor-pointer border ${
                   theme === 'dark'
                     ? 'bg-primary text-white border-primary-border shadow-sm'
                     : 'bg-surface-hover text-text-main border-surface-border dark:border-surface-border-soft hover:bg-slate-100 dark:hover:bg-slate-700'
@@ -499,57 +531,123 @@ export const SettingsView: React.FC = () => {
                 <span>{t('settings_theme_dark')}</span>
               </button>
             </div>
+
+            {/* Dark Mode Punch Background Variants */}
+            {theme === 'dark' && (
+              <div className="pt-3 border-t border-surface-border/80 space-y-3 animate-scale-up">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-extrabold text-text-main flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5 text-primary" />
+                    {_t('أنماط الخلفية الداكنة (Punch Dark Styles)', 'Dark Punch Canvas Style', 'Dunkles Canvas-Design')}
+                  </span>
+                  <span className="text-[10px] text-primary font-bold px-2 py-0.5 rounded-full bg-primary-soft">
+                    {darkThemeVariant || 'oled'}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  {[
+                    { id: 'oled' as const, label: _t('OLED أسود حاد', 'OLED Pitch Black'), bgHex: '#000000', borderHex: '#334155' },
+                    { id: 'midnight' as const, label: _t('كحلي ليلي', 'Midnight Navy'), bgHex: '#050811', borderHex: '#1e2b4a' },
+                    { id: 'cyberpunk' as const, label: _t('بنفسجي نيون', 'Cyberpunk Violet'), bgHex: '#0a0414', borderHex: '#32185a' },
+                    { id: 'emerald' as const, label: _t('زمردي داكن', 'Forest Emerald'), bgHex: '#020d08', borderHex: '#14422e' },
+                    { id: 'crimson' as const, label: _t('قرمزي مخملي', 'Crimson Velvet'), bgHex: '#0f0205', borderHex: '#44111d' },
+                    { id: 'amber' as const, label: _t('عنبر ليلي', 'Obsidian Amber'), bgHex: '#0c0904', borderHex: '#402c13' },
+                    { id: 'abyss' as const, label: _t('أعماق المحيط', 'Abyssal Teal'), bgHex: '#020b0e', borderHex: '#113646' },
+                  ].map((v) => {
+                    const isSelected = darkThemeVariant === v.id;
+                    return (
+                      <button
+                        key={v.id}
+                        type="button"
+                        onClick={() => {
+                          setDarkThemeVariant(v.id);
+                          confetti({ particleCount: 30, spread: 40 });
+                        }}
+                        className={`p-2.5 rounded-xl border text-start transition-all cursor-pointer flex items-center gap-2.5 ${
+                          isSelected
+                            ? 'ring-2 ring-primary border-primary bg-primary-soft/40'
+                            : 'border-surface-border hover:border-primary/50 bg-surface-hover'
+                        }`}
+                      >
+                        <div
+                          className="w-5 h-5 rounded-md border shrink-0 flex items-center justify-center shadow-inner"
+                          style={{ backgroundColor: v.bgHex, borderColor: v.borderHex }}
+                        >
+                          {isSelected && <Check className="w-3 h-3 text-primary stroke-[3]" />}
+                        </div>
+                        <span className="text-[11px] font-bold text-text-main truncate">
+                          {v.label}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
 
-          {/* Accent Color Section */}
+          {/* Accent Color Section (23 Rich & Punchy Colors) */}
           <div className="bg-surface border border-surface-border/90 dark:border-surface-border rounded-xl p-5 shadow-2xs space-y-4">
             <div className="flex items-center justify-between">
               <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
                 <Sparkles className="w-4 h-4 text-primary" />
                 <span>
-                  {_t('لون الواجهة (Accent Color)', 'Accent Color', 'Akzentfarbe')}
+                  {_t('ألوان التمييز والحيوية (23 Accent Colors)', '23 Vibrant Accent Colors', '23 Akzentfarben')}
                 </span>
               </h3>
+              <span className="text-[11px] font-mono font-bold text-primary px-2.5 py-0.5 rounded-lg bg-primary-soft">
+                {accentColor}
+              </span>
             </div>
 
             <p className="text-xs text-text-muted">
               {_t('اختر لون التمييز المفضل لجميع الأزرار والأيقونات والتبويبات النشطة وعناصر الواجهة التفاعلية.', 'Select your preferred accent color for all buttons, icons, active tabs, and interactive controls.', 'Wählen Sie die bevorzugte Akzentfarbe für alle Schaltflächen, Symbole, Tabs und Steuerelemente.')}
             </p>
 
-            <div className="grid grid-cols-4 sm:grid-cols-7 gap-3 pt-2 pb-2">
+            <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-3 pt-2 pb-2">
               {[
-                { id: 'blue' as const, hex: '#3b82f6', color: 'blue' },
-                { id: 'indigo' as const, hex: '#6366f1', color: 'indigo' },
-                { id: 'violet' as const, hex: '#8b5cf6', color: 'violet' },
-                { id: 'purple' as const, hex: '#a855f7', color: 'purple' },
-                { id: 'fuchsia' as const, hex: '#d946ef', color: 'fuchsia' },
-                { id: 'rose' as const, hex: '#f43f5e', color: 'rose' },
-                { id: 'red' as const, hex: '#ef4444', color: 'red' },
-                { id: 'orange' as const, hex: '#f97316', color: 'orange' },
-                { id: 'amber' as const, hex: '#f59e0b', color: 'amber' },
-                { id: 'green' as const, hex: '#22c55e', color: 'green' },
-                { id: 'emerald' as const, hex: '#10b981', color: 'emerald' },
-                { id: 'teal' as const, hex: '#14b8a6', color: 'teal' },
-                { id: 'cyan' as const, hex: '#06b6d4', color: 'cyan' },
-                { id: 'slate' as const, hex: '#64748b', color: 'slate' },
+                { id: 'blue' as const, name: _t('أزرق', 'Blue'), hex: '#3b82f6' },
+                { id: 'darkblue' as const, name: _t('أزرق داكن', 'Dark Blue'), hex: '#1d4ed8' },
+                { id: 'navy' as const, name: _t('نيفي', 'Navy'), hex: '#1e3a8a' },
+                { id: 'sky' as const, name: _t('سماوي', 'Sky'), hex: '#0284c7' },
+                { id: 'indigo' as const, name: _t('نيلي', 'Indigo'), hex: '#6366f1' },
+                { id: 'violet' as const, name: _t('بنفسجي', 'Violet'), hex: '#8b5cf6' },
+                { id: 'purple' as const, name: _t('أرجواني', 'Purple'), hex: '#a855f7' },
+                { id: 'fuchsia' as const, name: _t('فوكسيا', 'Fuchsia'), hex: '#d946ef' },
+                { id: 'pink' as const, name: _t('وردي', 'Pink'), hex: '#ec4899' },
+                { id: 'rose' as const, name: _t('زهري', 'Rose'), hex: '#f43f5e' },
+                { id: 'red' as const, name: _t('أحمر', 'Red'), hex: '#ef4444' },
+                { id: 'crimson' as const, name: _t('قرمزي', 'Crimson'), hex: '#dc2626' },
+                { id: 'bloodorange' as const, name: _t('برتقالي ناري', 'Blood Orange'), hex: '#ea580c' },
+                { id: 'orange' as const, name: _t('برتقالي', 'Orange'), hex: '#f97316' },
+                { id: 'amber' as const, name: _t('عنبري', 'Amber'), hex: '#f59e0b' },
+                { id: 'yellow' as const, name: _t('أصفر', 'Yellow'), hex: '#ca8a04' },
+                { id: 'lime' as const, name: _t('ليموني', 'Lime'), hex: '#84cc16' },
+                { id: 'neon-green' as const, name: _t('نيون أخضر', 'Neon Green'), hex: '#00ff66' },
+                { id: 'green' as const, name: _t('أخضر', 'Green'), hex: '#22c55e' },
+                { id: 'emerald' as const, name: _t('زمردي', 'Emerald'), hex: '#10b981' },
+                { id: 'teal' as const, name: _t('تركوازي', 'Teal'), hex: '#14b8a6' },
+                { id: 'cyan' as const, name: _t('سايان', 'Cyan'), hex: '#06b6d4' },
+                { id: 'slate' as const, name: _t('رمادي', 'Slate'), hex: '#64748b' },
               ].map((item) => {
                 const isSelected = accentColor === item.id;
                 return (
                   <button
                     key={item.id}
                     type="button"
+                    title={item.name}
                     onClick={() => {
                       if (accentColor !== item.id) {
                         setAccentColor(item.id);
                         confetti({ particleCount: 30, spread: 40 });
                       }
                     }}
-                    className="flex flex-col items-center gap-1.5 focus:outline-none group cursor-pointer"
+                    className="flex flex-col items-center gap-1 focus:outline-none group cursor-pointer"
                     style={{ WebkitTapHighlightColor: 'transparent' }}
                   >
                     <div 
-                      
-                      className={`w-10 h-10 rounded-full flex items-center justify-center shadow-lg relative transition-all duration-300 transform group-hover:scale-110 active:scale-95 ${
+                      className={`w-9 h-9 rounded-full flex items-center justify-center shadow-lg relative transition-all duration-300 transform group-hover:scale-110 active:scale-95 ${
                         isSelected 
                           ? 'ring-4 ring-offset-2 ring-offset-surface scale-110' 
                           : 'opacity-80 hover:opacity-100 border border-white/20'
@@ -557,9 +655,12 @@ export const SettingsView: React.FC = () => {
                       style={{ backgroundColor: item.hex, ...(isSelected ? { "--tw-ring-color": item.hex } : {}) } as React.CSSProperties}
                     >
                       {isSelected && (
-                        <Check className="w-5 h-5 text-white stroke-[3.5px] drop-shadow-sm animate-scale-up" />
+                        <Check className="w-4 h-4 text-white stroke-[3.5px] drop-shadow-sm animate-scale-up" />
                       )}
                     </div>
+                    <span className={`text-[10px] font-extrabold truncate max-w-[56px] ${isSelected ? 'text-primary' : 'text-text-muted'}`}>
+                      {item.name}
+                    </span>
                   </button>
                 );
               })}
@@ -582,8 +683,8 @@ export const SettingsView: React.FC = () => {
                   <Sparkles className="w-4 h-4" />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-xs font-bold text-text-main truncate">Premium Widget</p>
-                  <p className="text-[10px] text-text-muted truncate">Adapts to your accent color</p>
+                  <p className="text-xs font-bold text-text-main truncate">Premium Theme Widget</p>
+                  <p className="text-[10px] text-text-muted truncate">Adapts live to your accent color</p>
                 </div>
                 <div className="ml-auto shrink-0">
                    <div className="w-8 h-4 rounded-full bg-primary relative cursor-pointer">
@@ -603,7 +704,8 @@ export const SettingsView: React.FC = () => {
         <div className="space-y-4 animate-scale-up">
           {renderSubPageHeader(
             _t('الملف الشخصي للمعلم', 'Teacher Profile'),
-            _t('إدارة البيانات الشخصية وساعات العمل والعملة', 'Manage personal details, working hours & currency')
+            _t('إدارة البيانات الشخصية وساعات العمل والعملة', 'Manage personal details, working hours & currency'),
+            User
           )}
 
           <div className="bg-surface border border-surface-border/90 dark:border-surface-border rounded-xl p-5 shadow-2xs space-y-4">
@@ -611,7 +713,8 @@ export const SettingsView: React.FC = () => {
             <div className="flex items-center gap-4 pb-4 border-b border-slate-100 dark:border-surface-border">
               <div className="relative shrink-0 group">
                 <img
-                  src={profile.avatarUrl}
+                  src={profile.avatarUrl || DEFAULT_OFFLINE_AVATAR}
+                  onError={(e) => { e.currentTarget.src = DEFAULT_OFFLINE_AVATAR; }}
                   alt={profile.displayName}
                   className="w-16 h-16 rounded-lg object-cover ring-2 ring-primary/30 shadow-md"
                 />
@@ -623,15 +726,12 @@ export const SettingsView: React.FC = () => {
                 </label>
               </div>
 
-              <div className="space-y-1 flex-1">
-                <p className="text-sm font-extrabold text-text-main">{displayName || t('settings_name')}</p>
-                <p className="text-xs text-slate-500 font-mono">{email || '-'}</p>
-                <div className="flex items-center gap-2 pt-0.5">
-                  <span className="text-[11px] font-bold text-text-muted bg-surface-hover px-2.5 py-0.5 rounded-md">
+              <div className="space-y-1 flex-1 min-w-0 pr-2">
+                <p className="text-sm font-extrabold text-text-main truncate max-w-full">{displayName || t('settings_name')}</p>
+                <p className="text-xs text-slate-500 font-mono truncate max-w-full break-all" title={email}>{email || '-'}</p>
+                <div className="flex items-center gap-2 pt-0.5 flex-wrap">
+                  <span className="text-[11px] font-bold text-text-muted bg-surface-hover px-2.5 py-0.5 rounded-md shrink-0">
                     {t('settings_currency')}: {currency}
-                  </span>
-                  <span className="text-[11px] font-bold text-primary dark:text-primary bg-primary-soft dark:bg-primary-soft px-2.5 py-0.5 rounded-md">
-                    {startTime} - {endTime}
                   </span>
                 </div>
               </div>
@@ -674,7 +774,7 @@ export const SettingsView: React.FC = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1">
                   <label className="text-xs font-bold text-text-main">{t('settings_currency')}</label>
                   <select
@@ -690,25 +790,9 @@ export const SettingsView: React.FC = () => {
                   </select>
                 </div>
 
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-text-main">{t('settings_start_time')}</label>
-                  <input
-                    type="time"
-                    value={startTime}
-                    onChange={(e) => setStartTime(e.target.value)}
-                    className="w-full px-3.5 py-2.5 bg-surface-hover border border-surface-border dark:border-surface-border-soft rounded-xl text-xs font-bold focus:ring-2 focus:ring-primary outline-none"
-                  />
-                </div>
+                
 
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-text-main">{t('settings_end_time')}</label>
-                  <input
-                    type="time"
-                    value={endTime}
-                    onChange={(e) => setEndTime(e.target.value)}
-                    className="w-full px-3.5 py-2.5 bg-surface-hover border border-surface-border dark:border-surface-border-soft rounded-xl text-xs font-bold focus:ring-2 focus:ring-primary outline-none"
-                  />
-                </div>
+                
               </div>
 
               {savedSuccessToast && (
@@ -729,6 +813,113 @@ export const SettingsView: React.FC = () => {
               </fieldset>
             </form>
           </div>
+
+          {/* Working Days & Working Hours Form */}
+          <div className="bg-surface border border-surface-border/90 dark:border-surface-border rounded-xl p-5 shadow-2xs space-y-4">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
+              <Calendar className="w-4 h-4 text-primary" />
+              <span>{t('settings_working_hours')}</span>
+            </h3>
+
+            <form onSubmit={handleSaveCalendarSettings} className="space-y-4">
+              {/* Weekly Working Hours Configuration */}
+              <div className="space-y-3">
+                <label className="text-xs font-bold text-text-main">
+                  {_t('ساعات العمل الأسبوعية', 'Weekly Working Hours')}
+                </label>
+                <div className="flex flex-col gap-2">
+                  {[
+                    { num: 6, label: _t('السبت', 'Sat') },
+                    { num: 0, label: _t('الأحد', 'Sun') },
+                    { num: 1, label: _t('الإثنين', 'Mon') },
+                    { num: 2, label: _t('الثلاثاء', 'Tue') },
+                    { num: 3, label: _t('الأربعاء', 'Wed') },
+                    { num: 4, label: _t('الخميس', 'Thu') },
+                    { num: 5, label: _t('الجمعة', 'Fri') },
+                  ].map(day => {
+                    const dNum = day.num as keyof typeof weeklyWorkingHours;
+                    const hours = weeklyWorkingHours[dNum];
+                    return (
+                      <div key={day.num} className={`flex flex-wrap items-center justify-between gap-2 p-3 rounded-xl border ${hours.isOff ? 'bg-surface-hover border-surface-border opacity-60' : 'bg-surface border-primary-border/40'}`}>
+                        <div className="flex items-center gap-3 min-w-[80px]">
+                          <input 
+                            type="checkbox" 
+                            checked={!hours.isOff} 
+                            onChange={(e) => setWeeklyWorkingHours(prev => ({ ...prev, [dNum]: { ...prev[dNum], isOff: !e.target.checked } }))} 
+                            className="w-4 h-4 rounded text-primary"
+                          />
+                          <span className="text-sm font-bold text-text-main">{day.label}</span>
+                        </div>
+                        
+                        {!hours.isOff ? (
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="time"
+                              value={hours.startTime}
+                              onChange={(e) => setWeeklyWorkingHours(prev => ({ ...prev, [dNum]: { ...prev[dNum], startTime: e.target.value } }))}
+                              className="px-2 py-1.5 bg-surface-hover border border-surface-border rounded-lg text-xs font-mono font-bold"
+                            />
+                            <span className="text-text-muted text-xs">→</span>
+                            <input
+                              type="time"
+                              value={hours.endTime}
+                              onChange={(e) => setWeeklyWorkingHours(prev => ({ ...prev, [dNum]: { ...prev[dNum], endTime: e.target.value } }))}
+                              className="px-2 py-1.5 bg-surface-hover border border-surface-border rounded-lg text-xs font-mono font-bold"
+                            />
+                          </div>
+                        ) : (
+                          <span className="text-xs font-bold text-text-muted uppercase tracking-wider bg-surface-hover px-3 py-1 rounded-lg">Off</span>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Reminder Settings */}
+              <div className="p-3.5 bg-primary-soft dark:bg-primary-soft/40 border border-primary-border/60 dark:border-primary-border/60 rounded-lg space-y-2">
+                <h4 className="text-xs font-bold text-primary-hover dark:text-primary/70 flex items-center gap-1.5">
+                  <Bell className="w-4 h-4 text-primary" />
+                  <span>{_t('إعدادات التنبيهات والتذكير', 'Reminder Settings')}</span>
+                </h4>
+
+                <label className="flex items-center justify-between p-2 bg-surface rounded-xl cursor-pointer text-xs font-semibold">
+                  <span>{_t('تنبيهات الحصص المباشرة (قبل 30 دقيقة)', 'In-App Lesson Alerts (Within 30 mins)')}</span>
+                  <input 
+                    type="checkbox" 
+                    checked={enableLessonAlerts} 
+                    onChange={(e) => setEnableLessonAlerts(e.target.checked)} 
+                    className="w-4 h-4 rounded text-primary"
+                  />
+                </label>
+
+                <label className="flex items-center justify-between p-2 bg-surface rounded-xl cursor-pointer text-xs font-semibold">
+                  <span>{_t('إشعارات المتصفح والسطح', 'Browser Push Notifications')}</span>
+                  <input 
+                    type="checkbox" 
+                    checked={enableBrowserPush} 
+                    onChange={(e) => setEnableBrowserPush(e.target.checked)} 
+                    className="w-4 h-4 rounded text-primary"
+                  />
+                </label>
+              </div>
+
+              {savedSuccessToast && (
+                <div className="bg-primary text-white text-xs font-bold p-3 rounded-xl flex items-center justify-center gap-2 animate-scale-up">
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>{t('settings_save_success')}</span>
+                </div>
+              )}
+
+              <button
+                type="submit"
+                className="w-full bg-primary hover:bg-primary-hover text-white font-bold text-xs py-3 rounded-xl shadow-md transition-all cursor-pointer flex items-center justify-center gap-1.5 active:scale-95 hover:shadow-lg hover:shadow-primary/30"
+              >
+                <Save className="w-4 h-4" />
+                <span>{t('save')}</span>
+              </button>
+            </form>
+          </div>
         </div>
       )}
 
@@ -739,7 +930,8 @@ export const SettingsView: React.FC = () => {
         <div className="space-y-4 animate-scale-up">
           {renderSubPageHeader(
             _t('بيانات التحويل والدفع', 'Payment Information'),
-            _t('البيانات المستخدمة عند إرسال مطالبات الرسوم لأولياء الأمور', 'Information used when sending payment requests to parents')
+            _t('البيانات المستخدمة عند إرسال مطالبات الرسوم لأولياء الأمور', 'Information used when sending payment requests to parents'),
+            DollarSign
           )}
 
           <div className="bg-surface border border-surface-border/90 dark:border-surface-border rounded-xl p-5 shadow-2xs space-y-4">
@@ -865,7 +1057,8 @@ export const SettingsView: React.FC = () => {
         <div className="space-y-4 animate-scale-up">
           {renderSubPageHeader(
             _t('قوالب رسائل أولياء الأمور', 'Parent Message Templates'),
-            _t('تخصيص الرسائل التلقائية للواجبات، الحضور، الغياب والتقارير', 'Manage templates for homework, attendance, absence, payment & reports')
+            _t('تخصيص الرسائل التلقائية للواجبات، الحضور، الغياب والتقارير', 'Manage templates for homework, attendance, absence, payment & reports'),
+            MessageSquare
           )}
 
           <div className="bg-surface border border-surface-border/90 dark:border-surface-border rounded-xl p-5 shadow-2xs space-y-4">
@@ -974,185 +1167,14 @@ export const SettingsView: React.FC = () => {
       )}
 
       {/* ==========================================
-          SUBPAGE 5: CALENDAR & LESSONS
-      ========================================== */}
-      {activeCategory === 'calendar' && (
-        <div className="space-y-4 animate-scale-up">
-          {renderSubPageHeader(
-            _t('التقويم ومدة الحصص', 'Calendar & Lessons'),
-            _t('تحديد مدة حصص كل مجموعة، أيام وساعات العمل وتنبيهات التقويم', 'Group lesson durations, working days & schedule alerts')
-          )}
-
-          {/* Group Lesson Durations Card */}
-          <div className="bg-surface border border-surface-border/90 dark:border-surface-border rounded-xl p-5 shadow-2xs space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-xs font-bold uppercase tracking-wider text-primary dark:text-primary flex items-center gap-1.5">
-                  <Clock className="w-4 h-4" />
-                  <span>{_t('مدة الحصص حسب المجموعات', 'Lesson Duration per Group')}</span>
-                </h3>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  {_t('مدة الحصة الافتراضية 60 دقيقة. يمكنك تخصيص مدة أطول لكل مجموعة لتعكس في التقويم', 'Default duration is 60 mins. Customize specific group durations below (e.g. 60, 90, 120 mins)')}
-                </p>
-              </div>
-            </div>
-
-            {/* Groups Durations Table / List */}
-            {groups.length === 0 ? (
-              <div className="p-4 bg-surface-hover rounded-lg text-xs text-slate-500 text-center font-semibold">
-                {_t('لا توجد مجموعات حالياً. أضف مجموعة أولاً.', 'No groups available yet. Create a group first.')}
-              </div>
-            ) : (
-              <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
-                {groups.map(grp => (
-                  <div key={grp.id} className="p-3 bg-surface-hover/80 rounded-lg flex items-center justify-between gap-3 border border-surface-border/60 dark:border-surface-border-soft">
-                    <div className="min-w-0">
-                      <p className="text-xs font-extrabold text-text-main truncate">{grp.name}</p>
-                      <p className="text-[11px] text-slate-500">{grp.grade} • {grp.type === 'online' ? 'Online' : 'Offline'}</p>
-                    </div>
-
-                    <div className="flex items-center gap-1.5 shrink-0">
-                      <span className="text-[11px] font-bold text-slate-500">{_t('المدة:', 'Duration:')}</span>
-                      <select
-                        value={grp.lessonDurationMinutes || 60}
-                        onChange={(e) => updateGroup(grp.id, { lessonDurationMinutes: Number(e.target.value) })}
-                        className="px-3 py-1.5 bg-surface border border-surface-border dark:border-surface-border-soft rounded-xl text-xs font-bold text-primary dark:text-primary focus:ring-2 focus:ring-primary outline-none cursor-pointer"
-                      >
-                        <option value={60}>60 Min (1 Std / 1 Hour)</option>
-                        <option value={75}>75 Min (1h 15m)</option>
-                        <option value={90}>90 Min (1.5 Std / 1.5 Hours)</option>
-                        <option value={105}>105 Min (1h 45m)</option>
-                        <option value={120}>120 Min (2 Std / 2 Hours)</option>
-                        <option value={150}>150 Min (2.5 Std / 2.5 Hours)</option>
-                        <option value={180}>180 Min (3 Std / 3 Hours)</option>
-                      </select>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Working Days & Working Hours Form */}
-          <div className="bg-surface border border-surface-border/90 dark:border-surface-border rounded-xl p-5 shadow-2xs space-y-4">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
-              <Calendar className="w-4 h-4 text-primary" />
-              <span>{t('settings_working_hours')}</span>
-            </h3>
-
-            <form onSubmit={handleSaveCalendarSettings} className="space-y-4">
-              {/* Working Days Checkboxes */}
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-text-main">
-                  {_t('أيام العمل الأسبوعية:', 'Working Days:')}
-                </label>
-                <div className="flex flex-wrap gap-1.5">
-                  {[
-                    { num: 6, label: _t('السبت', 'Sa') },
-                    { num: 7, label: _t('الأحد', 'So') },
-                    { num: 1, label: _t('الإثنين', 'Mo') },
-                    { num: 2, label: _t('الثلاثاء', 'Di') },
-                    { num: 3, label: _t('الأربعاء', 'Mi') },
-                    { num: 4, label: _t('الخميس', 'Do') },
-                    { num: 5, label: _t('الجمعة', 'Fr') },
-                  ].map(day => {
-                    const isSelected = workingDays.includes(day.num);
-                    return (
-                      <button
-                        key={day.num}
-                        type="button"
-                        onClick={() => toggleWorkingDay(day.num)}
-                        className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                          isSelected
-                            ? 'bg-primary text-white shadow-2xs'
-                            : 'bg-surface-hover text-text-muted border border-surface-border dark:border-surface-border-soft'
-                        }`}
-                      >
-                        {day.label}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Working Hours Times */}
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-text-main">{t('settings_start_time')}</label>
-                  <input
-                    type="time"
-                    value={startTime}
-                    onChange={(e) => setStartTime(e.target.value)}
-                    className="w-full px-3.5 py-2 bg-surface-hover border border-surface-border dark:border-surface-border-soft rounded-xl text-xs font-mono font-bold"
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-text-main">{t('settings_end_time')}</label>
-                  <input
-                    type="time"
-                    value={endTime}
-                    onChange={(e) => setEndTime(e.target.value)}
-                    className="w-full px-3.5 py-2 bg-surface-hover border border-surface-border dark:border-surface-border-soft rounded-xl text-xs font-mono font-bold"
-                  />
-                </div>
-              </div>
-
-              {/* Reminder Settings */}
-              <div className="p-3.5 bg-primary-soft dark:bg-primary-soft/40 border border-primary-border/60 dark:border-primary-border/60 rounded-lg space-y-2">
-                <h4 className="text-xs font-bold text-primary-hover dark:text-primary/70 flex items-center gap-1.5">
-                  <Bell className="w-4 h-4 text-primary" />
-                  <span>{_t('إعدادات التنبيهات والتذكير', 'Reminder Settings')}</span>
-                </h4>
-
-                <label className="flex items-center justify-between p-2 bg-surface rounded-xl cursor-pointer text-xs font-semibold">
-                  <span>{_t('تنبيهات الحصص المباشرة (قبل 30 دقيقة)', 'In-App Lesson Alerts (Within 30 mins)')}</span>
-                  <input 
-                    type="checkbox" 
-                    checked={enableLessonAlerts} 
-                    onChange={(e) => setEnableLessonAlerts(e.target.checked)} 
-                    className="w-4 h-4 rounded text-primary"
-                  />
-                </label>
-
-                <label className="flex items-center justify-between p-2 bg-surface rounded-xl cursor-pointer text-xs font-semibold">
-                  <span>{_t('إشعارات المتصفح والسطح', 'Browser Push Notifications')}</span>
-                  <input 
-                    type="checkbox" 
-                    checked={enableBrowserPush} 
-                    onChange={(e) => setEnableBrowserPush(e.target.checked)} 
-                    className="w-4 h-4 rounded text-primary"
-                  />
-                </label>
-              </div>
-
-              {savedSuccessToast && (
-                <div className="bg-primary text-white text-xs font-bold p-3 rounded-xl flex items-center justify-center gap-2 animate-scale-up">
-                  <CheckCircle2 className="w-4 h-4" />
-                  <span>{t('settings_save_success')}</span>
-                </div>
-              )}
-
-              <button
-                type="submit"
-                className="w-full bg-primary hover:bg-primary-hover text-white font-bold text-xs py-3 rounded-xl shadow-md transition-all cursor-pointer flex items-center justify-center gap-1.5 active:scale-95 hover:shadow-lg hover:shadow-primary/30"
-              >
-                <Save className="w-4 h-4" />
-                <span>{t('save')}</span>
-              </button>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* ==========================================
           SUBPAGE 7: INSPIRATION & GRATITUDE
       ========================================== */}
       {activeCategory === 'inspiration' && (
         <div className="space-y-4 animate-scale-up ">
           {renderSubPageHeader(
             _t('الإلهام والامتنان', 'Inspiration & Gratitude', 'Inspiration & Dankbarkeit'),
-            _t('تذكيرات وأدعية للمعلم', 'Teacher reminders & motivation', 'Motivation & Dankbarkeits-Erinnerungen')
+            _t('تذكيرات وأدعية للمعلم', 'Teacher reminders & motivation', 'Motivation & Dankbarkeits-Erinnerungen'),
+            Sparkles
           )}
 
           {!isManagingMessages ? (
@@ -1307,7 +1329,7 @@ export const SettingsView: React.FC = () => {
                   .filter(m => msgFilterSource === 'all' || m.isFavorite)
                   .map(msg => (
                   <div key={msg.id} className="p-3.5 bg-surface-hover/50 border border-surface-border/60 dark:border-surface-border-soft rounded-lg flex flex-col gap-3">
-                    <p className="text-sm font-semibold text-slate-800 dark:text-slate-200 dir-rtl text-right">
+                    <p className={`text-sm font-semibold text-slate-800 dark:text-slate-200 ${language === 'ar' ? 'dir-rtl text-right' : 'text-left'}`}>
                       {msg.text}
                     </p>
                     <div className="flex items-center justify-between pt-2 border-t border-surface-border dark:border-surface-border-soft">
@@ -1397,7 +1419,7 @@ export const SettingsView: React.FC = () => {
               value={editingMsg ? editingMsg.text : newMsgText}
               onChange={(e) => editingMsg ? setEditingMsg({ ...editingMsg, text: e.target.value }) : setNewMsgText(e.target.value)}
               placeholder={_t('اكتب رسالتك أو دعاءك هنا...', 'Write your message...')}
-              className="w-full p-3 bg-surface-hover border border-surface-border dark:border-surface-border-soft rounded-xl focus:ring-2 focus:ring-primary font-medium text-sm min-h-[100px] resize-none dir-rtl"
+              className="w-full p-3 bg-surface-hover border border-surface-border dark:border-surface-border-soft rounded-xl focus:ring-2 focus:ring-primary font-medium text-sm min-h-[100px] resize-none"
               dir="auto"
             />
             <div className="flex gap-2">
@@ -1476,66 +1498,20 @@ export const SettingsView: React.FC = () => {
           SUBPAGE 6: DATA & BACKUP (INCLUDES DANGER ZONE)
       ========================================== */}
       {(activeCategory === 'backup' || activeCategory === 'danger') && (
-        <div className="space-y-4 animate-scale-up">
+        <div className="space-y-6 animate-scale-up">
           {renderSubPageHeader(
-            _t('النسخ الاحتياطي وإدارة البيانات', 'Backup & Data Management'),
-            _t('تنزيل واستعادة نسخة احتياطية من البيانات أو مسح البيانات', 'Download, restore backup or reset application data')
+            _t('مركز النسخ الاحتياطي وإدارة البيانات', 'Backup & Data Management Center'),
+            _t('إنشاء نسخ احتياطية شاملة، تشفير بكلمة مرور، استعادة انتقائية، وإدارة التعديلات', 'Create full backups, password encrypt, selectively restore & manage safety checkpoints'),
+            HardDrive
           )}
 
-          {/* Backup & Restore Section */}
-          <div className="bg-surface border border-surface-border/90 dark:border-surface-border rounded-xl p-5 shadow-2xs space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
-                <HardDrive className="w-4 h-4 text-primary" />
-                <span>{_t('النسخ الاحتياطي والاستعادة', 'Backup & Restore')}</span>
-              </h3>
-            </div>
+          {/* Dedicated Smart Backup Center */}
+          <SmartBackupCenter onBack={() => setActiveCategory(null)} />
 
-            <p className="text-xs text-text-muted">
-              {_t('احتفظ بنسخة من جميع الطلاب والمجموعات والحصص والمدفوعات آمنة محلياً (ملف JSON) أو استعدها في أي وقت.', 'Keep a secure local JSON backup of all students, groups, lessons, and payment records, or restore at any time.')}
-            </p>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-              <button
-                type="button"
-                onClick={exportBackupFile}
-                className="bg-primary hover:bg-primary-hover active:scale-[0.99] text-white font-bold py-3.5 px-4 rounded-xl shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer"
-              >
-                <Download className="w-4 h-4" />
-                <span>{_t('تنزيل / تصدير النسخة الاحتياطية (JSON)', 'Download / Export Backup (JSON)')}</span>
-              </button>
-
-              <div>
-                <input 
-                  type="file" 
-                  ref={fileInputRef} 
-                  onChange={handleRestoreFile} 
-                  accept=".json" 
-                  className="hidden" 
-                />
-                <button
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  className="w-full bg-slate-800 hover:bg-slate-900 dark:bg-slate-800 dark:hover:bg-slate-700 active:scale-[0.99] text-white font-bold py-3.5 px-4 rounded-xl shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer"
-                >
-                  <Upload className="w-4 h-4 text-primary" />
-                  <span>{_t('استعادة / استيراد من ملف (JSON)', 'Restore / Import Backup (JSON)')}</span>
-                </button>
-              </div>
-            </div>
-
-            {restoreStatusMsg && (
-              <div className="bg-primary-soft dark:bg-primary-soft border border-primary-border dark:border-primary-border text-primary dark:text-primary text-xs font-bold p-3 rounded-xl flex items-center gap-2 animate-scale-up">
-                <CheckCircle2 className="w-4 h-4 text-primary shrink-0" />
-                <span>{restoreStatusMsg}</span>
-              </div>
-            )}
-          </div>
-
-          {/* Danger Zone Section inside Backup */}
-          <div className="bg-primary-soft dark:bg-primary-soft border-2 border-primary-border dark:border-primary-border rounded-xl p-5 space-y-3.5 shadow-sm">
+          {/* Danger Zone Section */}
+          <div className="bg-primary-soft dark:bg-primary-soft border-2 border-primary-border dark:border-primary-border rounded-2xl p-5 space-y-3.5 shadow-2xs">
             <div className="flex items-center gap-3">
-              <div className="p-2.5 bg-primary text-white rounded-lg shrink-0 shadow-xs">
+              <div className="p-2.5 bg-primary text-white rounded-xl shrink-0 shadow-xs">
                 <AlertTriangle className="w-5 h-5" />
               </div>
               <div>
@@ -1551,7 +1527,7 @@ export const SettingsView: React.FC = () => {
             <button
               type="button"
               onClick={() => setShowClearConfirm(true)}
-              className="w-full bg-primary hover:bg-primary-hover active:scale-[0.99] text-white font-black text-xs py-3 px-4 rounded-xl shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer"
+              className="w-full bg-primary hover:bg-primary-hover active:scale-[0.99] text-white font-black text-xs py-3.5 px-4 rounded-xl shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer"
             >
               <Trash2 className="w-4 h-4" />
               <span>{t('settings_clear_data')}</span>
@@ -1567,7 +1543,8 @@ export const SettingsView: React.FC = () => {
         <div className="space-y-4 animate-scale-up">
           {renderSubPageHeader(
             _t('حول التطبيق', 'About'),
-            _t('معلومات التطبيق والميزات وتفاصيل التواصل مع المطور', 'Application details, features & developer contacts')
+            _t('معلومات التطبيق والميزات وتفاصيل التواصل مع المطور', 'Application details, features & developer contacts'),
+            Info
           )}
 
           <div className="bg-surface border border-surface-border/90 dark:border-surface-border rounded-xl p-4 shadow-2xs space-y-4 text-center sm:text-start">
@@ -1703,6 +1680,9 @@ export const SettingsView: React.FC = () => {
           </div>
         </div>
       )}
+          </div>
+        )}
+      </div>
     </div>
   );
 };

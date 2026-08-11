@@ -12,6 +12,21 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Display Build Metadata
+        run: |
+          echo "========================================="
+          echo "       BUILD INTEGRITY METADATA"
+          echo "========================================="
+          echo "Branch: ${GITHUB_REF_NAME}"
+          echo "Commit SHA: ${GITHUB_SHA}"
+          echo "Commit Message: $(git log -1 --pretty=%B)"
+          echo "Timestamp: $(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+          echo "Version Code: 1"
+          echo "Version Name: 1.0"
+          echo "========================================="
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -24,37 +39,54 @@ jobs:
           distribution: 'zulu'
           java-version: '21'
 
-      - name: Install Project Dependencies
-        run: npm install --legacy-peer-deps
-
-      - name: Install ALL Capacitor Plugins
+      - name: Force Clean Stale Build Artifacts
         run: |
-          npm install @capacitor/cli @capacitor/core @capacitor/android 
-          npm install @capacitor/app @capacitor/browser @capacitor/clipboard 
-          npm install @capacitor/device @capacitor/dialog @capacitor/filesystem 
-          npm install @capacitor/haptics @capacitor/keyboard @capacitor/local-notifications 
-          npm install @capacitor/preferences @capacitor/share @capacitor/splash-screen 
-          npm install @capacitor/status-bar @capacitor/toast
+          echo "Removing stale dist/ and android web assets..."
+          rm -rf dist android/app/src/main/assets/public
+
+      - name: Install Dependencies
+        run: npm install --legacy-peer-deps
 
       - name: Build Web Application
         run: npm run build
 
-      - name: Clean and Recreate Android Project
+      - name: Verify Web Build Output
         run: |
-          rm -rf android
-          npx cap add android
+          if [ ! -f "dist/index.html" ]; then
+            echo "ERROR: Web build failed - dist/index.html missing!"
+            exit 1
+          fi
+          echo "Web build successfully verified in dist/."
 
       - name: Sync Capacitor Android
         run: npx cap sync android
 
-      - name: Build Debug APK
+      - name: Verify Android Asset Sync
+        run: |
+          if [ ! -f "android/app/src/main/assets/public/index.html" ]; then
+            echo "ERROR: Capacitor sync failed - android assets missing!"
+            exit 1
+          fi
+          echo "Android public assets verified."
+
+      - name: Build Fresh Debug APK (Clean Build)
         run: |
           cd android
           chmod +x gradlew
-          ./gradlew assembleDebug --stacktrace
+          ./gradlew clean assembleDebug --stacktrace
 
-      - name: Upload APK
+      - name: Verify APK Generated
+        run: |
+          if [ ! -f "android/app/build/outputs/apk/debug/app-debug.apk" ]; then
+            echo "ERROR: APK build failed - output file missing!"
+            exit 1
+          fi
+          echo "APK successfully generated."
+
+      - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: AGS19-App-APK
           path: android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          overwrite: true

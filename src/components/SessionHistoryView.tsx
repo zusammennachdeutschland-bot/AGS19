@@ -293,7 +293,7 @@ export const SessionHistoryView: React.FC = () => {
                     </span>
                     <span className="font-mono text-text-muted/70 flex items-center gap-1">
                       <Clock className="w-3.5 h-3.5 text-text-muted/70" />
-                      <span>{lesson.time} ({lesson.durationMinutes || lesson.duration || 60} min)</span>
+                      <span>{lesson.time}</span>
                     </span>
                   </div>
 
@@ -329,6 +329,7 @@ export const SessionHistoryView: React.FC = () => {
 
                     <div className="flex items-center gap-2 text-[10px] text-slate-500 font-bold">
                       <span>{t('lesson_session_num')} ({lesson.sessionNumber || 1} / {lesson.totalSessionsInPackage || 8})</span>
+                      
                       {lesson.studentName && isGroup && (
                         <span className="text-text-muted/70">• {t('daily_stats_student')}: {lesson.studentName}</span>
                       )}

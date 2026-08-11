@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { useApp } from '../context/AppContext';
 import { calculateDuePaymentCycles } from '../utils/paymentUtils';
+
 import { Sparkles, Clock, Users, BookOpen, AlertCircle, Wallet } from 'lucide-react';
 
 export const SmartDailySummaryWidget: React.FC = () => {
@@ -39,10 +40,13 @@ export const SmartDailySummaryWidget: React.FC = () => {
     });
     const todaysStudentsCount = studentSet.size;
 
-    // Expected revenue today
-    const expectedIncomeToday = todaysLessons.reduce((sum, l) => {
-      return sum + (l.price || l.amountDue || 0);
-    }, 0);
+    // Revenue collected today (matching Payments View)
+    const paidOnly = payments.filter(p => p.status === 'paid');
+    const dailyPayments = paidOnly.filter(p => {
+      const d = p.paidDate || p.dueDate;
+      return d && d.startsWith(todayStr);
+    });
+    const collectedToday = dailyPayments.reduce((sum, p) => sum + (p.amountPaid || p.amountDue || 0), 0);
 
     // Overdue students count
     const dueCycles = calculateDuePaymentCycles(students, groups, lessons, payments);
@@ -105,18 +109,18 @@ export const SmartDailySummaryWidget: React.FC = () => {
       }
 
       if (language === 'ar') {
-        text = `لديك اليوم ${todaysLessonsCount} حصص، و ${todaysStudentsCount} طالبًا. متوقع تحصيل ${expectedIncomeToday.toLocaleString()} ${currency}. ${lateText} ${firstText}`;
+        text = `لديك اليوم ${todaysLessonsCount} حصص، و ${todaysStudentsCount} طالبًا. تم تحصيل ${collectedToday.toLocaleString()} ${currency} اليوم. ${lateText} ${firstText}`;
       } else if (language === 'de') {
-        text = `Sie haben heute ${todaysLessonsCount} Stunde(n) und ${todaysStudentsCount} Schüler. Erwartete Einnahmen: ${expectedIncomeToday.toLocaleString()} ${currency}. ${lateText} ${firstText}`;
+        text = `Sie haben heute ${todaysLessonsCount} Stunde(n) und ${todaysStudentsCount} Schüler. Heute eingenommen: ${collectedToday.toLocaleString()} ${currency}. ${lateText} ${firstText}`;
       } else {
-        text = `You have ${todaysLessonsCount} lesson(s) today with ${todaysStudentsCount} student(s). Expected collection: ${expectedIncomeToday.toLocaleString()} ${currency}. ${lateText} ${firstText}`;
+        text = `You have ${todaysLessonsCount} lesson(s) today with ${todaysStudentsCount} student(s). Collected today: ${collectedToday.toLocaleString()} ${currency}. ${lateText} ${firstText}`;
       }
     }
 
     return {
       todaysLessonsCount,
       todaysStudentsCount,
-      expectedIncomeToday,
+      collectedToday,
       lateStudentsCount,
       firstLessonTime: firstLessonTime ? formatTime12h(firstLessonTime) : null,
       text,
@@ -191,10 +195,10 @@ export const SmartDailySummaryWidget: React.FC = () => {
           </div>
           <div className="min-w-0">
             <p className="text-[9px] text-text-muted font-bold truncate">
-              {t('smart_summary_expected_income')}
+              {t('daily_stats_revenue_today')}
             </p>
             <p className="text-xs font-extrabold text-primary dark:text-primary font-mono">
-              {summary.expectedIncomeToday.toLocaleString()} <span className="text-[9px]">{summary.currency}</span>
+              {summary.collectedToday.toLocaleString()} <span className="text-[9px]">{summary.currency}</span>
             </p>
           </div>
         </div>

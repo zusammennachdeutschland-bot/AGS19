@@ -98,7 +98,7 @@ export const InspirationCardWidget: React.FC = () => {
 
         {/* Message body - flat layout */}
         <div className="pt-1.5">
-          <p className="text-sm font-bold text-text-main leading-relaxed text-right dir-rtl font-sans">
+          <p className={`text-sm font-bold text-text-main leading-relaxed font-sans ${language === 'ar' ? 'text-right dir-rtl' : 'text-left'}`}>
             "{activeInspirationCard.text}"
           </p>
         </div>

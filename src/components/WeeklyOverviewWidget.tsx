@@ -1,9 +1,10 @@
 import React from 'react';
 import { useApp } from '../context/AppContext';
+
 import { CheckCircle2, XCircle, Clock, Wallet, CalendarDays } from 'lucide-react';
 
 export const WeeklyOverviewWidget: React.FC = () => {
-  const { lessons, profile, language, t } = useApp();
+  const { lessons, groups, students, payments, profile, language, t } = useApp();
 
   // Helper for inline translations
   const _t = (ar: string, en: string, de?: string) => {
@@ -34,9 +35,15 @@ export const WeeklyOverviewWidget: React.FC = () => {
     const cancelled = weekLessons.filter(l => l.status === 'cancelled').length;
     const remaining = weekLessons.filter(l => l.status === 'scheduled' || l.status === 'in_progress').length;
 
-    const revenue = weekLessons
-      .filter(l => l.status === 'completed' || l.paymentStatus === 'paid')
-      .reduce((sum, l) => sum + (l.amountPaid || l.price || l.amountDue || 0), 0);
+    // Use actual payment records for accurate revenue tracking (matching Payments View)
+    const paidOnly = payments.filter(p => p.status === 'paid');
+    const weeklyPayments = paidOnly.filter(p => {
+      const d = p.paidDate || p.dueDate;
+      if (!d) return false;
+      const dateOnly = d.substring(0, 10);
+      return dateOnly >= friStr && dateOnly <= thuStr;
+    });
+    const revenue = weeklyPayments.reduce((sum, p) => sum + (p.amountPaid || p.amountDue || 0), 0);
 
     return { completed, cancelled, remaining, revenue, friStr, thuStr };
   };

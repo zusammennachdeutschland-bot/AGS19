@@ -337,10 +337,30 @@ export type TranslationKey =
   | 'todo_add_placeholder'
   | 'todo_no_tasks'
   | 'todo_add_btn'
-  | 'reports_and_analytics_title';
+  | 'reports_and_analytics_title'
+  | 'notifications_title'
+  | 'free_time_available_today'
+  | 'nav_free_time'
+  | 'add_group_title'
+  | 'add_group_subtitle'
+  | 'lesson_duration_label'
+  | 'schedule_lesson_title'
+  | 'save_lesson_btn'
+  | 'duplicate_student_warning'
+  | 'students_all_groups'
+  | 'payments_no_due'
+  | 'payment_plan_lessons'
+  | 'payments_completed_dates'
+  | 'reports_copied'
+  | 'reports_and_analyses'
+  | 'lesson_session_num'
+  | 'daily_stats_student'
+  | 'todo_more_tasks';
 
 export const translations: Record<AppLanguage, Record<TranslationKey, string>> = {
   ar: {
+    notifications_title: 'الإشعارات',
+    free_time_available_today: 'الأوقات المتاحة اليوم',
     nav_home: 'الرئيسية',
     nav_schedule: 'الجدول',
     nav_students: 'الطلاب',
@@ -678,9 +698,27 @@ export const translations: Record<AppLanguage, Record<TranslationKey, string>> =
     todo_no_tasks: 'لا توجد مهام معلقة ✨',
     todo_add_btn: 'إضافة',
     reports_and_analytics_title: 'التقارير والتحليلات',
+    nav_free_time: 'الأوقات المتاحة',
+    add_group_title: 'إضافة مجموعة جديدة',
+    add_group_subtitle: 'أدخل تفاصيل المجموعة والباقة الشهرية',
+    lesson_duration_label: 'مدة الحصة',
+    schedule_lesson_title: 'جدولة حصة جديدة',
+    save_lesson_btn: 'حفظ الحصة',
+    duplicate_student_warning: 'طالب بنفس الاسم موجود بالفعل في هذه المجموعة. هل تريد المتابعة؟',
+    students_all_groups: 'جميع المجموعات',
+    payments_no_due: 'لا توجد مستحقات سداد حالياً',
+    payment_plan_lessons: 'حصص',
+    payments_completed_dates: 'مواعيد الحصص المكتملة',
+    reports_copied: 'تم نسخ التقرير',
+    reports_and_analyses: 'التقارير والتحليلات',
+    lesson_session_num: 'رقم الحصة',
+    daily_stats_student: 'الطالب',
+    todo_more_tasks: 'مهام إضافية...',
   },
 
   en: {
+    notifications_title: 'Notifications',
+    free_time_available_today: 'Available Today',
     nav_home: 'Home',
     nav_schedule: 'Schedule',
     nav_students: 'Students',
@@ -1018,9 +1056,27 @@ export const translations: Record<AppLanguage, Record<TranslationKey, string>> =
     todo_no_tasks: 'No pending tasks ✨',
     todo_add_btn: 'Add',
     reports_and_analytics_title: 'Reports & Analytics',
+    nav_free_time: 'Free Time',
+    add_group_title: 'Add New Group',
+    add_group_subtitle: 'Enter group details and monthly package',
+    lesson_duration_label: 'Lesson Duration',
+    schedule_lesson_title: 'Schedule New Lesson',
+    save_lesson_btn: 'Save Lesson',
+    duplicate_student_warning: 'A student with the same name already exists in this group. Do you want to continue?',
+    students_all_groups: 'All Groups',
+    payments_no_due: 'No due payments available',
+    payment_plan_lessons: 'lessons',
+    payments_completed_dates: 'Completed lesson dates',
+    reports_copied: 'Report copied',
+    reports_and_analyses: 'Reports & Analytics',
+    lesson_session_num: 'Session Number',
+    daily_stats_student: 'Student',
+    todo_more_tasks: 'more tasks...',
   },
 
   de: {
+    notifications_title: 'Benachrichtigungen',
+    free_time_available_today: 'Heute verfügbar',
     nav_home: 'Start',
     nav_schedule: 'Kalender',
     nav_students: 'Schüler',
@@ -1358,5 +1414,21 @@ export const translations: Record<AppLanguage, Record<TranslationKey, string>> =
     todo_no_tasks: 'Keine ausstehenden Aufgaben ✨',
     todo_add_btn: 'Hinzufügen',
     reports_and_analytics_title: 'Berichte & Analysen',
+    nav_free_time: 'Freie Zeit',
+    add_group_title: 'Neue Gruppe hinzufügen',
+    add_group_subtitle: 'Gruppendetails und Monatspaket eingeben',
+    lesson_duration_label: 'Lektionsdauer',
+    schedule_lesson_title: 'Neue Lektion planen',
+    save_lesson_btn: 'Lektion speichern',
+    duplicate_student_warning: 'Ein Schüler mit demselben Namen existiert bereits in dieser Gruppe. Möchten Sie fortfahren?',
+    students_all_groups: 'Alle Gruppen',
+    payments_no_due: 'Keine fälligen Zahlungen',
+    payment_plan_lessons: 'Lektionen',
+    payments_completed_dates: 'Abgeschlossene Termine',
+    reports_copied: 'Bericht kopiert',
+    reports_and_analyses: 'Berichte & Analysen',
+    lesson_session_num: 'Lektionsnummer',
+    daily_stats_student: 'Schüler',
+    todo_more_tasks: 'weitere Aufgaben...',
   }
 };

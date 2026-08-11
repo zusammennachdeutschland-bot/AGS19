@@ -217,42 +217,44 @@ export const ScheduleView: React.FC = () => {
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-1.5 w-full sm:w-auto justify-start sm:justify-end">
+        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto justify-start sm:justify-end">
           {/* Refresh Calendar Data */}
           <button
             onClick={handleRefreshCalendar}
-            className="bg-background hover:bg-surface-hover dark:hover:bg-slate-700/80 text-text-main border border-surface-border dark:border-surface-border-soft font-bold text-xs px-2.5 py-2 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer"
+            title={t('schedule_refresh')}
+            className="bg-background hover:bg-surface-hover dark:hover:bg-slate-700/80 text-text-main border border-surface-border dark:border-surface-border-soft font-bold text-xs px-2.5 py-2 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer shrink-0"
           >
             <RefreshCw className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">{t('schedule_refresh')}</span>
+            <span className="hidden md:inline">{t('schedule_refresh')}</span>
           </button>
 
           {/* Export iCal */}
           <button
             onClick={handleExportICS}
-            className="bg-background hover:bg-surface-hover dark:hover:bg-slate-700/80 text-text-main border border-surface-border dark:border-surface-border-soft font-bold text-xs px-2.5 py-2 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer"
+            title={t('schedule_ical')}
+            className="bg-background hover:bg-surface-hover dark:hover:bg-slate-700/80 text-text-main border border-surface-border dark:border-surface-border-soft font-bold text-xs px-2.5 py-2 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer shrink-0"
           >
             <Download className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">{t('schedule_ical')}</span>
-          </button>
-
-          {/* START LESSON NOW */}
-          <button
-            onClick={() => setShowStartLessonNowModal(true)}
-            className="bg-primary hover:bg-primary-hover active:scale-95 text-white font-bold text-xs px-3.5 py-2 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer hover:shadow-lg hover:shadow-primary/30"
-          >
-            <Play className="w-3.5 h-3.5 fill-white text-white" />
-            <span>{t('schedule_start_now')}</span>
+            <span className="hidden md:inline">{t('schedule_ical')}</span>
           </button>
 
           {/* Quick Lesson */}
           <button
             type="button"
             onClick={() => setIsAddQuickLessonModalOpen(true)}
-            className="bg-primary hover:bg-primary active:scale-95 text-white font-bold text-xs px-3 py-2 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs whitespace-nowrap"
+            className="bg-primary-soft dark:bg-primary-soft text-primary dark:text-primary border border-primary-border dark:border-primary-border hover:bg-primary-soft/80 active:scale-95 font-bold text-xs px-3 py-2 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs whitespace-nowrap shrink-0"
           >
-            <Zap className="w-3.5 h-3.5 fill-current" />
+            <Zap className="w-3.5 h-3.5 fill-primary text-primary" />
             <span>{t('nav_quickLesson')}</span>
+          </button>
+
+          {/* START LESSON NOW */}
+          <button
+            onClick={() => setShowStartLessonNowModal(true)}
+            className="bg-primary hover:bg-primary-hover active:scale-95 text-white font-bold text-xs px-3.5 py-2 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer shadow-md hover:shadow-primary/30 shrink-0"
+          >
+            <Play className="w-3.5 h-3.5 fill-white text-white" />
+            <span>{t('schedule_start_now')}</span>
           </button>
         </div>
       </div>
@@ -432,7 +434,7 @@ export const ScheduleView: React.FC = () => {
                         : 'bg-primary ring-2 ring-primary dark:ring-primary'
                     }`} />
 
-                    <div className={`flex-1 border rounded-lg p-3 transition-all ${
+                    <div className={`flex-1 min-w-0 border rounded-lg p-3 transition-all ${
                       conflict
                         ? 'border-primary-border dark:border-primary-border bg-primary-soft dark:bg-primary-soft'
                         : isCompleted
@@ -442,7 +444,7 @@ export const ScheduleView: React.FC = () => {
                         : 'bg-surface-hover/80 hover:bg-primary-soft dark:hover:bg-primary-soft border-surface-border/80 dark:border-surface-border-soft/80 group-hover:border-primary'
                     }`}>
                       <div className="flex items-start justify-between gap-2">
-                        <div onClick={() => openLessonControl(lesson)} className="cursor-pointer flex-1">
+                        <div onClick={() => openLessonControl(lesson)} className="cursor-pointer flex-1 min-w-0">
                           <div className="flex items-center gap-2 flex-wrap">
                             <h4 className={`text-xs sm:text-sm font-bold transition-colors ${
                               isCompleted
@@ -480,6 +482,7 @@ export const ScheduleView: React.FC = () => {
                             <span className="font-bold text-primary dark:text-primary">
                               Session {lesson.sessionNumber}/{lesson.totalSessionsInPackage}
                             </span>
+                            
                             <span>•</span>
                             <span className="font-bold text-primary dark:text-primary bg-primary-soft dark:bg-primary-soft px-1.5 py-0.5 rounded-md border border-primary-border dark:border-primary-border">
                               {t('schedule_weekly')}

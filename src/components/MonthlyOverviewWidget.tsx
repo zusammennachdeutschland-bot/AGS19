@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { useApp } from '../context/AppContext';
 import { calculateDuePaymentCycles } from '../utils/paymentUtils';
+
 import { TrendingUp, CheckCircle2, XCircle, Clock, Wallet, AlertCircle, DollarSign } from 'lucide-react';
 
 export const MonthlyOverviewWidget: React.FC = () => {
@@ -22,21 +23,20 @@ export const MonthlyOverviewWidget: React.FC = () => {
     const cancelled = monthLessons.filter(l => l.status === 'cancelled').length;
     const remaining = monthLessons.filter(l => l.status === 'scheduled' || l.status === 'in_progress').length;
 
-    // Revenue collected this month
-    const collected = monthLessons
-      .filter(l => l.status === 'completed' || l.paymentStatus === 'paid')
-      .reduce((sum, l) => sum + (l.amountPaid || l.price || l.amountDue || 0), 0);
+    // Use actual payment records for accurate revenue tracking (matching Payments View)
+    const paidOnly = payments.filter(p => p.status === 'paid');
+    const monthlyPayments = paidOnly.filter(p => {
+      const d = p.paidDate || p.dueDate;
+      return d && d.startsWith(currentMonthPrefix);
+    });
+    const collected = monthlyPayments.reduce((sum, p) => sum + (p.amountPaid || p.amountDue || 0), 0);
 
-    // Uncollected / Due money across current cycles and unpaid lessons
-    const dueCycles = calculateDuePaymentCycles(students, groups, lessons, payments);
-    const uncollected = dueCycles.reduce((sum, item) => {
-      const existingRec = payments.find(p => p.id === item.existingPaymentRecordId);
-      const paid = existingRec ? (existingRec.amountPaid || 0) : 0;
-      const discount = existingRec ? (existingRec.discountAmount || 0) : 0;
-      const rem = Math.max(0, item.amountDue - paid - discount);
-      return sum + rem;
-    }, 0);
-
+    const pendingOnly = payments.filter(p => p.status !== 'paid');
+    const monthlyPending = pendingOnly.filter(p => {
+      const d = p.dueDate;
+      return d && d.startsWith(currentMonthPrefix);
+    });
+    const uncollected = monthlyPending.reduce((sum, p) => sum + p.amountDue, 0);
     const totalExpected = collected + uncollected;
 
     return {

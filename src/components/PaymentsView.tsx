@@ -11,7 +11,7 @@ import confetti from 'canvas-confetti';
 export const PaymentsView: React.FC = () => {
   const { 
     students, groups, lessons, payments, profile, 
-    markCyclePaymentPaid, markCyclePaymentNotYet, t 
+    markCyclePaymentPaid, markCyclePaymentNotYet, t, _t 
   } = useApp();
 
   const [activeTab, setActiveTab] = useState<'due' | 'history'>('due');
@@ -191,8 +191,13 @@ export const PaymentsView: React.FC = () => {
 
   // Total Due Calculation
   const totalAmountDue = useMemo(() => {
-    return filteredDueCycles.reduce((sum, item) => sum + item.amountDue, 0);
-  }, [filteredDueCycles]);
+    return filteredDueCycles.reduce((sum, item) => {
+      const existingRec = payments.find(p => p.id === item.existingPaymentRecordId);
+      const paid = existingRec ? (existingRec.amountPaid || 0) : 0;
+      const discount = existingRec ? (existingRec.discountAmount || 0) : 0;
+      return sum + Math.max(0, item.amountDue - paid - discount);
+    }, 0);
+  }, [filteredDueCycles, payments]);
 
   // --------------------------------------------------------------------------
   // ACTIONS
@@ -229,7 +234,37 @@ export const PaymentsView: React.FC = () => {
   const generateWhatsAppMessage = (item: DuePaymentCycle) => {
     const datesFormatted = item.lessonDates.length > 0 
       ? item.lessonDates.map(d => `• ${d}`).join('\n')
-      : '• مواعيد الحصص المكتملة';
+      : _t('• مواعيد الحصص المكتملة', '• Completed lesson dates', '• Termine der absolvierten Lektionen');
+
+    if (profile.language === 'en') {
+      return `Dear Parent,
+
+Notice of Course Cycle Completion & Payment Due 📚
+
+Student: ${item.studentName}
+Group: ${item.groupName}
+Amount Due: ${item.amountDue} ${currency} (${item.cycleLength} lessons)
+
+Completed Lesson Dates:
+${datesFormatted}
+
+Thank you for your cooperation!`;
+    }
+
+    if (profile.language === 'de') {
+      return `Sehr geehrte Eltern,
+
+Benachrichtigung über Kurssitzungsabschluss & Fälligkeit 📚
+
+Schüler/in: ${item.studentName}
+Gruppe: ${item.groupName}
+Fälliger Betrag: ${item.amountDue} ${currency} (${item.cycleLength} Lektionen)
+
+Abgeschlossene Termine:
+${datesFormatted}
+
+Vielen Dank für Ihre Zusammenarbeit!`;
+    }
 
     return `السلام عليكم ورحمة الله وبركاته،
 
@@ -510,45 +545,47 @@ ${datesFormatted}
             ))
           )}
 
-          {/* Section: Flexible & Prorated Billing (إنهاء الدورة مبكراً والفوترة الجزئية) */}
+          {/* Section: Flexible & Prorated Billing */}
           <div className="pt-4 border-t border-surface-border space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-right dir-rtl">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
               <div>
-                <h3 className="text-sm font-black text-text-main flex items-center justify-end gap-1.5">
+                <h3 className="text-sm font-black text-text-main flex items-center gap-1.5">
                   <Sparkles className="w-4 h-4 text-primary" />
-                  <span>الفوترة الجزئية وإنهاء الدورة مبكراً (Flexible & Prorated Billing)</span>
+                  <span>{_t('الفوترة الجزئية وإنهاء الدورة مبكراً', 'Flexible & Prorated Billing', 'Flexible & anteilige Abrechnung')}</span>
                 </h3>
                 <p className="text-[11px] text-text-muted mt-1">
-                  يمكنك إنهاء الدورة الحالية للطلاب مبكراً والمطالبة بالدفع بناءً على الحصص التي حضروها فعلياً.
+                  {_t('يمكنك إنهاء الدورة الحالية للطلاب مبكراً والمطالبة بالدفع بناءً على الحصص التي حضروها فعلياً.', 'You can end the current cycle early for students and bill based on actually attended lessons.', 'Sie können den aktuellen Kurs für Schüler vorzeitig beenden und basierend auf den tatsächlich besuchten Lektionen abrechnen.')}
                 </p>
               </div>
             </div>
 
             {filteredInProgressCycles.length === 0 ? (
               <div className="bg-surface-hover/30 p-4 rounded-lg text-center border border-slate-100 dark:border-surface-border/50">
-                <p className="text-xs text-text-muted/70 font-medium">لا يوجد طلاب لديهم حصص مكتملة غير مفوترة حالياً تحت الحد الأقصى للدورة.</p>
+                <p className="text-xs text-text-muted/70 font-medium">
+                  {_t('لا يوجد طلاب لديهم حصص مكتملة غير مفوترة حالياً تحت الحد الأقصى للدورة.', 'There are currently no students with completed unbilled lessons under the cycle limit.', 'Derzeit gibt es keine Schüler mit abgeschlossenen, nicht abgerechneten Lektionen unter dem Kurslimit.')}
+                </p>
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
                 {filteredInProgressCycles.map((item, idx) => (
-                  <div key={`${item.id}_${idx}`} className="bg-surface border border-surface-border p-4 rounded-lg space-y-3 shadow-xs relative text-right dir-rtl">
-                    <div className="flex justify-between items-start flex-row-reverse">
+                  <div key={`${item.id}_${idx}`} className="bg-surface border border-surface-border p-4 rounded-lg space-y-3 shadow-xs relative">
+                    <div className="flex justify-between items-start">
                       <div>
-                        <h4 className="text-xs font-black text-text-main text-right">{item.studentName}</h4>
+                        <h4 className="text-xs font-black text-text-main">{item.studentName}</h4>
                         <span className="text-[10px] bg-surface-hover text-slate-600 dark:text-slate-300 font-bold px-1.5 py-0.5 rounded-md inline-block mt-0.5">{item.groupName}</span>
                       </div>
-                      <div className="text-left">
-                        <span className="text-[9px] font-extrabold text-text-muted/70 uppercase tracking-wider block">القيمة المقترحة (Prorated)</span>
+                      <div className="text-right">
+                        <span className="text-[9px] font-extrabold text-text-muted/70 uppercase tracking-wider block">{_t('القيمة المقترحة', 'Prorated Amount', 'Vorgeschlagener Betrag')}</span>
                         <span className="text-sm font-bold text-primary dark:text-primary font-mono">{item.amountDue} {currency}</span>
                       </div>
                     </div>
 
                     <div className="bg-surface-hover/40 p-2.5 rounded-xl border border-slate-100 dark:border-surface-border/50 text-[11px] space-y-1">
-                      <div className="flex justify-between flex-row-reverse">
-                        <span className="text-slate-500">الحصص المكتملة (Attended):</span>
-                        <span className="font-bold text-primary dark:text-primary">{item.lessonDates.length} / {item.cycleLength} حصة</span>
+                      <div className="flex justify-between">
+                        <span className="text-slate-500">{_t('الحصص المكتملة:', 'Attended Lessons:', 'Besuchte Lektionen:')}</span>
+                        <span className="font-bold text-primary dark:text-primary">{item.lessonDates.length} / {item.cycleLength} {_t('حصة', 'lessons', 'Lektionen')}</span>
                       </div>
-                      <div className="text-[10px] text-text-muted/70 font-mono flex flex-wrap gap-1 mt-1 justify-end">
+                      <div className="text-[10px] text-text-muted/70 font-mono flex flex-wrap gap-1 mt-1">
                         {item.lessonDates.map((d, idx) => (
                           <span key={idx} className="bg-surface px-1.5 py-0.5 rounded border border-surface-border">🗓️ {d}</span>
                         ))}
@@ -564,7 +601,7 @@ ${datesFormatted}
                       className="w-full py-1.5 bg-primary-soft dark:bg-primary-soft/40 text-primary dark:text-primary hover:bg-primary-soft dark:hover:bg-primary-soft active:scale-95 transition-all text-xs font-black rounded-xl border border-primary-border/50 dark:border-primary-border flex items-center justify-center gap-1.5 cursor-pointer"
                     >
                       <Sparkles className="w-3.5 h-3.5 text-primary" />
-                      <span>إنهاء الدورة والفوترة (Force Cycle & Bill)</span>
+                      <span>{_t('إنهاء الدورة والفوترة', 'Force Cycle & Bill', 'Kurs beenden & abrechnen')}</span>
                     </button>
                   </div>
                 ))}
@@ -639,7 +676,7 @@ ${datesFormatted}
               </button>
             </div>
 
-            <div className="p-4 bg-primary-soft dark:bg-primary-soft rounded-lg border border-primary-border dark:border-primary-border text-text-main text-xs font-mono whitespace-pre-wrap leading-relaxed dir-rtl text-right">
+            <div className="p-4 bg-primary-soft dark:bg-primary-soft rounded-lg border border-primary-border dark:border-primary-border text-text-main text-xs font-mono whitespace-pre-wrap leading-relaxed">
               {generateWhatsAppMessage(selectedCycleForWhatsApp)}
             </div>
 
@@ -757,12 +794,12 @@ ${datesFormatted}
       {/* FORCE CYCLE / PRORATE MODAL */}
       {prorateModalItem && (
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4 pb-0">
-          <div className="bg-surface rounded-t-[28px] sm:rounded-xl pb-safe-bottom sm:pb-0 mb-0 max-w-md w-full p-4 border border-surface-border shadow-2xl space-y-4 animate-scale-up text-right dir-rtl">
+          <div className="bg-surface rounded-t-[28px] sm:rounded-xl pb-safe-bottom sm:pb-0 mb-0 max-w-md w-full p-4 border border-surface-border shadow-2xl space-y-4 animate-scale-up">
         <div className="w-12 h-1.5 bg-slate-200 dark:bg-slate-800 rounded-full mx-auto mt-3 mb-1 sm:hidden shrink-0" />
-            <div className="flex items-center justify-between flex-row-reverse">
+            <div className="flex items-center justify-between">
               <h2 className="text-base font-black text-text-main flex items-center gap-2">
                 <Sparkles className="w-5 h-5 text-primary" />
-                <span>إنهاء الدورة الحالية والمطالبة بالدفع</span>
+                <span>{_t('إنهاء الدورة الحالية والمطالبة بالدفع', 'Force End Current Cycle & Bill', 'Aktuellen Kurs beenden & abrechnen')}</span>
               </h2>
               <button
                 onClick={() => setProrateModalItem(null)}
@@ -774,22 +811,28 @@ ${datesFormatted}
 
             <div className="space-y-3.5">
               {/* Student info card */}
-              <div className="p-4 bg-surface-hover/40 rounded-lg border border-slate-100 dark:border-surface-border/60 text-sm space-y-2 text-right">
+              <div className="p-4 bg-surface-hover/40 rounded-lg border border-slate-100 dark:border-surface-border/60 text-sm space-y-2">
                 <div>
-                  <span className="text-xs text-text-muted/70 font-bold block">اسم الطالب (Student):</span>
+                  <span className="text-xs text-text-muted/70 font-bold block">{_t('اسم الطالب:', 'Student Name:', 'Schülername:')}</span>
                   <span className="font-black text-text-main">{prorateModalItem.studentName}</span>
                 </div>
                 <div>
-                  <span className="text-xs text-text-muted/70 font-bold block">المجموعة (Group):</span>
+                  <span className="text-xs text-text-muted/70 font-bold block">{_t('المجموعة:', 'Group:', 'Gruppe:')}</span>
                   <span className="font-black text-slate-800 dark:text-slate-200">{prorateModalItem.groupName}</span>
                 </div>
                 <div>
-                  <span className="text-xs text-text-muted/70 font-bold block">معدل الحضور (Attendance Progress):</span>
-                  <span className="font-bold text-primary dark:text-primary">حضر {prorateModalItem.lessonDates.length} حصص من أصل دورة من {prorateModalItem.cycleLength} حصص</span>
+                  <span className="text-xs text-text-muted/70 font-bold block">{_t('معدل الحضور:', 'Attendance Progress:', 'Anwesenheitsfortschritt:')}</span>
+                  <span className="font-bold text-primary dark:text-primary">
+                    {_t(
+                      `حضر ${prorateModalItem.lessonDates.length} حصص من أصل دورة من ${prorateModalItem.cycleLength} حصص`,
+                      `Attended ${prorateModalItem.lessonDates.length} of ${prorateModalItem.cycleLength} cycle lessons`,
+                      `${prorateModalItem.lessonDates.length} von ${prorateModalItem.cycleLength} Lektionen besucht`
+                    )}
+                  </span>
                 </div>
                 <div>
-                  <span className="text-xs text-text-muted/70 font-bold block">تواريخ الحصص المنجزة:</span>
-                  <div className="flex flex-wrap gap-1 mt-1 justify-end">
+                  <span className="text-xs text-text-muted/70 font-bold block">{_t('تواريخ الحصص المنجزة:', 'Completed Lesson Dates:', 'Termine der absolvierten Lektionen:')}</span>
+                  <div className="flex flex-wrap gap-1 mt-1">
                     {prorateModalItem.lessonDates.map((d, idx) => (
                       <span key={idx} className="bg-surface text-[10px] font-mono px-2 py-0.5 rounded border border-surface-border dark:border-surface-border-soft">🗓️ {d}</span>
                     ))}
@@ -799,8 +842,8 @@ ${datesFormatted}
 
               {/* Amount editor */}
               <div className="space-y-1.5">
-                <label className="block text-xs font-black text-text-main text-right">
-                  تعديل القيمة المستحقة للدفع الجزئي (Prorated Due Amount):
+                <label className="block text-xs font-black text-text-main">
+                  {_t('تعديل القيمة المستحقة للدفع الجزئي:', 'Adjust Prorated Due Amount:', 'Anteiligen fälligen Betrag anpassen:')}
                 </label>
                 <div className="relative">
                   <input
@@ -813,8 +856,12 @@ ${datesFormatted}
                     {currency}
                   </div>
                 </div>
-                <p className="text-[10px] text-text-muted/70 leading-relaxed text-right">
-                  * تم حساب القيمة المقترحة تلقائياً بناءً على متوسط قيمة الحصة الواحدة. يمكنك تعديل المبلغ يدوياً قبل تأكيد الفاتورة.
+                <p className="text-[10px] text-text-muted/70 leading-relaxed">
+                  {_t(
+                    '* تم حساب القيمة المقترحة تلقائياً بناءً على متوسط قيمة الحصة الواحدة. يمكنك تعديل المبلغ يدوياً قبل تأكيد الفاتورة.',
+                    '* The suggested amount is calculated automatically based on per-lesson cost. You can adjust it manually before confirming.',
+                    '* Der vorgeschlagene Betrag wird automatisch berechnet. Sie können ihn vor der Bestätigung anpassen.'
+                  )}
                 </p>
               </div>
             </div>
@@ -838,7 +885,7 @@ ${datesFormatted}
                 }}
                 className="w-full py-2.5 bg-primary hover:bg-primary text-white rounded-xl font-bold text-xs cursor-pointer shadow-xs flex items-center justify-center gap-1.5 transition-all active:scale-95"
               >
-                <span>تسجيل كفاتورة غير مدفوعة (Mark Unpaid)</span>
+                <span>{_t('تسجيل كفاتورة غير مدفوعة', 'Mark as Unpaid Invoice', 'Als unbezahlte Rechnung markieren')}</span>
               </button>
 
               <button
@@ -853,14 +900,18 @@ ${datesFormatted}
                     amountPaid: customProrateAmount,
                     lessonDates: prorateModalItem.lessonDates,
                     lessonIds: prorateModalItem.lessonIds,
-                    notes: `دفع جزئي مرن (${prorateModalItem.lessonDates.length}/${prorateModalItem.cycleLength} حصص)`
+                    notes: _t(
+                      `دفع جزئي مرن (${prorateModalItem.lessonDates.length}/${prorateModalItem.cycleLength} حصص)`,
+                      `Flexible prorated payment (${prorateModalItem.lessonDates.length}/${prorateModalItem.cycleLength} lessons)`,
+                      `Anteilige Zahlung (${prorateModalItem.lessonDates.length}/${prorateModalItem.cycleLength} Lektionen)`
+                    )
                   });
                   setProrateModalItem(null);
                   confetti({ particleCount: 50, spread: 50 });
                 }}
                 className="w-full py-2.5 bg-primary hover:bg-primary-hover text-white rounded-xl font-bold text-xs cursor-pointer shadow-xs flex items-center justify-center gap-1.5 transition-all active:scale-95"
               >
-                <span>تسجيل كمدفوع بالكامل فوراً (Mark Paid Now)</span>
+                <span>{_t('تسجيل كمدفوع بالكامل فوراً', 'Mark Paid Now', 'Sofort als bezahlt markieren')}</span>
               </button>
 
               <button
@@ -868,7 +919,7 @@ ${datesFormatted}
                 onClick={() => setProrateModalItem(null)}
                 className="w-full py-2 bg-surface-hover text-text-main rounded-xl font-bold text-xs cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
               >
-                <span>إلغاء (Cancel)</span>
+                <span>{_t('إلغاء', 'Cancel', 'Abbrechen')}</span>
               </button>
             </div>
           </div>

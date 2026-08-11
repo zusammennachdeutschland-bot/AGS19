@@ -6,10 +6,12 @@ import {
 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart as RePieChart, Pie, Cell } from 'recharts';
 import { Lesson } from '../types';
+import { calculateOverallAttendance } from '../utils/lessonUtils';
 import confetti from 'canvas-confetti';
 
 export const ReportsView: React.FC = () => {
-  const { lessons, updateLesson, profile, openLessonControl, t } = useApp();
+  const { lessons, updateLesson, profile, openLessonControl, t, groups, students, payments } = useApp();
+  const [showDebugModal, setShowDebugModal] = useState(false);
 
   const [activeFilter, setActiveFilter] = useState<'all' | 'this_week' | 'paid' | 'unpaid'>('all');
 
@@ -72,13 +74,8 @@ export const ReportsView: React.FC = () => {
   });
 
   // Overall Financial & Session Metrics
-  const totalCollectedRevenue = lessons
-    .filter(l => l.status === 'completed' || l.amountPaid > 0)
-    .reduce((sum, l) => sum + (l.amountPaid || 0), 0);
-
-  const totalUnpaidAmount = lessons
-    .filter(l => l.paymentStatus !== 'paid')
-    .reduce((sum, l) => sum + Math.max(0, (l.amountDue || 0) - (l.amountPaid || 0)), 0);
+  const totalCollectedRevenue = payments.filter(p => p.status === 'paid').reduce((sum, p) => sum + (p.amountPaid || p.amountDue || 0), 0);
+  const totalUnpaidAmount = payments.filter(p => p.status !== 'paid').reduce((sum, p) => sum + p.amountDue, 0);
 
   const completedSessionsCount = lessons.filter(l => l.status === 'completed').length;
   const cancelledSessionsCount = lessons.filter(l => l.status === 'cancelled').length;
@@ -99,8 +96,23 @@ export const ReportsView: React.FC = () => {
 
   // Revenue chart data by week or month
   const chartData = Object.entries(weeksGrouped).map(([weekLabel, weekLessons]) => {
-    const collected = weekLessons.reduce((sum, l) => sum + (l.amountPaid || 0), 0);
-    const unpaid = weekLessons.reduce((sum, l) => sum + (l.paymentStatus !== 'paid' ? (l.amountDue - l.amountPaid) : 0), 0);
+    const sampleLessonDate = new Date(weekLessons[0].date);
+    const wStart = getWeekStart(sampleLessonDate);
+    const wEnd = new Date(wStart);
+    wEnd.setDate(wStart.getDate() + 6);
+    const wStartStr = wStart.toISOString().split('T')[0];
+    const wEndStr = wEnd.toISOString().split('T')[0];
+
+    const collected = payments.filter(p => p.status === 'paid').filter(p => {
+      const d = (p.paidDate || p.dueDate || '').substring(0, 10);
+      return d >= wStartStr && d <= wEndStr;
+    }).reduce((sum, p) => sum + (p.amountPaid || p.amountDue || 0), 0);
+
+    const unpaid = payments.filter(p => p.status !== 'paid').filter(p => {
+      const d = (p.dueDate || '').substring(0, 10);
+      return d >= wStartStr && d <= wEndStr;
+    }).reduce((sum, p) => sum + p.amountDue, 0);
+
     return {
       name: weekLabel.split(' ')[1] || weekLabel,
       Einnahmen: collected,
@@ -109,10 +121,11 @@ export const ReportsView: React.FC = () => {
   }).reverse();
 
   // Attendance breakdown
+  const { presentCount, lateCount, absentCount } = calculateOverallAttendance(lessons, students);
   const attendanceData = [
-    { name: 'Anwesend', value: lessons.filter(l => l.report?.attendanceStatus === 'present').length || 12, color: '#10B981' },
-    { name: 'Verspätet', value: lessons.filter(l => l.report?.attendanceStatus === 'late').length || 2, color: '#F59E0B' },
-    { name: 'Abwesend', value: lessons.filter(l => l.report?.attendanceStatus === 'absent').length || 1, color: '#EF4444' }
+    { name: 'Anwesend', value: presentCount, color: '#10B981' },
+    { name: 'Verspätet', value: lateCount, color: '#F59E0B' },
+    { name: 'Abwesend', value: absentCount, color: '#EF4444' }
   ];
 
   const handlePrintReport = () => {
@@ -267,8 +280,22 @@ export const ReportsView: React.FC = () => {
           </div>
         ) : (
           Object.entries(weeksGrouped).map(([weekTitle, weekLessons]) => {
-            const weekRevenue = weekLessons.reduce((sum, l) => sum + (l.amountPaid || 0), 0);
-            const weekUnpaid = weekLessons.reduce((sum, l) => sum + (l.paymentStatus !== 'paid' ? (l.amountDue - l.amountPaid) : 0), 0);
+            const sampleLessonDate = new Date(weekLessons[0].date);
+            const wStart = getWeekStart(sampleLessonDate);
+            const wEnd = new Date(wStart);
+            wEnd.setDate(wStart.getDate() + 6);
+            const wStartStr = wStart.toISOString().split('T')[0];
+            const wEndStr = wEnd.toISOString().split('T')[0];
+
+            const weekRevenue = payments.filter(p => p.status === 'paid').filter(p => {
+              const d = (p.paidDate || p.dueDate || '').substring(0, 10);
+              return d >= wStartStr && d <= wEndStr;
+            }).reduce((sum, p) => sum + (p.amountPaid || p.amountDue || 0), 0);
+
+            const weekUnpaid = payments.filter(p => p.status !== 'paid').filter(p => {
+              const d = (p.dueDate || '').substring(0, 10);
+              return d >= wStartStr && d <= wEndStr;
+            }).reduce((sum, p) => sum + p.amountDue, 0);
 
             return (
               <div key={weekTitle} className="space-y-2 border border-slate-100 dark:border-surface-border/60 rounded-xl overflow-hidden bg-background/25 dark:bg-surface/40">

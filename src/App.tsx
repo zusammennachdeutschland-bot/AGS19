@@ -6,6 +6,8 @@ import { TodaysProgressTimeline } from './components/TodaysProgressTimeline';
 import { DailyStats } from './components/DailyStats';
 import { PaymentAlertsCard } from './components/PaymentAlertsCard';
 import { TomorrowsLessonsWidget } from './components/TomorrowsLessonsWidget';
+import { AvailableTodayWidget } from './components/AvailableTodayWidget';
+
 import { SmartDailySummaryWidget } from './components/SmartDailySummaryWidget';
 import { QuickTodoWidget } from './components/QuickTodoWidget';
 import { InspirationCardWidget } from './components/InspirationCardWidget';
@@ -15,6 +17,8 @@ import { PaymentsView } from './components/PaymentsView';
 import { ReportsView } from './components/ReportsView';
 import { SessionHistoryView } from './components/SessionHistoryView';
 import { SettingsView } from './components/SettingsView';
+import { FreeTimeSlotsView } from './components/FreeTimeSlotsView';
+
 import { AnimatePresence, motion } from 'motion/react';
 import { BottomNav } from './components/BottomNav';
 import { LessonControlModal } from './components/LessonControlModal';
@@ -26,6 +30,7 @@ import { StartLessonNowModal } from './components/StartLessonNowModal';
 import { GlobalSearchModal } from './components/GlobalSearchModal';
 import { RecentlyDeletedModal } from './components/RecentlyDeletedModal';
 import { SetupWizard } from './components/SetupWizard';
+import { BackupModal } from './components/BackupModal';
 
 import { useLessonReminders } from './hooks/useLessonReminders';
 import { Capacitor } from '@capacitor/core';
@@ -48,7 +53,8 @@ function MainApp() {
     isAddQuickLessonModalOpen, setIsAddQuickLessonModalOpen,
     isStartLessonNowModalOpen, setIsStartLessonNowModalOpen,
     isAddStudentModalOpen, setIsAddStudentModalOpen,
-    isAddGroupModalOpen, setIsAddGroupModalOpen
+    isAddGroupModalOpen, setIsAddGroupModalOpen,
+    isBackupModalOpen, setIsBackupModalOpen
   } = useApp();
 
 
@@ -128,6 +134,8 @@ function MainApp() {
 
               {/* Tomorrow's Lessons Compact Widget */}
               <TomorrowsLessonsWidget />
+              <AvailableTodayWidget />
+
 
               {/* Weekly & Monthly Statistics */}
               <DailyStats />
@@ -151,6 +159,8 @@ function MainApp() {
           {activeTab === 'reports' && <ReportsView />}
 
           {activeTab === 'settings' && <SettingsView />}
+          {activeTab === 'freeTime' && <FreeTimeSlotsView />}
+
             </motion.div>
           </AnimatePresence>
         </main>
@@ -165,6 +175,7 @@ function MainApp() {
         {isStartLessonNowModalOpen && <StartLessonNowModal onClose={() => setIsStartLessonNowModalOpen(false)} />}
         {isAddStudentModalOpen && <AddStudentModal onClose={() => setIsAddStudentModalOpen(false)} />}
         {isAddGroupModalOpen && <AddGroupModal onClose={() => setIsAddGroupModalOpen(false)} />}
+        {isBackupModalOpen && <BackupModal onClose={() => setIsBackupModalOpen(false)} />}
         <GlobalSearchModal />
         <RecentlyDeletedModal />
         <SetupWizard />
@@ -186,11 +197,11 @@ export default function App() {
       try {
         await migrateFromLocalStorageToIndexedDB();
         const keys = [
-          'dl_theme', 'dl_accent_color', 'dl_quick_todos', 'dl_language', 'dl_profile',
+          'dl_theme', 'dl_dark_theme_variant', 'dl_accent_color', 'dl_quick_todos', 'dl_language', 'dl_profile',
           'dl_groups', 'dl_students', 'dl_lessons', 'dl_payments',
-          'dl_notifications', 'dl_inspiration_settings', 'dl_inspiration_messages',
+          'dl_notifications', 'dl_notification_settings', 'dl_inspiration_settings', 'dl_inspiration_messages',
           'dl_last_backup_time', 'dl_dismissed_dashboard_lessons', 'dl_recently_deleted',
-          'dl_active_lesson_session', 'dl_notified_lesson_alerts'
+          'dl_active_lesson_session', 'dl_notified_lesson_alerts', 'dl_local_backup_data'
         ];
         
         const data: any = {};

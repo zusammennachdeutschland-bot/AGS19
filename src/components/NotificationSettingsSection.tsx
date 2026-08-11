@@ -130,36 +130,41 @@ export const NotificationSettingsSection: React.FC<Props> = ({ onBack }) => {
   return (
     <div className="space-y-4  animate-fadeIn">
       {/* Top Navigation Header */}
-      <div className="flex items-center justify-between pb-4 border-b border-surface-border">
-        <div className="flex items-center gap-3">
+      <div className="pb-3.5 mb-5 border-b border-surface-border/80 dark:border-surface-border">
+        <div className="flex items-center justify-between gap-3 min-w-0">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <button
+              type="button"
+              onClick={onBack}
+              className="lg:hidden p-2 rounded-xl bg-surface-hover hover:bg-slate-200 dark:hover:bg-slate-700 text-text-main hover:text-primary transition-all cursor-pointer flex items-center justify-center shrink-0 shadow-2xs border border-surface-border/60 active:scale-95"
+              title={_t('العودة للإعدادات', 'Back to Settings', 'العودة للإعدادات')}
+            >
+              <BackIcon className="w-4 h-4" />
+            </button>
+
+            <div className="p-2 rounded-xl bg-primary-soft text-primary dark:text-primary border border-primary-border/50 shrink-0">
+              <Bell className="w-4.5 h-4.5" />
+            </div>
+
+            <h2 className="text-base sm:text-lg font-black text-text-main truncate">
+              {_t('إعدادات الإشعارات والتنبيهات', 'Notification & Alert Settings', 'Benachrichtigungseinstellungen')}
+            </h2>
+          </div>
+
           <button
             type="button"
-            onClick={onBack}
-            className="p-2.5 rounded-xl bg-surface-hover hover:bg-slate-200 dark:hover:bg-slate-700 text-text-main transition-all cursor-pointer flex items-center justify-center shrink-0 shadow-2xs"
-            title="العودة للإعدادات"
+            onClick={handleManualRebuild}
+            disabled={isRebuilding}
+            className="px-3 py-2 rounded-xl bg-primary/10 hover:bg-primary/20 text-primary dark:text-primary text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50 shrink-0"
           >
-            <BackIcon className="w-5 h-5" />
+            <RefreshCw className={`w-3.5 h-3.5 ${isRebuilding ? 'animate-spin' : ''}`} />
+            <span className="hidden sm:inline">{_t('تحديث الجدول', 'Sync Schedule', 'Zeitplan synchronisieren')}</span>
           </button>
-          <div>
-            <h2 className="text-lg font-black text-text-main flex items-center gap-2">
-              <Bell className="w-5 h-5 text-primary" />
-              إعدادات الإشعارات والتنبيهات
-            </h2>
-            <p className="text-xs text-text-muted mt-0.5">
-              تخصيص جميع إشعارات النظام، مواعيد التذكير بالححص، وتصريحات Android
-            </p>
-          </div>
         </div>
 
-        <button
-          type="button"
-          onClick={handleManualRebuild}
-          disabled={isRebuilding}
-          className="px-3 py-2 rounded-xl bg-primary/10 hover:bg-primary/20 text-primary dark:text-primary text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
-        >
-          <RefreshCw className={`w-3.5 h-3.5 ${isRebuilding ? 'animate-spin' : ''}`} />
-          إعادة بناء الجدول
-        </button>
+        <p className="text-xs text-text-muted mt-1.5 leading-relaxed">
+          {_t('تخصيص جميع إشعارات النظام، مواعيد التذكير بالححص، وتصريحات Android', 'Customize all system notifications, lesson reminders, and device permissions', 'Systembenachrichtigungen, Lektionserinnerungen und Geräteeinstellungen anpassen')}
+        </p>
       </div>
 
       {/* Notification Rebuild Feedback Toast */}
@@ -248,7 +253,7 @@ export const NotificationSettingsSection: React.FC<Props> = ({ onBack }) => {
           </div>
 
           <div className="text-right dir-ltr">
-            <span className="inline-block px-3 py-1 rounded-lg bg-surface/80 dark:bg-surface/80 border border-surface-border text-xs font-black text-primary dark:text-primary dir-rtl">
+            <span className="inline-block px-3 py-1 rounded-lg bg-surface/80 dark:bg-surface/80 border border-surface-border text-xs font-black text-primary dark:text-primary">
               🕒 {nextScheduledItem.scheduledAt}
             </span>
           </div>
@@ -527,14 +532,14 @@ export const NotificationSettingsSection: React.FC<Props> = ({ onBack }) => {
             <div className="p-5 text-center rounded-xl bg-surface-hover/40 border border-dashed border-surface-border dark:border-surface-border-soft">
               <CheckCircle2 className="w-8 h-8 text-text-muted/70 mx-auto mb-2" />
               <p className="text-xs font-bold text-slate-600 dark:text-slate-300">
-                لا توجد إشعارات معلقة في الانتظار حالياً
+                {_t('لا توجد إشعارات معلقة في الانتظار حالياً', 'No pending scheduled notifications currently', 'Derzeit keine ausstehenden Benachrichtigungen')}
               </p>
               <p className="text-[11px] text-text-muted/70 mt-1">
-                اضغط على "إعادة بناء الجدول" لأداء فحص فوري وجدولة الحصص القادمة.
+                {_t('اضغط على "إعادة بناء الجدول" لأداء فحص فوري وجدولة الحصص القادمة.', 'Click "Rebuild Schedules" to perform an immediate check and schedule upcoming lessons.', 'Klicken Sie auf "Zeitpläne neu erstellen", um anstehende Lektionen zu planen.')}
               </p>
             </div>
           ) : (
-            <div className="space-y-2 max-h-72 overflow-y-auto custom-scrollbar dir-rtl pl-1">
+            <div className="space-y-2 max-h-72 overflow-y-auto custom-scrollbar pl-1">
               {pendingScheduledNotifications.map(item => (
                 <div
                   key={item.id}

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
-import { Home, Calendar, Users, MoreHorizontal, Wallet, BarChart2, Settings, Zap, History, Play } from 'lucide-react';
+import { Home, Calendar, Users, MoreHorizontal, Wallet, BarChart2, Settings, Zap, History, Play, Clock } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 export const BottomNav: React.FC = () => {
@@ -285,6 +285,17 @@ export const BottomNav: React.FC = () => {
                     transition={{ type: 'spring', stiffness: 450, damping: 25 }}
                     className="absolute bottom-14 right-0 w-44 bg-surface/95 dark:bg-background/95 backdrop-blur-xl border border-surface-border/40 dark:border-surface-border/60 rounded-[20px] shadow-xl p-1.5 space-y-1.5 z-50 origin-bottom-right"
                   >
+                    <button
+                      onClick={() => handleTabClick('freeTime')}
+                      className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-bold transition-colors cursor-pointer ${
+                        activeTab === 'freeTime'
+                          ? 'bg-primary-soft text-primary dark:bg-primary-soft dark:text-primary'
+                          : 'hover:bg-background dark:hover:bg-slate-900 text-text-main'
+                      }`}
+                    >
+                      <Clock className="w-4 h-4 text-primary" />
+                      <span>{t('nav_free_time') || 'Free Time'}</span>
+                    </button>
                     <button
                       onClick={() => handleTabClick('history')}
                       className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-bold transition-colors cursor-pointer ${

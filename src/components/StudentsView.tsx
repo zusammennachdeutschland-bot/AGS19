@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { Student, Group } from '../types';
-import { Users, UserPlus, Search, Phone, Send, ChevronRight, Plus, MapPin, Video, FolderCheck, X, Trash2, Edit3, Archive, RotateCcw, MoreVertical, User, FileText, Award, DollarSign, Bot } from 'lucide-react';
+import { Users, UserPlus, Search, Phone, Send, ChevronRight, Plus, MapPin, Video, FolderCheck, X, Trash2, Edit3, Archive, RotateCcw, MoreVertical, User, FileText, Award, DollarSign, Bot, ChevronDown, Filter } from 'lucide-react';
 import { StudentProfileModal } from './StudentProfileModal';
 import { GroupProfileModal } from './GroupProfileModal';
 import { DeleteConfirmModal } from './DeleteConfirmModal';
 import { AiImportModal } from './AiImportModal';
 import { formatGroupScheduleDisplay, getDayNumber } from '../utils/scheduleUtils';
+import { DEFAULT_OFFLINE_AVATAR } from '../data/avatarPresets';
 
 export const StudentsView: React.FC = () => {
   const { 
@@ -223,46 +224,23 @@ export const StudentsView: React.FC = () => {
 
       {/* DAILY FILTER FOR GROUPS */}
       {activeSegment === 'groups' && (
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar text-xs font-bold">
-          <button
-            type="button"
-            onClick={() => setSelectedGroupDay('all')}
-            className={`px-3 py-1.5 rounded-xl transition-all cursor-pointer shrink-0 ${
-              selectedGroupDay === 'all'
-                ? 'bg-primary text-white shadow-xs'
-                : 'bg-surface-hover text-text-muted hover:bg-slate-200 dark:hover:bg-slate-700'
-            }`}
+        <div className="relative">
+          <select
+            value={selectedGroupDay}
+            onChange={(e) => setSelectedGroupDay(e.target.value)}
+            className="w-full bg-surface border border-surface-border text-text-main text-xs font-bold rounded-xl px-4 py-2.5 appearance-none focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary shadow-2xs cursor-pointer"
           >
-            {t('students_all_days')}
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setSelectedGroupDay('today')}
-            className={`px-3 py-1.5 rounded-xl transition-all cursor-pointer shrink-0 flex items-center gap-1 ${
-              selectedGroupDay === 'today'
-                ? 'bg-primary text-white shadow-xs'
-                : 'bg-primary-soft dark:bg-primary-soft text-primary dark:text-primary border border-primary-border dark:border-primary-border hover:bg-primary-soft'
-            }`}
-          >
-            <span>{t('students_today')}</span>
-            <span className="text-[10px] font-mono opacity-80">({GERMAN_WEEKDAYS.find(w => w.dayNum === new Date().getDay())?.short})</span>
-          </button>
-
-          {GERMAN_WEEKDAYS.map(w => (
-            <button
-              key={w.short}
-              type="button"
-              onClick={() => setSelectedGroupDay(w.short)}
-              className={`px-3 py-1.5 rounded-xl transition-all cursor-pointer shrink-0 ${
-                selectedGroupDay === w.short || selectedGroupDay === w.full
-                  ? 'bg-primary text-white shadow-xs'
-                  : 'bg-surface-hover text-text-muted hover:bg-slate-200 dark:hover:bg-slate-700'
-              }`}
-            >
-              {w.short}
-            </button>
-          ))}
+            <option value="all">{t('students_all_days') || 'All Days'}</option>
+            <option value="today">{t('students_today') || 'Today'} ({GERMAN_WEEKDAYS.find(w => w.dayNum === new Date().getDay())?.short})</option>
+            {GERMAN_WEEKDAYS.map(w => (
+              <option key={w.short} value={w.short}>
+                {_t(w.full, w.full, w.full)}
+              </option>
+            ))}
+          </select>
+          <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
+            <ChevronDown className="w-4 h-4 text-text-muted" />
+          </div>
         </div>
       )}
 
@@ -302,7 +280,8 @@ export const StudentsView: React.FC = () => {
                 >
                   <div className="flex items-center gap-3.5 min-w-0">
                     <img
-                      src={student.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=150'}
+                      src={student.avatarUrl || DEFAULT_OFFLINE_AVATAR}
+                      onError={(e) => { e.currentTarget.src = DEFAULT_OFFLINE_AVATAR; }}
                       alt={student.name}
                       className="w-11 h-11 rounded-lg border border-slate-100 dark:border-surface-border object-cover shrink-0"
                     />
@@ -499,17 +478,17 @@ export const StudentsView: React.FC = () => {
                     {group.type === 'online' ? <Video className="w-5 h-5" /> : <MapPin className="w-5 h-5" />}
                   </div>
 
-                  <div className="min-w-0 space-y-0.5">
-                    <div className="flex items-center gap-2">
-                      <h3 className="text-sm font-black text-text-main group-hover:text-primary transition-colors truncate">
-                        {group.name}
-                      </h3>
-                      <span className="text-[10px] font-black text-primary dark:text-primary bg-primary-soft dark:bg-primary-soft border border-primary-border/50 dark:border-primary-border px-1.5 py-0.5 rounded-md shrink-0">
-                        {group.grade}
-                      </span>
-                    </div>
+                  <div className="flex-1 min-w-0 space-y-1">
+                    <h3 className="text-sm sm:text-base font-black text-text-main group-hover:text-primary transition-colors break-words leading-snug">
+                      {group.name}
+                    </h3>
 
-                    <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-text-muted">
+                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-text-muted">
+                      {group.grade && (
+                        <span className="text-[10px] font-black text-primary dark:text-primary bg-primary-soft dark:bg-primary-soft border border-primary-border/50 dark:border-primary-border px-1.5 py-0.5 rounded-md shrink-0">
+                          {group.grade}
+                        </span>
+                      )}
                       <span className="font-extrabold text-text-main bg-surface-hover border border-surface-border-soft px-1.5 py-0.5 rounded text-[10px]">
                         {count} {t('daily_stats_students')}
                       </span>

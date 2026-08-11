@@ -2,6 +2,8 @@ import { storage } from './storageService';
 
 const STORAGE_KEYS = [
   'dl_theme',
+  'dl_dark_theme_variant',
+  'dl_accent_color',
   'dl_quick_todos',
   'dl_language',
   'dl_profile',
@@ -48,7 +50,7 @@ export async function migrateFromLocalStorageToIndexedDB(): Promise<void> {
       if (value !== null) {
         try {
           // Assume JSON parsing except for theme, language, dl_last_backup_time
-          if (key === 'dl_theme' || key === 'dl_language' || key === 'dl_last_backup_time' || key === 'dl_local_backup_data') {
+          if (key === 'dl_theme' || key === 'dl_dark_theme_variant' || key === 'dl_accent_color' || key === 'dl_language' || key === 'dl_last_backup_time' || key === 'dl_local_backup_data') {
             await storage.setItem(key, value);
           } else {
             await storage.setItem(key, JSON.parse(value));

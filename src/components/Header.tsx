@@ -1,10 +1,14 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { Bell, RefreshCw, CheckCircle2, Camera, Clock, Search, Trash2 } from 'lucide-react';
+import { DEFAULT_OFFLINE_AVATAR } from '../data/avatarPresets';
 import { NotificationsModal } from './NotificationsModal';
 import { motion } from 'motion/react';
 
 export const Header: React.FC = () => {
+  const { language } = useApp();
+  const _t = (ar: string, en: string, de?: string) => language === 'ar' ? ar : language === 'de' ? (de || en) : en;
+
   const { 
     activeTab,
     profile, 
@@ -97,40 +101,41 @@ export const Header: React.FC = () => {
       />
 
       {/* Compact Premium Dashboard Header */}
-      <header className="bg-surface dark:bg-black border-b border-surface-border px-4 py-2.5 sticky top-0 z-30 transition-colors">
-        <div className="flex items-center justify-between gap-3 max-w-lg mx-auto">
+      <header className="bg-surface dark:bg-black border-b border-surface-border/80 px-3.5 py-2.5 sticky top-0 z-30 transition-colors shadow-2xs">
+        <div className="flex items-center justify-between gap-2.5 max-w-lg mx-auto">
           {/* Profile & Greeting / Tab Indicator */}
-          <div className="flex items-center gap-3 min-w-0">
+          <div className="flex items-center gap-2.5 min-w-0 flex-1">
             <div className="relative group shrink-0">
               <img
-                src={profile.avatarUrl}
+                src={profile.avatarUrl || DEFAULT_OFFLINE_AVATAR}
+                onError={(e) => { e.currentTarget.src = DEFAULT_OFFLINE_AVATAR; }}
                 alt={profile.displayName}
-                className="w-10 h-10 rounded-full object-cover ring-2 ring-slate-100 dark:ring-slate-900 shadow-2xs"
+                className="w-10 h-10 rounded-full object-cover ring-2 ring-primary/25 dark:ring-primary/40 shadow-xs transition-transform group-hover:scale-105"
               />
-              <span className="absolute bottom-0 right-0 w-3 h-3 bg-primary border-2 border-white dark:border-black rounded-full shadow-2xs animate-pulse" />
+              <span className="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 border-2 border-white dark:border-black rounded-full shadow-2xs" />
               <label className="absolute inset-0 bg-black/40 rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer">
                 <Camera className="w-3.5 h-3.5 text-white" />
                 <input type="file" accept="image/*" onChange={handleAvatarUpload} className="hidden" />
               </label>
             </div>
- 
-            <div className="leading-tight min-w-0">
+
+            <div className="leading-tight min-w-0 flex-1 pr-1">
               {activeTab === 'home' ? (
                 <>
-                  <p className="text-[9px] font-black uppercase tracking-wider text-text-muted/70 dark:text-slate-500 flex items-center gap-1">
-                    <span>{t('greeting')}</span>
+                  <p className="text-[10px] font-black uppercase tracking-wider text-primary/80 dark:text-primary-soft flex items-center gap-1">
+                    <span>{t('greeting') || 'WELCOME'}</span>
                     <span className="inline-block animate-wave text-[11px]">👋</span>
                   </p>
-                  <h1 className="text-sm font-black text-slate-900 dark:text-slate-100 truncate max-w-[130px] sm:max-w-[160px]">
+                  <h1 className="text-sm sm:text-base font-extrabold text-slate-900 dark:text-slate-100 leading-snug whitespace-normal break-words">
                     {profile.displayName}
                   </h1>
                 </>
               ) : (
                 <>
-                  <p className="text-[9px] font-black uppercase tracking-wider text-primary dark:text-primary">
+                  <p className="text-[9px] font-black uppercase tracking-widest text-primary dark:text-primary">
                     AGS19
                   </p>
-                  <h1 className="text-sm font-black text-slate-900 dark:text-slate-100 capitalize truncate max-w-[130px] sm:max-w-[160px]">
+                  <h1 className="text-sm sm:text-base font-black text-slate-900 dark:text-slate-100 capitalize leading-snug whitespace-normal break-words">
                     {activeTab === 'schedule' ? (t('nav_schedule') || 'Termine')
                      : activeTab === 'students' ? (t('nav_students') || 'Schüler')
                      : activeTab === 'history' ? (t('nav_history') || 'Sitzungen')
@@ -143,64 +148,64 @@ export const Header: React.FC = () => {
               )}
             </div>
           </div>
- 
+
           {/* Right Action Controls: Unified Command Pill with Spring Animations */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 shrink-0">
             {/* Global Search Button */}
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               transition={{ type: 'spring', stiffness: 400, damping: 17 }}
               onClick={() => setIsGlobalSearchOpen(true)}
-              className="p-2.5 rounded-full bg-background dark:bg-background hover:bg-surface-hover text-text-main border border-surface-border transition-colors cursor-pointer"
+              className="p-2 sm:p-2.5 rounded-full bg-background dark:bg-background hover:bg-surface-hover text-text-main border border-surface-border/80 transition-colors cursor-pointer"
               aria-label="Global Search"
               title="Suchen..."
             >
-              <Search className="w-4 h-4" />
+              <Search className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </motion.button>
- 
+
             {/* Recently Deleted / Trash Bin */}
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               transition={{ type: 'spring', stiffness: 400, damping: 17 }}
               onClick={() => setIsRecentlyDeletedModalOpen(true)}
-              className="relative p-2.5 rounded-full bg-background dark:bg-background hover:bg-surface-hover text-text-main border border-surface-border transition-colors cursor-pointer"
+              className="relative p-2 sm:p-2.5 rounded-full bg-background dark:bg-background hover:bg-surface-hover text-text-main border border-surface-border/80 transition-colors cursor-pointer"
               aria-label="Recently Deleted"
               title="Zuletzt gelöscht"
             >
-              <Trash2 className="w-4 h-4" />
+              <Trash2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               {deletedCount > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-primary text-white font-black text-[9px] rounded-full flex items-center justify-center ring-2 ring-white dark:ring-black">
+                <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 sm:w-4 sm:h-4 bg-primary text-white font-black text-[9px] rounded-full flex items-center justify-center ring-2 ring-white dark:ring-black">
                   {deletedCount}
                 </span>
               )}
             </motion.button>
- 
+
             {/* Refresh Data Button */}
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               transition={{ type: 'spring', stiffness: 400, damping: 17 }}
               onClick={handleRefresh}
-              className="p-2.5 rounded-full bg-background dark:bg-background hover:bg-surface-hover text-text-main border border-surface-border transition-colors cursor-pointer flex items-center justify-center shrink-0"
-              title="Daten aktualisieren"
+              className="p-2 sm:p-2.5 rounded-full bg-background dark:bg-background hover:bg-surface-hover text-text-main border border-surface-border/80 transition-colors cursor-pointer flex items-center justify-center shrink-0"
+              title={_t("تحديث البيانات", "Refresh Data", "Daten aktualisieren")}
             >
-              <RefreshCw className="w-4 h-4" />
+              <RefreshCw className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </motion.button>
- 
+
             {/* Notification Bell */}
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               transition={{ type: 'spring', stiffness: 400, damping: 17 }}
               onClick={() => setShowNotifications(true)}
-              className="relative p-2.5 rounded-full bg-background dark:bg-background hover:bg-surface-hover text-text-main border border-surface-border transition-colors cursor-pointer"
+              className="relative p-2 sm:p-2.5 rounded-full bg-background dark:bg-background hover:bg-surface-hover text-text-main border border-surface-border/80 transition-colors cursor-pointer"
               aria-label="Notifications"
             >
-              <Bell className="w-4 h-4" />
+              <Bell className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               {unreadCount > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 text-white font-black text-[9px] rounded-full flex items-center justify-center ring-2 ring-white dark:ring-black animate-bounce">
+                <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 sm:w-4 sm:h-4 bg-red-500 text-white font-black text-[9px] rounded-full flex items-center justify-center ring-2 ring-white dark:ring-black animate-bounce">
                   {unreadCount}
                 </span>
               )}

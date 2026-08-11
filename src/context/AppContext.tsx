@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { 
   TeacherProfile, Group, Student, Lesson, PaymentRecord, NotificationItem, 
-  LessonReport, StudentDocument, PaymentStatus, LessonStatus, AttendanceStatus, HomeworkStatus, SyncStatus, BackupData, BackupIntegrityReport, StudentPaymentDetail, AppLanguage, AccentColor, RecentlyDeletedData, ActiveLessonSession,
+  LessonReport, StudentDocument, PaymentStatus, LessonStatus, AttendanceStatus, HomeworkStatus, SyncStatus, BackupData, BackupIntegrityReport, StudentPaymentDetail, AppLanguage, AccentColor, DarkThemeVariant, RecentlyDeletedData, ActiveLessonSession,
   InspirationSettings, InspirationMessage, InspirationFrequency, InspirationDisplayMethod, InspirationSource,
   NotificationSettings, ScheduledNotificationItem
 } from '../types';
@@ -33,11 +33,14 @@ interface AppContextType {
   // Navigation & Theme & Language & Accent
   theme: 'light' | 'dark';
   toggleTheme: () => void;
+  darkThemeVariant: DarkThemeVariant;
+  setDarkThemeVariant: (variant: DarkThemeVariant) => void;
   language: AppLanguage;
   setLanguage: (lang: AppLanguage) => void;
   accentColor: AccentColor;
   setAccentColor: (color: AccentColor) => void;
   t: (key: TranslationKey) => string;
+  _t: (ar: string, en: string, de?: string) => string;
   activeTab: 'home' | 'schedule' | 'students' | 'history' | 'payments' | 'reports' | 'settings';
   setActiveTab: (tab: 'home' | 'schedule' | 'students' | 'history' | 'payments' | 'reports' | 'settings') => void;
 
@@ -216,6 +219,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode, initialData: any
     return saved !== null && saved !== undefined ? saved : 'light';
   });
 
+  const [darkThemeVariant, setDarkThemeVariantState] = useState<DarkThemeVariant>(() => {
+    const saved = initialData['dl_dark_theme_variant'];
+    return saved !== null && saved !== undefined ? saved : 'oled';
+  });
+
+  const setDarkThemeVariant = (variant: DarkThemeVariant) => {
+    setDarkThemeVariantState(variant);
+    storage.setItem('dl_dark_theme_variant', variant);
+  };
+
   const [accentColor, setAccentColorState] = useState<AccentColor>(() => {
     const saved = initialData['dl_accent_color'];
     return saved !== null && saved !== undefined ? saved : 'blue';
@@ -227,10 +240,24 @@ export const AppProvider: React.FC<{ children: React.ReactNode, initialData: any
   };
 
   useEffect(() => {
-    const classes = ['accent-blue', 'accent-green', 'accent-purple', 'accent-orange', 'accent-red', 'accent-teal', 'accent-indigo', 'accent-rose', 'accent-amber', 'accent-emerald', 'accent-fuchsia', 'accent-cyan', 'accent-violet', 'accent-slate'];
+    const darkVariants = [
+      'dark-variant-oled', 'dark-variant-midnight', 'dark-variant-cyberpunk',
+      'dark-variant-emerald', 'dark-variant-crimson', 'dark-variant-amber', 'dark-variant-abyss'
+    ];
+    darkVariants.forEach(v => document.documentElement.classList.remove(v));
+    document.documentElement.classList.add(`dark-variant-${darkThemeVariant}`);
+  }, [darkThemeVariant]);
+
+  useEffect(() => {
+    const classes = [
+      'accent-blue', 'accent-darkblue', 'accent-navy', 'accent-sky', 'accent-indigo', 
+      'accent-violet', 'accent-purple', 'accent-fuchsia', 'accent-pink', 'accent-rose', 
+      'accent-red', 'accent-crimson', 'accent-bloodorange', 'accent-orange', 'accent-amber', 
+      'accent-yellow', 'accent-lime', 'accent-neon-green', 'accent-green', 'accent-emerald', 
+      'accent-teal', 'accent-cyan', 'accent-slate'
+    ];
     classes.forEach(c => document.documentElement.classList.remove(c));
     document.documentElement.classList.add(`accent-${accentColor}`);
-    
   }, [accentColor]);
 
   const [todos, setTodos] = useState<any[]>(() => {
@@ -275,7 +302,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode, initialData: any
   }, [language]);
 
   const t = (key: TranslationKey): string => {
-    return translations[language]?.[key] || translations['de']?.[key] || key;
+    const val = translations[language]?.[key] || translations['de']?.[key] || translations['en']?.[key] || translations['ar']?.[key];
+    if (val !== undefined && val !== null && val !== '') return val;
+    return '';
+  };
+
+  const _t = (ar: string, en: string, de?: string): string => {
+    return language === 'ar' ? ar : language === 'de' ? (de || en) : en;
   };
 
   // Initial state for fresh start with duplicate ID sanitization
@@ -1968,8 +2001,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode, initialData: any
           encoding: Encoding.UTF8
         });
         await Share.share({
-          title: 'AGS19 Teacher App Backup',
-          text: 'Backup Export Data (AGS19 Teacher App)',
+          title: 'AGS19 Backup',
+          text: 'Backup Export Data (AGS19)',
           url: savedFile.uri,
           dialogTitle: 'Export Backup JSON'
         });
@@ -2129,11 +2162,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode, initialData: any
         setTodos,
         theme,
         toggleTheme,
+        darkThemeVariant,
+        setDarkThemeVariant,
         language,
         setLanguage,
         accentColor,
         setAccentColor,
         t,
+        _t,
         activeTab,
         setActiveTab,
         isGlobalSearchOpen,

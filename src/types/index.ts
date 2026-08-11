@@ -9,7 +9,12 @@ export type LessonStatus = 'scheduled' | 'in_progress' | 'completed' | 'cancelle
 
 export type AppLanguage = 'ar' | 'en' | 'de';
 
-export type AccentColor = 'blue' | 'green' | 'purple' | 'orange' | 'red' | 'teal' | 'indigo' | 'rose' | 'amber' | 'emerald' | 'fuchsia' | 'cyan' | 'violet' | 'slate';
+export type AccentColor = 
+  | 'blue' | 'darkblue' | 'navy' | 'sky' | 'indigo' | 'violet' | 'purple' | 'fuchsia' 
+  | 'pink' | 'rose' | 'red' | 'crimson' | 'bloodorange' | 'orange' | 'amber' | 'yellow' 
+  | 'lime' | 'neon-green' | 'green' | 'emerald' | 'teal' | 'cyan' | 'slate';
+
+export type DarkThemeVariant = 'oled' | 'midnight' | 'cyberpunk' | 'emerald' | 'crimson' | 'amber' | 'abyss';
 
 export type PaymentStatus = 'paid' | 'pending' | 'partial';
 
@@ -33,6 +38,7 @@ export interface TeacherProfile {
   whatsappNumber?: string;
   isGoogleConnected: boolean;
   lastSyncedAt: string | null;
+  weeklyWorkingHours?: WeeklyWorkingHours;
   workingHours: {
     workingDays: number[]; // 1 = Mon, 7 = Sun
     startTime: string; // e.g. "09:00"
@@ -44,6 +50,23 @@ export interface TeacherProfile {
   enableBrowserPush?: boolean; // Browser push notifications
   parentMessageTemplates?: Record<string, string>;
 }
+
+
+export type DayWorkingHours = {
+  isOff: boolean;
+  startTime: string;
+  endTime: string;
+};
+
+export type WeeklyWorkingHours = {
+  0: DayWorkingHours;
+  1: DayWorkingHours;
+  2: DayWorkingHours;
+  3: DayWorkingHours;
+  4: DayWorkingHours;
+  5: DayWorkingHours;
+  6: DayWorkingHours;
+};
 
 export type PaymentCycle = 'per_lesson' | '4_lessons' | '8_lessons' | '12_lessons' | 'monthly';
 
