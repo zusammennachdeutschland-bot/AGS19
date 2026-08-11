@@ -72,7 +72,7 @@ jobs:
         run: |
           cd android
           echo "Regenerating gradle wrapper to fix corrupt jar..."
-          gradle wrapper
+          gradle wrapper --gradle-version 8.7
           chmod +x gradlew
           ./gradlew clean assembleDebug --stacktrace
           
