@@ -70,9 +70,19 @@ jobs:
           
       - name: Fix Corrupt Gradle Wrapper & Build APK
         run: |
-          cd android
-          echo "Regenerating gradle wrapper to fix corrupt jar..."
+          # 1. Generate the wrapper in an empty temp directory to avoid parsing build.gradle with Gradle 9.7
+          echo "Generating fresh gradle-wrapper.jar in isolated directory..."
+          mkdir -p /tmp/gradle-fix
+          cd /tmp/gradle-fix
           gradle wrapper --gradle-version 8.7
+          
+          # 2. Copy the fresh jar back into your repository
+          echo "Copying fixed jar to Android directory..."
+          cd $GITHUB_WORKSPACE/android
+          cp /tmp/gradle-fix/gradle/wrapper/gradle-wrapper.jar gradle/wrapper/
+          
+          # 3. Build the APK using the local, corrected 8.7 wrapper
+          echo "Building APK with fixed wrapper..."
           chmod +x gradlew
           ./gradlew clean assembleDebug --stacktrace
           
