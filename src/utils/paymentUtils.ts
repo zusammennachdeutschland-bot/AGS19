@@ -1,4 +1,4 @@
-import { Student, Group } from '../types';
+import { Student, Group, Lesson, PaymentRecord } from '../types';
 
 export interface CyclePricingResult {
   cycleLength: number;
@@ -6,6 +6,139 @@ export interface CyclePricingResult {
   pricePerSession: number;
   isCustomOverride: boolean;
 }
+
+export interface DuePaymentCycle {
+  id: string; // unique key
+  studentId: string;
+  studentName: string;
+  groupId: string;
+  groupName: string;
+  cycleLength: number; // e.g. 4
+  amountDue: number; // e.g. 400
+  lessonDates: string[];
+  lessonIds: string[];
+  status: 'due' | 'not_yet';
+  parentPhone?: string;
+  existingPaymentRecordId?: string;
+}
+
+const formatDateDisplay = (dateStr: string) => {
+  if (!dateStr) return '';
+  const parts = dateStr.split('-');
+  if (parts.length === 3) {
+    return `${parts[2]}/${parts[1]}/${parts[0]}`;
+  }
+  return dateStr;
+};
+
+export const calculateDuePaymentCycles = (
+  students: Student[],
+  groups: Group[],
+  lessons: Lesson[],
+  payments: PaymentRecord[]
+): DuePaymentCycle[] => {
+  const list: DuePaymentCycle[] = [];
+
+  // Map paid lesson IDs for fast lookup
+  const paidLessonIds = new Set<string>();
+  payments.forEach(p => {
+    if (p.status === 'paid' && p.lessonIds && p.lessonIds.length > 0) {
+      p.lessonIds.forEach(id => paidLessonIds.add(id));
+    }
+  });
+
+  students.forEach(st => {
+    const grp = groups.find(g => g.id === st.groupId);
+    const { cycleLength, amountDue } = getStudentCyclePricing(st, grp);
+
+    // Collect all completed attended lessons for this student that have NOT been paid for
+    const stCompletedLessons = lessons.filter(l => {
+      if (l.status !== 'completed') return false;
+      const matchesGroup = grp ? l.groupId === grp.id : false;
+      const matchesStudent = l.studentId === st.id || l.studentName === st.name;
+      if (!matchesGroup && !matchesStudent) return false;
+
+      const att = l.report?.studentAttendance?.[st.id] || l.report?.attendanceStatus || 'present';
+      if (att === 'absent') return false;
+
+      if (paidLessonIds.has(l.id)) return false;
+
+      return true;
+    });
+
+    stCompletedLessons.sort((a, b) => a.date.localeCompare(b.date));
+
+    // Unpaid record in payments
+    const unpaidRec = payments.find(p => p.studentId === st.id && p.status !== 'paid');
+
+    if (stCompletedLessons.length >= cycleLength) {
+      let remaining = [...stCompletedLessons];
+      let chunkIndex = 0;
+
+      while (remaining.length >= cycleLength) {
+        const currentChunk = remaining.slice(0, cycleLength);
+        const lessonDates = currentChunk.map(l => formatDateDisplay(l.date));
+        const lessonIds = currentChunk.map(l => l.id);
+
+        list.push({
+          id: (chunkIndex === 0 && unpaidRec?.id) ? unpaidRec.id : `due_cycle_${st.id}_${currentChunk[0]?.id || Date.now()}_chunk_${chunkIndex}`,
+          studentId: st.id,
+          studentName: st.name,
+          groupId: st.groupId || grp?.id || '',
+          groupName: grp?.name || 'Gruppe',
+          cycleLength,
+          amountDue,
+          lessonDates,
+          lessonIds,
+          status: (chunkIndex === 0 && unpaidRec) ? 'not_yet' : 'due',
+          parentPhone: st.parentPhone || st.studentPhone || '',
+          existingPaymentRecordId: chunkIndex === 0 ? unpaidRec?.id : undefined
+        });
+
+        remaining = remaining.slice(cycleLength);
+        chunkIndex++;
+      }
+    } else if (unpaidRec) {
+      list.push({
+        id: unpaidRec.id,
+        studentId: st.id,
+        studentName: st.name,
+        groupId: st.groupId || grp?.id || '',
+        groupName: grp?.name || unpaidRec.groupName || 'Gruppe',
+        cycleLength: unpaidRec.bundleSize || cycleLength,
+        amountDue: unpaidRec.amountDue || amountDue,
+        lessonDates: unpaidRec.lessonDates || [],
+        lessonIds: unpaidRec.lessonIds || [],
+        status: 'not_yet',
+        parentPhone: st.parentPhone || st.studentPhone || '',
+        existingPaymentRecordId: unpaidRec.id
+      });
+    }
+  });
+
+  // Also include standalone unpaid payment records from payments table
+  const addedPaymentRecordIds = new Set(list.map(item => item.existingPaymentRecordId).filter(Boolean));
+  payments.forEach(p => {
+    if (p.status !== 'paid' && !addedPaymentRecordIds.has(p.id)) {
+      list.push({
+        id: p.id,
+        studentId: p.studentId || '',
+        studentName: p.studentName || 'Schüler',
+        groupId: p.groupId || '',
+        groupName: p.groupName || 'Gruppe',
+        cycleLength: p.bundleSize || 1,
+        amountDue: p.amountDue || 0,
+        lessonDates: p.lessonDates || [],
+        lessonIds: p.lessonIds || [],
+        status: 'not_yet',
+        parentPhone: '',
+        existingPaymentRecordId: p.id
+      });
+    }
+  });
+
+  return list;
+};
 
 /**
  * Single Source of Truth for Student & Group Payment Calculation.

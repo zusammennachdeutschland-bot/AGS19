@@ -204,15 +204,15 @@ export const ScheduleView: React.FC = () => {
   };
 
   return (
-    <div className="space-y-4 pb-20 font-sans">
+    <div className="space-y-4  font-sans">
       {/* TOP HEADER */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-lg font-black text-slate-900 dark:text-white flex items-center gap-2">
-            <CalendarIcon className="w-5 h-5 text-blue-600" />
+          <h2 className="text-lg font-black text-text-main flex items-center gap-2">
+            <CalendarIcon className="w-5 h-5 text-primary" />
             <span>{t('schedule_title')}</span>
           </h2>
-          <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+          <p className="text-xs font-semibold text-text-muted">
             {t('schedule_working_hours')}: {workingStart} - {workingEnd}
           </p>
         </div>
@@ -221,7 +221,7 @@ export const ScheduleView: React.FC = () => {
           {/* Refresh Calendar Data */}
           <button
             onClick={handleRefreshCalendar}
-            className="bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700/80 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 font-bold text-xs px-2.5 py-2 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer"
+            className="bg-background hover:bg-surface-hover dark:hover:bg-slate-700/80 text-text-main border border-surface-border dark:border-surface-border-soft font-bold text-xs px-2.5 py-2 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer"
           >
             <RefreshCw className="w-3.5 h-3.5" />
             <span className="hidden sm:inline">{t('schedule_refresh')}</span>
@@ -230,7 +230,7 @@ export const ScheduleView: React.FC = () => {
           {/* Export iCal */}
           <button
             onClick={handleExportICS}
-            className="bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700/80 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 font-bold text-xs px-2.5 py-2 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer"
+            className="bg-background hover:bg-surface-hover dark:hover:bg-slate-700/80 text-text-main border border-surface-border dark:border-surface-border-soft font-bold text-xs px-2.5 py-2 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer"
           >
             <Download className="w-3.5 h-3.5" />
             <span className="hidden sm:inline">{t('schedule_ical')}</span>
@@ -239,7 +239,7 @@ export const ScheduleView: React.FC = () => {
           {/* START LESSON NOW */}
           <button
             onClick={() => setShowStartLessonNowModal(true)}
-            className="bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-bold text-xs px-3.5 py-2 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer"
+            className="bg-primary hover:bg-primary-hover active:scale-95 text-white font-bold text-xs px-3.5 py-2 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer hover:shadow-lg hover:shadow-primary/30"
           >
             <Play className="w-3.5 h-3.5 fill-white text-white" />
             <span>{t('schedule_start_now')}</span>
@@ -249,7 +249,7 @@ export const ScheduleView: React.FC = () => {
           <button
             type="button"
             onClick={() => setIsAddQuickLessonModalOpen(true)}
-            className="bg-amber-500 hover:bg-amber-600 active:scale-95 text-white font-bold text-xs px-3 py-2 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs whitespace-nowrap"
+            className="bg-primary hover:bg-primary active:scale-95 text-white font-bold text-xs px-3 py-2 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs whitespace-nowrap"
           >
             <Zap className="w-3.5 h-3.5 fill-current" />
             <span>{t('nav_quickLesson')}</span>
@@ -259,7 +259,7 @@ export const ScheduleView: React.FC = () => {
 
       {/* REFRESH TOAST BANNER */}
       {showRefreshToast && (
-        <div className="bg-emerald-600 text-white text-xs font-bold p-3 rounded-lg flex items-center justify-center gap-2 shadow-md animate-scale-up">
+        <div className="bg-primary text-white text-xs font-bold p-3 rounded-lg flex items-center justify-center gap-2 shadow-md animate-scale-up">
           <CheckCircle2 className="w-4 h-4" />
           <span>✓ {t('dataRefreshed')}</span>
         </div>
@@ -267,9 +267,9 @@ export const ScheduleView: React.FC = () => {
 
       {/* CONFLICT ALERT BANNER */}
       {dayConflicts.length > 0 && calendarView === 'day' && (
-        <div className="bg-rose-50 dark:bg-rose-950/80 border border-rose-200 dark:border-rose-800 rounded-lg p-3 flex items-center justify-between gap-2 animate-pulse">
-          <div className="flex items-center gap-2 text-rose-800 dark:text-rose-200 text-xs font-bold">
-            <AlertTriangle className="w-4 h-4 shrink-0 text-rose-600 dark:text-rose-400" />
+        <div className="bg-primary-soft dark:bg-primary-soft border border-primary-border dark:border-primary-border rounded-lg p-3 flex items-center justify-between gap-2 animate-pulse">
+          <div className="flex items-center gap-2 text-primary dark:text-primary text-xs font-bold">
+            <AlertTriangle className="w-4 h-4 shrink-0 text-primary dark:text-primary" />
             <span>
               {t('schedule_conflict_alert')}: {selectedDate}
             </span>
@@ -278,15 +278,15 @@ export const ScheduleView: React.FC = () => {
       )}
 
       {/* VIEW SWITCHER TABS & DATE NAVIGATION BANNER */}
-      <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-lg p-3 shadow-2xs space-y-3">
+      <div className="bg-surface border border-surface-border/90 dark:border-surface-border rounded-lg p-3 shadow-2xs space-y-3">
         
         {/* Row 1: View Switcher Tabs */}
-        <div className="flex items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-800 pb-2.5">
-          <div className="flex items-center bg-slate-100 dark:bg-slate-800 p-1 rounded-xl text-xs font-bold gap-1">
+        <div className="flex items-center justify-between gap-2 border-b border-slate-100 dark:border-surface-border pb-2.5">
+          <div className="flex items-center bg-surface-hover p-1 rounded-xl text-xs font-bold gap-1">
             <button
               onClick={() => setCalendarView('day')}
               className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
-                calendarView === 'day' ? 'bg-blue-600 text-white shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+                calendarView === 'day' ? 'bg-primary text-white shadow-xs' : 'text-text-muted hover:text-slate-900'
               }`}
             >
               {t('schedule_day_view')}
@@ -294,7 +294,7 @@ export const ScheduleView: React.FC = () => {
             <button
               onClick={() => setCalendarView('week')}
               className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
-                calendarView === 'week' ? 'bg-blue-600 text-white shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+                calendarView === 'week' ? 'bg-primary text-white shadow-xs' : 'text-text-muted hover:text-slate-900'
               }`}
             >
               {t('schedule_week_view')}
@@ -302,7 +302,7 @@ export const ScheduleView: React.FC = () => {
             <button
               onClick={() => setCalendarView('month')}
               className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
-                calendarView === 'month' ? 'bg-blue-600 text-white shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+                calendarView === 'month' ? 'bg-primary text-white shadow-xs' : 'text-text-muted hover:text-slate-900'
               }`}
             >
               {t('schedule_month_view')}
@@ -311,7 +311,7 @@ export const ScheduleView: React.FC = () => {
 
           <button
             onClick={() => setSelectedDate(todayStr)}
-            className="text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline cursor-pointer bg-blue-50 dark:bg-blue-950/80 px-2.5 py-1 rounded-lg border border-blue-200 dark:border-blue-800"
+            className="text-xs font-bold text-primary dark:text-primary hover:underline cursor-pointer bg-primary-soft dark:bg-primary-soft/80 px-2.5 py-1 rounded-lg border border-primary-border dark:border-primary-border"
           >
             {t('schedule_today')}
           </button>
@@ -327,9 +327,9 @@ export const ScheduleView: React.FC = () => {
               else current.setMonth(current.getMonth() - 1);
               setSelectedDate(current.toISOString().split('T')[0]);
             }}
-            className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl cursor-pointer transition-all"
+            className="p-2 hover:bg-surface-hover rounded-xl cursor-pointer transition-all"
           >
-            <ChevronLeft className="w-4 h-4 text-slate-600 dark:text-slate-400" />
+            <ChevronLeft className="w-4 h-4 text-text-muted" />
           </button>
 
           <div className="text-center">
@@ -339,22 +339,22 @@ export const ScheduleView: React.FC = () => {
                   type="date"
                   value={selectedDate}
                   onChange={(e) => setSelectedDate(e.target.value)}
-                  className="text-sm font-extrabold text-slate-900 dark:text-white bg-transparent border-none focus:outline-none cursor-pointer font-mono text-center"
+                  className="text-sm font-extrabold text-text-main bg-transparent border-none focus:outline-none cursor-pointer font-mono text-center"
                 />
-                <span className="block text-[10px] text-blue-600 dark:text-blue-400 font-extrabold uppercase">
+                <span className="block text-[10px] text-primary dark:text-primary font-extrabold uppercase">
                   {selectedDate === todayStr ? t('schedule_today') : new Date(selectedDate).toLocaleDateString(undefined, { weekday: 'long', day: '2-digit', month: 'long' })}
                 </span>
               </>
             )}
 
             {calendarView === 'week' && (
-              <span className="text-xs font-extrabold text-slate-900 dark:text-white font-mono">
+              <span className="text-xs font-extrabold text-text-main font-mono">
                 {weekDays[0].dateStr.substring(5)} — {weekDays[6].dateStr.substring(5)}
               </span>
             )}
 
             {calendarView === 'month' && (
-              <span className="text-sm font-extrabold text-slate-900 dark:text-white">
+              <span className="text-sm font-extrabold text-text-main">
                 {monthData.monthName}
               </span>
             )}
@@ -368,24 +368,24 @@ export const ScheduleView: React.FC = () => {
               else current.setMonth(current.getMonth() + 1);
               setSelectedDate(current.toISOString().split('T')[0]);
             }}
-            className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl cursor-pointer transition-all"
+            className="p-2 hover:bg-surface-hover rounded-xl cursor-pointer transition-all"
           >
-            <ChevronRight className="w-4 h-4 text-slate-600 dark:text-slate-400" />
+            <ChevronRight className="w-4 h-4 text-text-muted" />
           </button>
         </div>
       </div>
 
       {/* 1. DAY VIEW */}
       {calendarView === 'day' && (
-        <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-lg p-4 shadow-2xs space-y-3">
-          <div className="flex items-center justify-between text-xs font-bold border-b border-slate-100 dark:border-slate-800 pb-2">
+        <div className="bg-surface border border-surface-border/90 dark:border-surface-border rounded-lg p-4 shadow-2xs space-y-3">
+          <div className="flex items-center justify-between text-xs font-bold border-b border-slate-100 dark:border-surface-border pb-2">
             <span className="text-slate-500 uppercase">({dayLessons.length}) {t('schedule_title')}</span>
             {dayConflicts.length === 0 ? (
-              <span className="text-emerald-600 dark:text-emerald-400 flex items-center gap-1 text-[11px]">
+              <span className="text-primary dark:text-primary flex items-center gap-1 text-[11px]">
                 <CheckCircle2 className="w-3.5 h-3.5" /> {t('schedule_no_conflicts')}
               </span>
             ) : (
-              <span className="text-rose-600 dark:text-rose-400 flex items-center gap-1 text-[11px] font-bold">
+              <span className="text-primary dark:text-primary flex items-center gap-1 text-[11px] font-bold">
                 <AlertTriangle className="w-3.5 h-3.5" /> {t('schedule_conflict')}
               </span>
             )}
@@ -394,10 +394,10 @@ export const ScheduleView: React.FC = () => {
           {dayLessons.length === 0 ? (
             <div className="text-center py-10 space-y-2">
               <Clock className="w-8 h-8 text-slate-300 dark:text-slate-600 mx-auto" />
-              <p className="text-xs font-bold text-slate-500 dark:text-slate-400">{t('schedule_no_lessons_day')}</p>
+              <p className="text-xs font-bold text-text-muted">{t('schedule_no_lessons_day')}</p>
               <button
                 onClick={() => setIsAddLessonModalOpen(true)}
-                className="text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
+                className="text-xs font-bold text-primary dark:text-primary hover:underline cursor-pointer"
               >
                 + {t('schedule_add_lesson_for')}
               </button>
@@ -417,39 +417,39 @@ export const ScheduleView: React.FC = () => {
                     className="flex items-start gap-3 relative z-10 group"
                   >
                     <div className={`w-12 text-right text-xs font-extrabold font-mono shrink-0 pt-3 ${
-                      isCompleted ? 'text-slate-400 dark:text-slate-500 line-through' : 'text-slate-800 dark:text-slate-200'
+                      isCompleted ? 'text-text-muted/70 dark:text-slate-500 line-through' : 'text-slate-800 dark:text-slate-200'
                     }`}>
                       {lesson.time}
                     </div>
 
                     <div className={`w-3.5 h-3.5 rounded-full border-2 border-white dark:border-slate-900 shrink-0 mt-3.5 ${
                       conflict
-                        ? 'bg-rose-600 ring-4 ring-rose-200 dark:ring-rose-950 animate-bounce'
+                        ? 'bg-primary ring-4 ring-primary dark:ring-primary animate-bounce'
                         : isCompleted
                         ? 'bg-slate-400 dark:bg-slate-500 ring-2 ring-slate-200 dark:ring-slate-800'
                         : isCancelled
-                        ? 'bg-rose-500 ring-2 ring-rose-200 dark:ring-rose-950'
-                        : 'bg-blue-600 ring-2 ring-blue-200 dark:ring-blue-950'
+                        ? 'bg-primary ring-2 ring-primary dark:ring-primary'
+                        : 'bg-primary ring-2 ring-primary dark:ring-primary'
                     }`} />
 
                     <div className={`flex-1 border rounded-lg p-3 transition-all ${
                       conflict
-                        ? 'border-rose-400 dark:border-rose-700 bg-rose-50/30 dark:bg-rose-950/30'
+                        ? 'border-primary-border dark:border-primary-border bg-primary-soft dark:bg-primary-soft'
                         : isCompleted
-                        ? 'bg-slate-100/90 dark:bg-slate-800/40 border-slate-200 dark:border-slate-800/80 opacity-80'
+                        ? 'bg-slate-100/90 dark:bg-slate-800/40 border-surface-border/80 opacity-80'
                         : isCancelled
-                        ? 'bg-rose-50/40 dark:bg-rose-950/20 border-rose-200 dark:border-rose-900/40 opacity-75'
-                        : 'bg-slate-50 dark:bg-slate-800/80 hover:bg-blue-50/50 dark:hover:bg-blue-950/40 border-slate-200/80 dark:border-slate-700/80 group-hover:border-blue-400'
+                        ? 'bg-primary-soft dark:bg-primary-soft border-primary-border dark:border-primary-border opacity-75'
+                        : 'bg-surface-hover/80 hover:bg-primary-soft dark:hover:bg-primary-soft border-surface-border/80 dark:border-surface-border-soft/80 group-hover:border-primary'
                     }`}>
                       <div className="flex items-start justify-between gap-2">
                         <div onClick={() => openLessonControl(lesson)} className="cursor-pointer flex-1">
                           <div className="flex items-center gap-2 flex-wrap">
                             <h4 className={`text-xs sm:text-sm font-bold transition-colors ${
                               isCompleted
-                                ? 'line-through text-slate-400 dark:text-slate-500'
+                                ? 'line-through text-text-muted/70 dark:text-slate-500'
                                 : isCancelled
-                                ? 'line-through text-rose-400 dark:text-rose-500'
-                                : 'text-slate-900 dark:text-white group-hover:text-blue-600'
+                                ? 'line-through text-primary dark:text-primary'
+                                : 'text-text-main group-hover:text-primary'
                             }`}>
                               {lesson.title}
                             </h4>
@@ -462,26 +462,26 @@ export const ScheduleView: React.FC = () => {
                             )}
 
                             {isCancelled && (
-                              <span className="text-[9px] font-black uppercase bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300 px-1.5 py-0.5 rounded-md">
+                              <span className="text-[9px] font-black uppercase bg-primary-soft text-primary dark:bg-primary-soft dark:text-primary px-1.5 py-0.5 rounded-md">
                                 {t('status_cancelled')}
                               </span>
                             )}
 
                             {conflict && (
-                              <span className="text-[9px] font-black uppercase bg-rose-600 text-white px-1.5 py-0.5 rounded-md">
+                              <span className="text-[9px] font-black uppercase bg-primary text-white px-1.5 py-0.5 rounded-md">
                                 {t('schedule_conflict')}
                               </span>
                             )}
                           </div>
 
-                          <div className="flex items-center gap-2 text-[10px] text-slate-500 dark:text-slate-400 mt-1 flex-wrap">
+                          <div className="flex items-center gap-2 text-[10px] text-text-muted mt-1 flex-wrap">
                             <span className="font-semibold">{lesson.grade}</span>
                             <span>•</span>
-                            <span className="font-bold text-indigo-600 dark:text-indigo-400">
+                            <span className="font-bold text-primary dark:text-primary">
                               Session {lesson.sessionNumber}/{lesson.totalSessionsInPackage}
                             </span>
                             <span>•</span>
-                            <span className="font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/80 px-1.5 py-0.5 rounded-md border border-emerald-200 dark:border-emerald-800">
+                            <span className="font-bold text-primary dark:text-primary bg-primary-soft dark:bg-primary-soft px-1.5 py-0.5 rounded-md border border-primary-border dark:border-primary-border">
                               {t('schedule_weekly')}
                             </span>
                           </div>
@@ -489,11 +489,11 @@ export const ScheduleView: React.FC = () => {
 
                         <div className="flex items-center gap-1 shrink-0">
                           {lesson.type === 'online' ? (
-                            <span className="text-[10px] font-bold text-blue-600 bg-blue-100 dark:bg-blue-950 px-2 py-0.5 rounded-md flex items-center gap-1">
+                            <span className="text-[10px] font-bold text-primary bg-primary-soft dark:bg-primary-soft px-2 py-0.5 rounded-md flex items-center gap-1">
                               <Video className="w-3 h-3" /> {t('next_action_online')}
                             </span>
                           ) : (
-                            <span className="text-[10px] font-bold text-amber-600 bg-amber-100 dark:bg-amber-950 px-2 py-0.5 rounded-md flex items-center gap-1">
+                            <span className="text-[10px] font-bold text-primary bg-primary-soft dark:bg-primary-soft px-2 py-0.5 rounded-md flex items-center gap-1">
                               <MapPin className="w-3 h-3" /> {t('next_action_offline')}
                             </span>
                           )}
@@ -507,7 +507,7 @@ export const ScheduleView: React.FC = () => {
 
                           <button
                             onClick={() => deleteLesson(lesson.id)}
-                            className="p-1.5 hover:bg-rose-100 dark:hover:bg-rose-950 rounded-lg text-rose-600 dark:text-rose-400 transition-all cursor-pointer"
+                            className="p-1.5 hover:bg-primary-soft dark:hover:bg-primary-soft rounded-lg text-primary dark:text-primary transition-all cursor-pointer"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>
@@ -529,30 +529,30 @@ export const ScheduleView: React.FC = () => {
             {weekDays.map((day) => (
               <div
                 key={day.dateStr}
-                className={`bg-white dark:bg-slate-900 border rounded-lg p-3 shadow-2xs space-y-2 transition-all ${
+                className={`bg-surface border rounded-lg p-3 shadow-2xs space-y-2 transition-all ${
                   day.isToday
-                    ? 'border-blue-500 dark:border-blue-500 ring-2 ring-blue-100 dark:ring-blue-950'
-                    : 'border-slate-200/90 dark:border-slate-800'
+                    ? 'border-primary dark:border-primary ring-2 ring-primary dark:ring-primary'
+                    : 'border-surface-border/90 dark:border-surface-border'
                 }`}
               >
-                <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-1.5">
+                <div className="flex items-center justify-between border-b border-slate-100 dark:border-surface-border pb-1.5">
                   <div>
-                    <span className="text-[11px] font-black text-slate-500 dark:text-slate-400 uppercase block">
+                    <span className="text-[11px] font-black text-text-muted uppercase block">
                       {day.dayName}
                     </span>
-                    <span className={`text-sm font-black font-mono ${day.isToday ? 'text-blue-600 dark:text-blue-400' : 'text-slate-900 dark:text-white'}`}>
+                    <span className={`text-sm font-black font-mono ${day.isToday ? 'text-primary dark:text-primary' : 'text-text-main'}`}>
                       {day.dayNumber}. {day.monthName}
                     </span>
                   </div>
 
-                  <span className="text-[10px] font-extrabold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-2 py-0.5 rounded-full">
+                  <span className="text-[10px] font-extrabold bg-surface-hover text-text-main px-2 py-0.5 rounded-full">
                     {day.lessons.length}
                   </span>
                 </div>
 
                 <div className="space-y-1.5 min-h-[90px]">
                   {day.lessons.length === 0 ? (
-                    <p className="text-[10px] text-slate-400 dark:text-slate-500 text-center py-4 font-semibold">
+                    <p className="text-[10px] text-text-muted/70 dark:text-slate-500 text-center py-4 font-semibold">
                       {t('schedule_no_lessons')}
                     </p>
                   ) : (
@@ -564,10 +564,10 @@ export const ScheduleView: React.FC = () => {
                           onClick={() => openLessonControl(l)}
                           className={`p-2 rounded-xl border text-xs cursor-pointer transition-all hover:scale-[1.02] ${
                             conflict
-                              ? 'bg-rose-50 border-rose-300 text-rose-900 dark:bg-rose-950/50 dark:border-rose-800 dark:text-rose-200'
+                              ? 'bg-primary-soft border-primary-border text-primary dark:bg-primary-soft dark:border-primary-border dark:text-primary'
                               : l.type === 'online'
-                              ? 'bg-blue-50/80 border-blue-200 text-blue-900 dark:bg-blue-950/50 dark:border-blue-800 dark:text-blue-200'
-                              : 'bg-amber-50/80 border-amber-200 text-amber-900 dark:bg-amber-950/50 dark:border-amber-800 dark:text-amber-200'
+                              ? 'bg-primary-soft border-primary-border text-primary-hover dark:bg-primary-soft/50 dark:border-primary-border dark:text-primary/70'
+                              : 'bg-primary-soft border-primary-border text-primary dark:bg-primary-soft dark:border-primary-border dark:text-primary'
                           }`}
                         >
                           <div className="flex items-center justify-between font-mono font-bold text-[10px]">
@@ -586,7 +586,7 @@ export const ScheduleView: React.FC = () => {
                     setSelectedDate(day.dateStr);
                     setIsAddLessonModalOpen(true);
                   }}
-                  className="w-full text-[10px] font-bold text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 bg-slate-50 dark:bg-slate-800/60 hover:bg-blue-50 p-1.5 rounded-xl border border-dashed border-slate-200 dark:border-slate-700 transition-all cursor-pointer text-center"
+                  className="w-full text-[10px] font-bold text-slate-500 hover:text-primary dark:hover:text-primary bg-surface-hover/60 hover:bg-primary-soft p-1.5 rounded-xl border border-dashed border-surface-border dark:border-surface-border-soft transition-all cursor-pointer text-center"
                 >
                   + {t('add')}
                 </button>
@@ -598,8 +598,8 @@ export const ScheduleView: React.FC = () => {
 
       {/* 3. MONTH VIEW */}
       {calendarView === 'month' && (
-        <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-lg p-4 shadow-2xs space-y-3">
-          <div className="grid grid-cols-7 gap-1 text-center text-xs font-black text-slate-400 uppercase tracking-wider border-b border-slate-100 dark:border-slate-800 pb-2">
+        <div className="bg-surface border border-surface-border/90 dark:border-surface-border rounded-lg p-4 shadow-2xs space-y-3">
+          <div className="grid grid-cols-7 gap-1 text-center text-xs font-black text-text-muted/70 uppercase tracking-wider border-b border-slate-100 dark:border-surface-border pb-2">
             <span>Mon</span>
             <span>Tue</span>
             <span>Wed</span>
@@ -612,7 +612,7 @@ export const ScheduleView: React.FC = () => {
           <div className="grid grid-cols-7 gap-1.5">
             {monthData.gridDays.map((cell, index) => {
               if (!cell) {
-                return <div key={`empty_${index}`} className="min-h-[64px] bg-slate-50/40 dark:bg-slate-900/40 rounded-xl" />;
+                return <div key={`empty_${index}`} className="min-h-[64px] bg-background/40 dark:bg-surface/40 rounded-xl" />;
               }
 
               const isSelected = cell.dateStr === selectedDate;
@@ -624,22 +624,22 @@ export const ScheduleView: React.FC = () => {
                     setSelectedDate(cell.dateStr);
                     setCalendarView('day');
                   }}
-                  className={`min-h-[64px] p-1.5 rounded-xl border transition-all cursor-pointer flex flex-col justify-between ${
+                  className={`min-h-[64px] p-1.5 rounded-xl border transition-all cursor-pointer active:scale-95 active:bg-surface-hover flex flex-col justify-between ${
                     cell.isToday
-                      ? 'bg-blue-50/60 dark:bg-blue-950/40 border-blue-500 font-bold'
+                      ? 'bg-primary-soft dark:bg-primary-soft/40 border-primary font-bold'
                       : isSelected
-                      ? 'bg-indigo-50/60 dark:bg-indigo-950/40 border-indigo-500'
-                      : 'bg-slate-50/50 dark:bg-slate-800/40 border-slate-200/60 dark:border-slate-800 hover:border-blue-400'
+                      ? 'bg-primary-soft dark:bg-primary-soft border-primary-border'
+                      : 'bg-background/50 dark:bg-slate-800/40 border-surface-border/60 dark:border-surface-border hover:border-primary'
                   }`}
                 >
                   <div className="flex items-center justify-between">
-                    <span className={`text-xs font-mono font-bold ${cell.isToday ? 'text-blue-600 dark:text-blue-400 font-black' : 'text-slate-800 dark:text-slate-200'}`}>
+                    <span className={`text-xs font-mono font-bold ${cell.isToday ? 'text-primary dark:text-primary font-black' : 'text-slate-800 dark:text-slate-200'}`}>
                       {cell.dayNumber}
                     </span>
 
                     {cell.lessons.length > 0 && (
                       <span className={`text-[9px] font-black px-1.5 py-0.2 rounded-full ${
-                        cell.hasConflict ? 'bg-rose-600 text-white' : 'bg-blue-600 text-white'
+                        cell.hasConflict ? 'bg-primary text-white' : 'bg-primary text-white'
                       }`}>
                         {cell.lessons.length}
                       </span>
@@ -651,13 +651,13 @@ export const ScheduleView: React.FC = () => {
                       <span
                         key={l.id}
                         className={`w-2 h-2 rounded-full ${
-                          l.type === 'online' ? 'bg-blue-500' : 'bg-amber-500'
+                          l.type === 'online' ? 'bg-primary' : 'bg-primary'
                         }`}
                         title={`${l.time} - ${l.title}`}
                       />
                     ))}
                     {cell.lessons.length > 3 && (
-                      <span className="text-[8px] font-bold text-slate-400">+{cell.lessons.length - 3}</span>
+                      <span className="text-[8px] font-bold text-text-muted/70">+{cell.lessons.length - 3}</span>
                     )}
                   </div>
                 </div>
@@ -669,61 +669,62 @@ export const ScheduleView: React.FC = () => {
 
       {/* RESCHEDULE MODAL */}
       {rescheduleLesson && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 max-w-sm w-full shadow-2xl space-y-4 font-sans">
-            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
-              <h3 className="text-sm font-black text-slate-900 dark:text-white flex items-center gap-2">
-                <ArrowLeftRight className="w-4 h-4 text-blue-600" />
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 pb-0">
+          <div className="bg-surface border border-surface-border rounded-t-[28px] sm:rounded-xl pb-safe-bottom sm:pb-0 mb-0 p-5 max-w-sm w-full shadow-2xl space-y-4 font-sans">
+        <div className="w-12 h-1.5 bg-slate-200 dark:bg-slate-800 rounded-full mx-auto mt-3 mb-1 sm:hidden shrink-0" />
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-surface-border pb-3">
+              <h3 className="text-sm font-black text-text-main flex items-center gap-2">
+                <ArrowLeftRight className="w-4 h-4 text-primary" />
                 <span>{t('schedule_reschedule')}</span>
               </h3>
               <button
                 onClick={() => setRescheduleLesson(null)}
-                className="p-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-slate-400 cursor-pointer"
+                className="p-1 hover:bg-surface-hover rounded-lg text-text-muted/70 cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            <div className="bg-slate-50 dark:bg-slate-800/60 p-3 rounded-lg border border-slate-200/80 dark:border-slate-700/80 space-y-1">
-              <span className="text-[10px] font-bold text-slate-400 uppercase">{rescheduleLesson.title}</span>
+            <div className="bg-surface-hover/60 p-3 rounded-lg border border-surface-border/80 dark:border-surface-border-soft/80 space-y-1">
+              <span className="text-[10px] font-bold text-text-muted/70 uppercase">{rescheduleLesson.title}</span>
               <p className="text-[11px] text-slate-500">{rescheduleLesson.date} • {rescheduleLesson.time}</p>
             </div>
 
             {rescheduleSuccess && (
-              <div className="bg-emerald-50 text-emerald-800 text-xs font-bold p-3 rounded-lg flex items-center gap-2">
-                <Check className="w-4 h-4 text-emerald-600" />
+              <div className="bg-primary-soft text-primary text-xs font-bold p-3 rounded-lg flex items-center gap-2">
+                <Check className="w-4 h-4 text-primary" />
                 <span>{rescheduleSuccess}</span>
               </div>
             )}
 
             <div className="space-y-3">
               <div>
-                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                <label className="text-xs font-bold text-text-main block mb-1">
                   {t('schedule_new_date')}
                 </label>
                 <input
                   type="date"
                   value={newDate}
                   onChange={(e) => setNewDate(e.target.value)}
-                  className="w-full bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-mono font-bold p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full bg-surface-hover text-text-main text-xs font-mono font-bold p-2.5 rounded-xl border border-surface-border dark:border-surface-border-soft focus:outline-none focus:ring-2 focus:ring-primary"
                 />
               </div>
 
               <div>
-                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                <label className="text-xs font-bold text-text-main block mb-1">
                   {t('schedule_new_time')}
                 </label>
                 <input
                   type="time"
                   value={newTime}
                   onChange={(e) => setNewTime(e.target.value)}
-                  className="w-full bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-mono font-bold p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full bg-surface-hover text-text-main text-xs font-mono font-bold p-2.5 rounded-xl border border-surface-border dark:border-surface-border-soft focus:outline-none focus:ring-2 focus:ring-primary"
                 />
               </div>
 
               {checkTimeConflict(newDate, newTime, rescheduleLesson?.id) && (
-                <div className="bg-rose-50 text-rose-800 dark:bg-rose-950/80 dark:text-rose-200 text-[11px] font-bold p-2.5 rounded-xl border border-rose-200 dark:border-rose-800 flex items-center gap-1.5">
-                  <AlertTriangle className="w-3.5 h-3.5 text-rose-600 shrink-0" />
+                <div className="bg-primary-soft text-primary dark:bg-primary-soft dark:text-primary text-[11px] font-bold p-2.5 rounded-xl border border-primary-border dark:border-primary-border flex items-center gap-1.5">
+                  <AlertTriangle className="w-3.5 h-3.5 text-primary shrink-0" />
                   <span>{t('schedule_conflict_alert')}</span>
                 </div>
               )}
@@ -732,14 +733,14 @@ export const ScheduleView: React.FC = () => {
             <div className="flex items-center justify-end gap-2 pt-2">
               <button
                 onClick={() => setRescheduleLesson(null)}
-                className="px-3.5 py-2 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl cursor-pointer"
+                className="px-3.5 py-2 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-surface-hover rounded-xl cursor-pointer"
               >
                 {t('cancel')}
               </button>
               <button
                 onClick={handleSaveReschedule}
                 disabled={checkTimeConflict(newDate, newTime, rescheduleLesson?.id)}
-                className={`px-4 py-2 text-xs font-bold text-white rounded-xl transition-all shadow-xs ${checkTimeConflict(newDate, newTime, rescheduleLesson?.id) ? 'bg-slate-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700 cursor-pointer'}`}
+                className={`px-4 py-2 text-xs font-bold text-white rounded-xl transition-all shadow-xs ${checkTimeConflict(newDate, newTime, rescheduleLesson?.id) ? 'bg-slate-400 cursor-not-allowed' : 'bg-primary hover:bg-primary-hover cursor-pointer'}`}
               >
                 {t('save')}
               </button>

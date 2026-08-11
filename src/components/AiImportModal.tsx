@@ -28,6 +28,12 @@ export const AiImportModal: React.FC<AiImportModalProps> = ({
 }) => {
   const { addGroup, addStudent, generateGroupScheduleLessons, t, language } = useApp();
 
+  // Helper for inline translations
+  const _t = (ar: string, en: string, de?: string) => {
+    return language === 'ar' ? ar : language === 'de' ? (de || en) : en;
+  };
+
+
   const [importText, setImportText] = useState<string>('');
   const [copied, setCopied] = useState<string | null>(null);
   const [importedGroup, setImportedGroup] = useState<Group | null>(null);
@@ -129,52 +135,53 @@ export const AiImportModal: React.FC<AiImportModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 pt-[max(24px,env(safe-area-inset-top,24px))] overflow-y-auto font-sans">
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-2xl shadow-2xl overflow-hidden my-auto animate-scale-up flex flex-col max-h-[90vh]">
+    <div className="fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-xs flex items-end sm:items-center justify-center sm: pt-[max(24px,env(safe-area-inset-top,24px))] overflow-y-auto font-sans p-0 sm:p-4 pb-0">
+      <div className="bg-surface border border-surface-border rounded-t-[28px] sm:rounded-2xl pb-safe-bottom sm:pb-0 mb-0 w-full max-w-2xl shadow-2xl overflow-hidden animate-scale-up flex flex-col max-h-[90vh]">
+        <div className="w-12 h-1.5 bg-slate-200 dark:bg-slate-800 rounded-full mx-auto mt-3 mb-1 sm:hidden shrink-0" />
         
         {/* Header */}
-        <div className="bg-gradient-to-r from-purple-700 via-indigo-700 to-blue-700 p-4 sm:p-5 text-white flex items-center justify-between shrink-0">
+        <div className="bg-gradient-to-r from-primary to-primary-hover p-4 sm:p-5 text-white flex items-center justify-between shrink-0">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center shadow-inner shrink-0">
-              <Bot className="w-5 h-5 text-purple-100" />
+            <div className="w-10 h-10 rounded-xl bg-surface/20 backdrop-blur-md flex items-center justify-center shadow-inner shrink-0">
+              <Bot className="w-5 h-5 text-primary-soft" />
             </div>
             <div>
               <div className="flex items-center gap-2">
                 <h3 className="font-black text-base sm:text-lg">
-                  {language === 'ar' ? 'استيراد مجموعة + طلاب (AI Import)' : 'Import Group + Students (AI Template)'}
+                  {_t('استيراد مجموعة + طلاب (AI Import)', 'Import Group + Students (AI Template)')}
                 </h3>
-                <span className="bg-purple-500/30 text-purple-100 border border-purple-300/30 text-[10px] uppercase font-extrabold px-2 py-0.5 rounded-full backdrop-blur-md">
+                <span className="bg-primary/30 text-primary-soft border border-primary-border text-[10px] uppercase font-extrabold px-2 py-0.5 rounded-full backdrop-blur-md">
                   AI Ready
                 </span>
               </div>
-              <p className="text-xs text-purple-100/80">
-                {language === 'ar' ? 'أنشئ المجموعة وجميع الطلاب دفعة واحدة بنص ذكي' : 'Create an entire group and all students in one step'}
+              <p className="text-xs text-primary-soft/80">
+                {_t('أنشئ المجموعة وجميع الطلاب دفعة واحدة بنص ذكي', 'Create an entire group and all students in one step')}
               </p>
             </div>
           </div>
           <button 
             onClick={handleClose} 
-            className="text-white/80 hover:text-white hover:bg-white/10 p-1.5 rounded-lg transition-colors cursor-pointer"
+            className="text-white/80 hover:text-white hover:bg-surface/10 p-1.5 rounded-lg transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Modal Body */}
-        <div className="p-4 sm:p-6 overflow-y-auto space-y-5 flex-1">
+        <div className="p-4 sm:p-4 overflow-y-auto space-y-3 flex-1">
 
           {isSuccess ? (
             /* SUCCESS RESULT VIEW */
-            <div className="py-6 space-y-6 text-center animate-fade-in">
-              <div className="w-16 h-16 bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 rounded-full flex items-center justify-center mx-auto shadow-lg ring-8 ring-emerald-50 dark:ring-emerald-900/30">
+            <div className="py-4 space-y-4 text-center animate-fade-in">
+              <div className="w-16 h-16 bg-primary-soft dark:bg-primary-soft text-primary dark:text-primary rounded-full flex items-center justify-center mx-auto shadow-lg ring-8 ring-primary/30 dark:ring-primary/30">
                 <CheckCircle2 className="w-10 h-10" />
               </div>
 
               <div className="space-y-2">
-                <h4 className="text-xl font-black text-slate-900 dark:text-white">
-                  {language === 'ar' ? 'تم استيراد المجموعة والطلاب بنجاح!' : 'Group & Students Imported Successfully!'}
+                <h4 className="text-xl font-black text-text-main">
+                  {_t('تم استيراد المجموعة والطلاب بنجاح!', 'Group & Students Imported Successfully!')}
                 </h4>
-                <p className="text-sm text-slate-600 dark:text-slate-400 max-w-md mx-auto">
+                <p className="text-sm text-text-muted max-w-md mx-auto">
                   {language === 'ar' 
                     ? `تم إنشاء المجموعة "${importedGroup?.name}" وإضافة ${importedCount} طالب مع جدول المواعيد تلقائياً.` 
                     : `Created group "${importedGroup?.name}" and added ${importedCount} students with schedule successfully.`}
@@ -182,21 +189,21 @@ export const AiImportModal: React.FC<AiImportModalProps> = ({
               </div>
 
               {/* Summary Box */}
-              <div className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 rounded-xl p-4 text-left max-w-md mx-auto space-y-3">
-                <div className="flex items-center justify-between text-xs border-b border-slate-200 dark:border-slate-700 pb-2">
-                  <span className="text-slate-500 font-bold">{language === 'ar' ? 'اسم المجموعة:' : 'Group Name:'}</span>
-                  <span className="font-black text-slate-900 dark:text-white">{importedGroup?.name}</span>
+              <div className="bg-surface-hover/60 border border-surface-border dark:border-surface-border-soft/80 rounded-xl p-4 text-left max-w-md mx-auto space-y-3">
+                <div className="flex items-center justify-between text-xs border-b border-surface-border dark:border-surface-border-soft pb-2">
+                  <span className="text-slate-500 font-bold">{_t('اسم المجموعة:', 'Group Name:')}</span>
+                  <span className="font-black text-text-main">{importedGroup?.name}</span>
                 </div>
-                <div className="flex items-center justify-between text-xs border-b border-slate-200 dark:border-slate-700 pb-2">
-                  <span className="text-slate-500 font-bold">{language === 'ar' ? 'الصف / المرحلة:' : 'Grade Level:'}</span>
+                <div className="flex items-center justify-between text-xs border-b border-surface-border dark:border-surface-border-soft pb-2">
+                  <span className="text-slate-500 font-bold">{_t('الصف / المرحلة:', 'Grade Level:')}</span>
                   <span className="font-bold text-slate-900 dark:text-slate-200">{importedGroup?.grade}</span>
                 </div>
-                <div className="flex items-center justify-between text-xs border-b border-slate-200 dark:border-slate-700 pb-2">
-                  <span className="text-slate-500 font-bold">{language === 'ar' ? 'عدد الطلاب:' : 'Students Imported:'}</span>
-                  <span className="font-extrabold text-emerald-600 dark:text-emerald-400">{importedCount} {language === 'ar' ? 'طلاب' : 'Students'}</span>
+                <div className="flex items-center justify-between text-xs border-b border-surface-border dark:border-surface-border-soft pb-2">
+                  <span className="text-slate-500 font-bold">{_t('عدد الطلاب:', 'Students Imported:')}</span>
+                  <span className="font-extrabold text-primary dark:text-primary">{importedCount} {_t('طلاب', 'Students')}</span>
                 </div>
                 <div className="flex items-center justify-between text-xs">
-                  <span className="text-slate-500 font-bold">{language === 'ar' ? 'المواعيد:' : 'Schedule:'}</span>
+                  <span className="text-slate-500 font-bold">{_t('المواعيد:', 'Schedule:')}</span>
                   <span className="font-medium text-slate-800 dark:text-slate-300">{importedGroup?.scheduleDays?.join(', ')} @ {importedGroup?.scheduleTime}</span>
                 </div>
               </div>
@@ -208,9 +215,9 @@ export const AiImportModal: React.FC<AiImportModalProps> = ({
                       onSelectGroup(importedGroup);
                       handleClose();
                     }}
-                    className="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white font-bold px-5 py-2.5 rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md text-sm"
+                    className="w-full sm:w-auto bg-primary hover:bg-primary-hover active:scale-95 text-white font-bold px-5 py-2.5 rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md text-sm"
                   >
-                    <span>{language === 'ar' ? 'فتح ملف المجموعة' : 'View Group Profile'}</span>
+                    <span>{_t('فتح ملف المجموعة', 'View Group Profile')}</span>
                     <ChevronRight className="w-4 h-4" />
                   </button>
                 )}
@@ -218,7 +225,7 @@ export const AiImportModal: React.FC<AiImportModalProps> = ({
                   onClick={handleClose}
                   className="w-full sm:w-auto bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-bold px-5 py-2.5 rounded-xl transition-all cursor-pointer text-sm"
                 >
-                  {language === 'ar' ? 'إغلاق' : 'Close'}
+                  {_t('إغلاق', 'Close')}
                 </button>
               </div>
             </div>
@@ -226,44 +233,44 @@ export const AiImportModal: React.FC<AiImportModalProps> = ({
             /* PASTE & PREVIEW FORM VIEW */
             <>
               {/* Instructions Banner */}
-              <div className="bg-indigo-50/80 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800/60 rounded-xl p-3.5 sm:p-4 text-xs space-y-3">
+              <div className="bg-primary-soft dark:bg-primary-soft border border-primary-border dark:border-primary-border rounded-xl p-3.5 sm:p-4 text-xs space-y-3">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
-                  <div className="flex items-center gap-2 font-bold text-indigo-900 dark:text-indigo-200">
-                    <Bot className="w-4 h-4 text-purple-600 dark:text-purple-400 shrink-0" />
-                    <span>{language === 'ar' ? 'أوامر للذكاء الاصطناعي (AI Prompt Orders)' : 'Copy Prompt / Orders for AI'}</span>
+                  <div className="flex items-center gap-2 font-bold text-primary dark:text-primary">
+                    <Bot className="w-4 h-4 text-primary dark:text-primary shrink-0" />
+                    <span>{_t('أوامر للذكاء الاصطناعي (AI Prompt Orders)', 'Copy Prompt / Orders for AI')}</span>
                   </div>
 
                   <div className="flex items-center gap-1.5 flex-wrap">
                     <button
                       onClick={() => handleCopySample(language === 'ar' ? AI_PROMPT_TEMPLATE_AR : AI_PROMPT_TEMPLATE_EN, 'prompt')}
-                      className="bg-purple-600 hover:bg-purple-700 text-white font-bold px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer text-xs shadow-xs shrink-0 active:scale-95"
+                      className="bg-primary hover:bg-primary-hover text-white font-bold px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer text-xs shadow-xs shrink-0 active:scale-95"
                     >
                       {copied === 'prompt' ? (
                         <>
                           <Check className="w-3.5 h-3.5 text-white" />
-                          <span>{language === 'ar' ? 'تم نسخ الأوامر!' : 'Prompt Copied!'}</span>
+                          <span>{_t('تم نسخ الأوامر!', 'Prompt Copied!')}</span>
                         </>
                       ) : (
                         <>
-                          <MessageSquareCode className="w-3.5 h-3.5 text-purple-100" />
-                          <span>{language === 'ar' ? 'نسخ أوامر ChatGPT / Gemini' : 'Copy AI Prompt Orders'}</span>
+                          <MessageSquareCode className="w-3.5 h-3.5 text-primary-soft" />
+                          <span>{_t('نسخ أوامر ChatGPT / Gemini', 'Copy AI Prompt Orders')}</span>
                         </>
                       )}
                     </button>
 
                     <button
                       onClick={() => handleCopySample(SAMPLE_MULTI_SCHEDULE_TEMPLATE, 'multi')}
-                      className="bg-white dark:bg-indigo-900/80 hover:bg-indigo-100 dark:hover:bg-indigo-800 border border-indigo-300 dark:border-indigo-700 text-indigo-700 dark:text-indigo-200 font-bold px-2.5 py-1.5 rounded-lg transition-all flex items-center gap-1 cursor-pointer text-[11px] shadow-2xs shrink-0"
+                      className="bg-surface dark:bg-primary-soft hover:bg-primary-soft dark:hover:bg-primary-hover border border-primary-border dark:border-primary-border text-primary dark:text-primary font-bold px-2.5 py-1.5 rounded-lg transition-all flex items-center gap-1 cursor-pointer text-[11px] shadow-2xs shrink-0"
                     >
                       {copied === 'multi' ? (
                         <>
-                          <Check className="w-3.5 h-3.5 text-emerald-600" />
-                          <span>{language === 'ar' ? 'تم النسخ!' : 'Copied!'}</span>
+                          <Check className="w-3.5 h-3.5 text-primary" />
+                          <span>{_t('تم النسخ!', 'Copied!')}</span>
                         </>
                       ) : (
                         <>
-                          <Sparkles className="w-3.5 h-3.5 text-purple-500" />
-                          <span>{language === 'ar' ? 'تجربة نموذج جاهز' : 'Sample Data'}</span>
+                          <Sparkles className="w-3.5 h-3.5 text-primary" />
+                          <span>{_t('تجربة نموذج جاهز', 'Sample Data')}</span>
                         </>
                       )}
                     </button>
@@ -271,18 +278,16 @@ export const AiImportModal: React.FC<AiImportModalProps> = ({
                 </div>
 
                 <p className="text-slate-600 dark:text-slate-300 leading-relaxed text-[11px]">
-                  {language === 'ar' 
-                    ? 'اضغط على "نسخ أوامر ChatGPT / Gemini" والصقها في برنامج الذكاء الاصطناعي مع قائمة أسماء طلابك وملاحظات المجموعة، ثم انسخ الرد والصقه في الصندوق بالأسفل مباشرة.'
-                    : 'Click "Copy AI Prompt Orders" and paste it into ChatGPT/Gemini along with your raw group list/notes. Then copy the AI response and paste it into the box below.'}
+                  {_t('اضغط على "نسخ أوامر ChatGPT / Gemini" والصقها في برنامج الذكاء الاصطناعي مع قائمة أسماء طلابك وملاحظات المجموعة، ثم انسخ الرد والصقه في الصندوق بالأسفل مباشرة.', 'Click "Copy AI Prompt Orders" and paste it into ChatGPT/Gemini along with your raw group list/notes. Then copy the AI response and paste it into the box below.')}
                 </p>
               </div>
 
               {/* Textarea Input */}
               <div className="space-y-1.5">
-                <label className="text-xs font-black text-slate-700 dark:text-slate-300 flex items-center justify-between">
-                  <span>{language === 'ar' ? 'النص المستورد من الذكاء الاصطناعي:' : 'AI Generated Text:'}</span>
-                  <span className="text-[11px] text-slate-400 font-normal">
-                    {language === 'ar' ? 'يدعم التحقق الفوري بدون أخطاء' : 'Strict Zero-Data-Loss Validation'}
+                <label className="text-xs font-black text-text-main flex items-center justify-between">
+                  <span>{_t('النص المستورد من الذكاء الاصطناعي:', 'AI Generated Text:')}</span>
+                  <span className="text-[11px] text-text-muted/70 font-normal">
+                    {_t('يدعم التحقق الفوري بدون أخطاء', 'Strict Zero-Data-Loss Validation')}
                   </span>
                 </label>
                 <textarea
@@ -290,13 +295,13 @@ export const AiImportModal: React.FC<AiImportModalProps> = ({
                   onChange={(e) => setImportText(e.target.value)}
                   placeholder={`[GROUP]\nname=Grade 5 A\ngrade=Grade 5\ntype=offline\ndays=Sunday,Wednesday\ntime=18:00\npayment_type=every_4_lessons\npayment_amount=400\n\n[STUDENTS]\nAhmed Mohamed|01012345678\nMohamed Ali|01112345679`}
                   rows={8}
-                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-xl p-3 text-xs font-mono text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all resize-y"
+                  className="w-full bg-background dark:bg-background border border-slate-300 dark:border-surface-border rounded-xl p-3 text-xs font-mono text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary transition-all resize-y"
                 />
               </div>
 
               {/* VALIDATION RESULTS & PREVIEW AREA */}
               {importText.trim() && (
-                <div className="space-y-4 pt-2 border-t border-slate-200 dark:border-slate-800 animate-fade-in">
+                <div className="space-y-4 pt-2 border-t border-surface-border animate-fade-in">
                   
                   {/* Validation Error Box */}
                   {!parseResult.isValid && parseResult.errors.length > 0 && (
@@ -319,12 +324,10 @@ export const AiImportModal: React.FC<AiImportModalProps> = ({
 
                   {/* Valid Status Badge */}
                   {parseResult.isValid && (
-                    <div className="bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 rounded-xl p-3 text-xs flex items-center gap-2 text-emerald-800 dark:text-emerald-300 font-bold">
-                      <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                    <div className="bg-primary-soft dark:bg-primary-soft border border-primary-border dark:border-primary-border rounded-xl p-3 text-xs flex items-center gap-2 text-primary dark:text-primary font-bold">
+                      <ShieldCheck className="w-4 h-4 text-primary dark:text-primary shrink-0" />
                       <span>
-                        {language === 'ar' 
-                          ? '✓ البيانات سليمة 100% ومجهزة للاستيراد الآمن' 
-                          : '✓ All fields validated successfully. Ready for import.'}
+                        {_t('✓ البيانات سليمة 100% ومجهزة للاستيراد الآمن', '✓ All fields validated successfully. Ready for import.')}
                       </span>
                     </div>
                   )}
@@ -333,26 +336,26 @@ export const AiImportModal: React.FC<AiImportModalProps> = ({
                   {parseResult.group && (
                     <div className="space-y-3">
                       <h4 className="text-xs font-black text-slate-800 dark:text-slate-200 flex items-center justify-between">
-                        <span>{language === 'ar' ? 'معاينة البيانات قبل الاعتماد:' : 'Data Preview Before Import:'}</span>
+                        <span>{_t('معاينة البيانات قبل الاعتماد:', 'Data Preview Before Import:')}</span>
                         <span className="text-slate-500 text-[11px] font-normal">
-                          {parseResult.students.length} {language === 'ar' ? 'طلاب' : 'students'}
+                          {parseResult.students.length} {_t('طلاب', 'students')}
                         </span>
                       </h4>
 
                       {/* Group Meta Grid */}
-                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 bg-slate-100 dark:bg-slate-800/80 p-3 rounded-xl text-xs">
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 bg-surface-hover/80 p-3 rounded-xl text-xs">
                         <div>
-                          <div className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">
-                            {language === 'ar' ? 'اسم المجموعة' : 'Group Name'}
+                          <div className="text-[10px] text-text-muted font-medium">
+                            {_t('اسم المجموعة', 'Group Name')}
                           </div>
-                          <div className="font-black text-slate-900 dark:text-white truncate">
+                          <div className="font-black text-text-main truncate">
                             {parseResult.group.name || '—'}
                           </div>
                         </div>
 
                         <div>
-                          <div className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">
-                            {language === 'ar' ? 'الصف' : 'Grade'}
+                          <div className="text-[10px] text-text-muted font-medium">
+                            {_t('الصف', 'Grade')}
                           </div>
                           <div className="font-bold text-slate-800 dark:text-slate-200">
                             {parseResult.group.grade || '—'}
@@ -360,19 +363,19 @@ export const AiImportModal: React.FC<AiImportModalProps> = ({
                         </div>
 
                         <div>
-                          <div className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">
-                            {language === 'ar' ? 'المواعيد' : 'Days & Time'}
+                          <div className="text-[10px] text-text-muted font-medium">
+                            {_t('المواعيد', 'Days & Time')}
                           </div>
-                          <div className="font-bold text-indigo-600 dark:text-indigo-400 truncate" title={formatGroupScheduleDisplay(parseResult.group, language)}>
+                          <div className="font-bold text-primary dark:text-primary truncate" title={formatGroupScheduleDisplay(parseResult.group, language)}>
                             {formatGroupScheduleDisplay(parseResult.group, language)}
                           </div>
                         </div>
 
                         <div>
-                          <div className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">
-                            {language === 'ar' ? 'نظام المحاسبة' : 'Payment System'}
+                          <div className="text-[10px] text-text-muted font-medium">
+                            {_t('نظام المحاسبة', 'Payment System')}
                           </div>
-                          <div className="font-bold text-emerald-600 dark:text-emerald-400">
+                          <div className="font-bold text-primary dark:text-primary">
                             {parseResult.group.payment_type} ({parseResult.group.payment_amount})
                             {parseResult.group.lesson_price ? ` [${parseResult.group.lesson_price}/lesson]` : ''}
                           </div>
@@ -381,21 +384,21 @@ export const AiImportModal: React.FC<AiImportModalProps> = ({
 
                       {/* Student Table Preview */}
                       {parseResult.students.length > 0 && (
-                        <div className="border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden max-h-48 overflow-y-auto">
+                        <div className="border border-surface-border rounded-xl overflow-hidden max-h-48 overflow-y-auto">
                           <table className="w-full text-left text-xs">
-                            <thead className="bg-slate-100 dark:bg-slate-800/90 text-slate-600 dark:text-slate-300 font-bold sticky top-0 border-b border-slate-200 dark:border-slate-700">
+                            <thead className="bg-surface-hover/90 text-slate-600 dark:text-slate-300 font-bold sticky top-0 border-b border-surface-border dark:border-surface-border-soft">
                               <tr>
                                 <th className="p-2.5 w-10 text-center">#</th>
-                                <th className="p-2.5">{language === 'ar' ? 'اسم الطالب' : 'Student Name'}</th>
-                                <th className="p-2.5">{language === 'ar' ? 'رقم الهاتف' : 'Phone'}</th>
+                                <th className="p-2.5">{_t('اسم الطالب', 'Student Name')}</th>
+                                <th className="p-2.5">{_t('رقم الهاتف', 'Phone')}</th>
                               </tr>
                             </thead>
-                            <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-slate-800 dark:text-slate-200 bg-white dark:bg-slate-900">
+                            <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-slate-800 dark:text-slate-200 bg-surface">
                               {parseResult.students.map((st, i) => (
-                                <tr key={i} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-                                  <td className="p-2 text-center text-slate-400 text-[11px]">{i + 1}</td>
+                                <tr key={i} className="hover:bg-background dark:hover:bg-slate-800/50 transition-colors">
+                                  <td className="p-2 text-center text-text-muted/70 text-[11px]">{i + 1}</td>
                                   <td className="p-2 font-extrabold">{st.name}</td>
-                                  <td className="p-2 font-mono text-slate-600 dark:text-slate-400">{st.phone}</td>
+                                  <td className="p-2 font-mono text-text-muted">{st.phone}</td>
                                 </tr>
                               ))}
                             </tbody>
@@ -414,12 +417,12 @@ export const AiImportModal: React.FC<AiImportModalProps> = ({
 
         {/* Footer */}
         {!isSuccess && (
-          <div className="p-4 bg-slate-50 dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between gap-3 shrink-0">
+          <div className="p-4 bg-background border-t border-surface-border flex items-center justify-between gap-3 shrink-0">
             <button
               onClick={handleClose}
-              className="px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-bold text-xs hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+              className="px-4 py-2.5 rounded-xl border border-slate-300 dark:border-surface-border-soft text-text-main font-bold text-xs hover:bg-surface-hover transition-colors cursor-pointer"
             >
-              {language === 'ar' ? 'إلغاء' : 'Cancel'}
+              {_t('إلغاء', 'Cancel')}
             </button>
 
             <button
@@ -427,12 +430,12 @@ export const AiImportModal: React.FC<AiImportModalProps> = ({
               disabled={!parseResult.isValid || !importText.trim()}
               className={`px-5 py-2.5 rounded-xl font-bold text-xs transition-all flex items-center gap-2 shadow-md cursor-pointer ${
                 parseResult.isValid && importText.trim()
-                  ? 'bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white active:scale-95'
-                  : 'bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-600 cursor-not-allowed shadow-none'
+                  ? 'bg-gradient-to-r from-primary to-primary-hover hover:from-primary hover:to-primary-hover text-white active:scale-95'
+                  : 'bg-slate-200 dark:bg-slate-800 text-text-muted/70 dark:text-slate-600 cursor-not-allowed shadow-none'
               }`}
             >
               <CheckCircle2 className="w-4 h-4 shrink-0" />
-              <span>{language === 'ar' ? 'تأكيد الاستيراد (Confirm Import)' : 'Confirm Import'}</span>
+              <span>{_t('تأكيد الاستيراد (Confirm Import)', 'Confirm Import')}</span>
             </button>
           </div>
         )}

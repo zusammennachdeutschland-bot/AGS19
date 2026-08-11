@@ -59,31 +59,32 @@ export const BackupModal: React.FC<BackupModalProps> = ({ onClose }) => {
   const totalRecords = students.length + groups.length + lessons.length + payments.length + notifications.length;
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 font-sans">
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl w-full max-w-lg shadow-2xl overflow-hidden animate-scale-up my-auto max-h-[90vh] flex flex-col">
+    <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-end sm:items-center justify-center font-sans p-0 sm:p-4 pb-0">
+      <div className="bg-surface border border-surface-border rounded-t-[28px] sm:rounded-xl pb-safe-bottom sm:pb-0 mb-0 w-full max-w-lg shadow-2xl overflow-hidden animate-scale-up max-h-[90vh] flex flex-col">
+        <div className="w-12 h-1.5 bg-slate-200 dark:bg-slate-800 rounded-full mx-auto mt-3 mb-1 sm:hidden shrink-0" />
         {/* Header */}
-        <div className="bg-gradient-to-r from-emerald-600 to-teal-700 p-5 text-white flex items-center justify-between shrink-0">
+        <div className="bg-gradient-to-r from-primary to-primary-hover p-5 text-white flex items-center justify-between shrink-0">
           <div className="flex items-center gap-2.5">
-            <div className="p-2 bg-white/20 rounded-xl">
+            <div className="p-2 bg-surface/20 rounded-xl">
               <ShieldCheck className="w-5 h-5 text-white" />
             </div>
             <div>
               <h2 className="text-base font-black">Lokales Backup & Daten</h2>
-              <p className="text-xs text-emerald-100 font-semibold">Datensicherheit & Export</p>
+              <p className="text-xs text-primary-soft font-semibold">Datensicherheit & Export</p>
             </div>
           </div>
-          <button onClick={onClose} className="p-1.5 hover:bg-white/20 rounded-full transition-colors cursor-pointer">
+          <button onClick={onClose} className="p-1.5 hover:bg-surface/20 rounded-full transition-colors cursor-pointer">
             <X className="w-5 h-5" />
           </button>
         </div>
 
         <div className="p-5 space-y-4 overflow-y-auto">
           {/* Status Alert Banner */}
-          <div className="bg-slate-50 dark:bg-slate-800/80 p-3.5 rounded-lg border border-slate-200 dark:border-slate-700 space-y-2">
+          <div className="bg-surface-hover/80 p-3.5 rounded-lg border border-surface-border dark:border-surface-border-soft space-y-2">
             <div className="flex items-center justify-between">
               <span className="text-xs font-black text-slate-500 uppercase tracking-wider">Benutzerkonto</span>
-              <span className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1.5 bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 px-2.5 py-0.5 rounded-full border border-emerald-300 dark:border-emerald-800">
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+              <span className="text-xs font-bold text-text-main flex items-center gap-1.5 bg-primary-soft dark:bg-primary-soft text-primary dark:text-primary px-2.5 py-0.5 rounded-full border border-primary-border dark:border-primary-border">
+                <CheckCircle2 className="w-3.5 h-3.5 text-primary" />
                 {profile.displayName || 'Lehrer'}
               </span>
             </div>
@@ -93,10 +94,10 @@ export const BackupModal: React.FC<BackupModalProps> = ({ onClose }) => {
           {feedbackMsg && (
             <div className={`p-3 rounded-lg text-xs font-bold border ${
               feedbackMsg.type === 'success'
-                ? 'bg-emerald-50 text-emerald-800 border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-200 dark:border-emerald-800'
+                ? 'bg-primary-soft text-primary border-primary-border dark:bg-primary-soft dark:text-primary dark:border-primary-border'
                 : feedbackMsg.type === 'error'
-                ? 'bg-rose-50 text-rose-800 border-rose-200 dark:bg-rose-950/60 dark:text-rose-200 dark:border-rose-800'
-                : 'bg-blue-50 text-blue-800 border-blue-200 dark:bg-blue-950/60 dark:text-blue-200 dark:border-blue-800'
+                ? 'bg-primary-soft text-primary border-primary-border dark:bg-primary-soft dark:text-primary dark:border-primary-border'
+                : 'bg-primary-soft text-primary-hover border-primary-border dark:bg-primary-soft/60 dark:text-primary/70 dark:border-primary-border'
             }`}>
               {feedbackMsg.text}
             </div>
@@ -104,50 +105,50 @@ export const BackupModal: React.FC<BackupModalProps> = ({ onClose }) => {
 
           {/* Timestamp Metrics */}
           <div className="grid grid-cols-1 gap-2 text-xs font-bold">
-            <div className="p-3 bg-slate-50 dark:bg-slate-800/80 rounded-lg border border-slate-200/80 dark:border-slate-700">
-              <span className="block text-[10px] text-slate-400 uppercase font-black">Letztes Lokales Backup</span>
-              <span className="text-xs font-mono font-extrabold text-slate-900 dark:text-white mt-1 block">
+            <div className="p-3 bg-surface-hover/80 rounded-lg border border-surface-border/80 dark:border-surface-border-soft">
+              <span className="block text-[10px] text-text-muted/70 uppercase font-black">Letztes Lokales Backup</span>
+              <span className="text-xs font-mono font-extrabold text-text-main mt-1 block">
                 {new Date(lastBackupTime).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit', second: '2-digit' })} Uhr
               </span>
             </div>
           </div>
 
           {/* Records Summary */}
-          <div className="p-3.5 bg-indigo-50/60 dark:bg-indigo-950/40 rounded-lg border border-indigo-200 dark:border-indigo-900/60">
-            <div className="flex items-center justify-between border-b border-indigo-200/60 dark:border-indigo-900/60 pb-2 mb-2">
-              <span className="text-xs font-extrabold text-indigo-900 dark:text-indigo-200 flex items-center gap-1.5">
-                <Database className="w-4 h-4 text-indigo-600" />
+          <div className="p-3.5 bg-primary-soft dark:bg-primary-soft rounded-lg border border-primary-border dark:border-primary-border">
+            <div className="flex items-center justify-between border-b border-primary-border dark:border-primary-border pb-2 mb-2">
+              <span className="text-xs font-extrabold text-primary dark:text-primary flex items-center gap-1.5">
+                <Database className="w-4 h-4 text-primary" />
                 Gesamte Datensätze Im Backup
               </span>
-              <span className="text-xs font-black font-mono text-indigo-700 dark:text-indigo-300 bg-indigo-100 dark:bg-indigo-900 px-2 py-0.5 rounded-lg">
+              <span className="text-xs font-black font-mono text-primary dark:text-primary bg-primary-soft dark:bg-primary-soft px-2 py-0.5 rounded-lg">
                 {totalRecords} Datensätze
               </span>
             </div>
             <div className="grid grid-cols-4 gap-1.5 text-center text-[11px] font-bold">
-              <div className="bg-white dark:bg-slate-800 p-2 rounded-xl">
-                <span className="text-slate-400 block text-[9px]">Schüler</span>
-                <span className="font-mono text-slate-900 dark:text-white">{students.length}</span>
+              <div className="bg-surface dark:bg-slate-800 p-2 rounded-xl">
+                <span className="text-text-muted/70 block text-[9px]">Schüler</span>
+                <span className="font-mono text-text-main">{students.length}</span>
               </div>
-              <div className="bg-white dark:bg-slate-800 p-2 rounded-xl">
-                <span className="text-slate-400 block text-[9px]">Gruppen</span>
-                <span className="font-mono text-slate-900 dark:text-white">{groups.length}</span>
+              <div className="bg-surface dark:bg-slate-800 p-2 rounded-xl">
+                <span className="text-text-muted/70 block text-[9px]">Gruppen</span>
+                <span className="font-mono text-text-main">{groups.length}</span>
               </div>
-              <div className="bg-white dark:bg-slate-800 p-2 rounded-xl">
-                <span className="text-slate-400 block text-[9px]">Lektionen</span>
-                <span className="font-mono text-slate-900 dark:text-white">{lessons.length}</span>
+              <div className="bg-surface dark:bg-slate-800 p-2 rounded-xl">
+                <span className="text-text-muted/70 block text-[9px]">Lektionen</span>
+                <span className="font-mono text-text-main">{lessons.length}</span>
               </div>
-              <div className="bg-white dark:bg-slate-800 p-2 rounded-xl">
-                <span className="text-slate-400 block text-[9px]">Zahlungen</span>
-                <span className="font-mono text-slate-900 dark:text-white">{payments.length}</span>
+              <div className="bg-surface dark:bg-slate-800 p-2 rounded-xl">
+                <span className="text-text-muted/70 block text-[9px]">Zahlungen</span>
+                <span className="font-mono text-text-main">{payments.length}</span>
               </div>
             </div>
           </div>
 
           {/* Mandatory Action Buttons */}
-          <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+          <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-100 dark:border-surface-border">
             <button
               onClick={handleBackupNow}
-              className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs py-2.5 px-3 rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs"
+              className="bg-primary hover:bg-primary-hover text-white font-bold text-xs py-2.5 px-3 rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs"
             >
               <Download className="w-4 h-4" />
               <span>Backup Now</span>
@@ -162,7 +163,7 @@ export const BackupModal: React.FC<BackupModalProps> = ({ onClose }) => {
             />
             <button
               onClick={handleRestoreClick}
-              className="bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-bold text-xs py-2.5 px-3 rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+              className="bg-surface-hover hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-bold text-xs py-2.5 px-3 rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer"
             >
               <Upload className="w-4 h-4" />
               <span>Restore Data (JSON)</span>

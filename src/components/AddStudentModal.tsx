@@ -117,20 +117,21 @@ export const AddStudentModal: React.FC<AddStudentModalProps> = ({ onClose }) => 
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 pt-[max(24px,env(safe-area-inset-top,24px))]">
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl w-full max-w-md shadow-2xl overflow-hidden animate-scale-up">
+    <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-end sm:items-center justify-center pt-[max(24px,env(safe-area-inset-top,24px))] p-0 sm:p-4 pb-0">
+      <div className="bg-surface border border-surface-border rounded-t-[28px] sm:rounded-xl pb-safe-bottom sm:pb-0 mb-0 w-full max-w-md shadow-2xl overflow-hidden animate-scale-up">
+        <div className="w-12 h-1.5 bg-slate-200 dark:bg-slate-800 rounded-full mx-auto mt-3 mb-1 sm:hidden shrink-0" />
         {/* Header */}
-        <div className="bg-gradient-to-r from-blue-600 to-indigo-700 p-5 text-white flex items-center justify-between">
+        <div className="bg-gradient-to-r from-primary to-primary-hover p-5 text-white flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <div className="p-2 bg-white/20 rounded-xl">
+            <div className="p-2 bg-surface/20 rounded-xl">
               <UserPlus className="w-5 h-5 text-white" />
             </div>
             <div>
               <h2 className="text-base font-bold">Neuen Schüler anlegen (Add Student)</h2>
-              <p className="text-xs text-blue-100">Automatic Group Pricing Inheritance</p>
+              <p className="text-xs text-primary-soft">Automatic Group Pricing Inheritance</p>
             </div>
           </div>
-          <button onClick={onClose} className="p-1.5 hover:bg-white/20 rounded-full transition-colors cursor-pointer">
+          <button onClick={onClose} className="p-1.5 hover:bg-surface/20 rounded-full transition-colors cursor-pointer">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -138,10 +139,10 @@ export const AddStudentModal: React.FC<AddStudentModalProps> = ({ onClose }) => 
         {/* Form Body */}
         <form onSubmit={handleSubmit} className="p-5 space-y-4 max-h-[75vh] overflow-y-auto">
           {/* Avatar Selection Section */}
-          <div className="space-y-2 bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/80 p-3.5 rounded-lg">
+          <div className="space-y-2 bg-surface-hover/60 border border-surface-border/80 dark:border-surface-border-soft/80 p-3.5 rounded-lg">
             <div className="flex items-center justify-between">
               <label className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
-                <Sparkles className="w-4 h-4 text-amber-500" />
+                <Sparkles className="w-4 h-4 text-primary" />
                 <span>Cartoon Avatar wählen (Choose Avatar)</span>
               </label>
 
@@ -152,8 +153,8 @@ export const AddStudentModal: React.FC<AddStudentModalProps> = ({ onClose }) => 
                   onClick={() => setGenderFilter('all')}
                   className={`px-2 py-0.5 rounded-md transition-all cursor-pointer ${
                     genderFilter === 'all'
-                      ? 'bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 shadow-xs'
-                      : 'text-slate-600 dark:text-slate-400'
+                      ? 'bg-surface dark:bg-slate-800 text-primary dark:text-primary shadow-xs'
+                      : 'text-text-muted'
                   }`}
                 >
                   Alle ({CARTOON_AVATARS.length})
@@ -163,8 +164,8 @@ export const AddStudentModal: React.FC<AddStudentModalProps> = ({ onClose }) => 
                   onClick={() => setGenderFilter('boy')}
                   className={`px-2 py-0.5 rounded-md transition-all cursor-pointer ${
                     genderFilter === 'boy'
-                      ? 'bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 shadow-xs'
-                      : 'text-slate-600 dark:text-slate-400'
+                      ? 'bg-surface dark:bg-slate-800 text-primary dark:text-primary shadow-xs'
+                      : 'text-text-muted'
                   }`}
                 >
                   Jungs
@@ -174,8 +175,8 @@ export const AddStudentModal: React.FC<AddStudentModalProps> = ({ onClose }) => 
                   onClick={() => setGenderFilter('girl')}
                   className={`px-2 py-0.5 rounded-md transition-all cursor-pointer ${
                     genderFilter === 'girl'
-                      ? 'bg-white dark:bg-slate-800 text-pink-600 dark:text-pink-400 shadow-xs'
-                      : 'text-slate-600 dark:text-slate-400'
+                      ? 'bg-surface dark:bg-slate-800 text-pink-600 dark:text-pink-400 shadow-xs'
+                      : 'text-text-muted'
                   }`}
                 >
                   Mädchen
@@ -194,14 +195,14 @@ export const AddStudentModal: React.FC<AddStudentModalProps> = ({ onClose }) => 
                     onClick={() => setAvatarUrl(av.url)}
                     className={`relative rounded-xl overflow-hidden aspect-square border-2 transition-all cursor-pointer group hover:scale-105 ${
                       isSelected
-                        ? 'border-blue-500 ring-2 ring-blue-500/30 scale-105'
-                        : 'border-slate-200 dark:border-slate-700 hover:border-slate-400'
+                        ? 'border-primary ring-2 ring-primary/30 scale-105'
+                        : 'border-surface-border dark:border-surface-border-soft hover:border-slate-400'
                     }`}
                     title={av.name}
                   >
                     <img src={av.url} alt={av.name} className="w-full h-full object-cover" />
                     {isSelected && (
-                      <div className="absolute inset-0 bg-blue-600/30 flex items-center justify-center">
+                      <div className="absolute inset-0 bg-primary/30 flex items-center justify-center">
                         <Check className="w-4 h-4 text-white drop-shadow-md stroke-[3]" />
                       </div>
                     )}
@@ -211,12 +212,12 @@ export const AddStudentModal: React.FC<AddStudentModalProps> = ({ onClose }) => 
             </div>
 
             {/* Custom Photo Upload Option */}
-            <div className="pt-2 border-t border-slate-200/80 dark:border-slate-700/80 flex items-center justify-between gap-2">
-              <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
+            <div className="pt-2 border-t border-surface-border/80 dark:border-surface-border-soft/80 flex items-center justify-between gap-2">
+              <span className="text-[11px] text-text-muted font-medium">
                 Oder eigenes Foto verwenden:
               </span>
-              <label className="px-3 py-1.5 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-600 rounded-xl text-xs font-bold cursor-pointer transition-colors flex items-center gap-1.5 shrink-0">
-                <Camera className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+              <label className="px-3 py-1.5 bg-surface dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-text-main border border-slate-300 dark:border-slate-600 rounded-xl text-xs font-bold cursor-pointer transition-colors flex items-center gap-1.5 shrink-0">
+                <Camera className="w-3.5 h-3.5 text-primary dark:text-primary" />
                 <span>Foto hochladen</span>
                 <input type="file" accept="image/*" onChange={handlePhotoUpload} className="hidden" />
               </label>
@@ -225,7 +226,7 @@ export const AddStudentModal: React.FC<AddStudentModalProps> = ({ onClose }) => 
 
           {/* Student Name */}
           <div className="space-y-1">
-            <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
+            <label className="text-xs font-bold text-text-main">
               Schüler Name (Student Name) *
             </label>
             <input
@@ -234,13 +235,13 @@ export const AddStudentModal: React.FC<AddStudentModalProps> = ({ onClose }) => 
               placeholder="z. B. Ahmed Ali"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3.5 py-2.5 bg-surface-hover border border-surface-border dark:border-surface-border-soft rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-primary"
             />
           </div>
 
           {/* Group Selection */}
           <div className="space-y-1">
-            <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
+            <label className="text-xs font-bold text-text-main">
               Gruppe / Kurs zuweisen (Assigned Group) *
             </label>
             <select
@@ -250,7 +251,7 @@ export const AddStudentModal: React.FC<AddStudentModalProps> = ({ onClose }) => 
                 const g = groups.find(item => item.id === e.target.value);
                 if (g) setGrade(g.grade);
               }}
-              className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3.5 py-2.5 bg-surface-hover border border-surface-border dark:border-surface-border-soft rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-primary"
             >
               {groups.map(g => (
                 <option key={g.id} value={g.id}>
@@ -262,11 +263,11 @@ export const AddStudentModal: React.FC<AddStudentModalProps> = ({ onClose }) => 
 
           {/* Pricing Info Inherited Notice */}
           {selectedGroup && (
-            <div className="bg-blue-50/80 dark:bg-blue-950/40 border border-blue-200/80 dark:border-blue-800/60 rounded-xl p-3 flex items-start gap-2 text-xs text-blue-900 dark:text-blue-300">
-              <Info className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
+            <div className="bg-primary-soft dark:bg-primary-soft/40 border border-primary-border/80 dark:border-primary-border/60 rounded-xl p-3 flex items-start gap-2 text-xs text-primary-hover dark:text-primary/70 active:scale-95 transition-all hover:bg-primary/20">
+              <Info className="w-4 h-4 text-primary shrink-0 mt-0.5" />
               <div>
                 <p className="font-bold">Automatischer Preisschlüssel (Inherited Pricing):</p>
-                <p className="text-[11px] text-blue-700 dark:text-blue-400 mt-0.5">
+                <p className="text-[11px] text-primary dark:text-primary mt-0.5">
                   Package: <span className="font-mono font-bold">{selectedGroup.monthlyPackagePrice} EGP</span> / {selectedGroup.sessionCount} Sitzungen.
                   Preis wird automatisch von {selectedGroup.name} übernommen.
                 </p>
@@ -276,13 +277,13 @@ export const AddStudentModal: React.FC<AddStudentModalProps> = ({ onClose }) => 
 
           {/* Predefined Grade Level */}
           <div className="space-y-1">
-            <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
+            <label className="text-xs font-bold text-text-main">
               Klassenstufe (Predefined Grade Level)
             </label>
             <select
               value={grade}
               onChange={(e) => setGrade(e.target.value as GradeLevel)}
-              className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3.5 py-2.5 bg-surface-hover border border-surface-border dark:border-surface-border-soft rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-primary"
             >
               {PREDEFINED_GRADES.map(g => (
                 <option key={g} value={g}>{g}</option>
@@ -292,7 +293,7 @@ export const AddStudentModal: React.FC<AddStudentModalProps> = ({ onClose }) => 
 
           {/* Parent Name */}
           <div className="space-y-1">
-            <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
+            <label className="text-xs font-bold text-text-main">
               Name des Erziehungsberechtigten (Parent Name)
             </label>
             <input
@@ -300,14 +301,14 @@ export const AddStudentModal: React.FC<AddStudentModalProps> = ({ onClose }) => 
               placeholder="z. B. Ali Mahmoud"
               value={parentName}
               onChange={(e) => setParentName(e.target.value)}
-              className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3.5 py-2.5 bg-surface-hover border border-surface-border dark:border-surface-border-soft rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-primary"
             />
           </div>
 
           {/* Phone Numbers */}
           <div className="grid grid-cols-2 gap-2">
             <div className="space-y-1">
-              <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
+              <label className="text-xs font-bold text-text-main">
                 Telefon Eltern (Parent Phone)
               </label>
               <input
@@ -315,12 +316,12 @@ export const AddStudentModal: React.FC<AddStudentModalProps> = ({ onClose }) => 
                 placeholder="+20 100 123 4567"
                 value={parentPhone}
                 onChange={(e) => setParentPhone(e.target.value)}
-                className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-mono"
+                className="w-full px-3 py-2 bg-surface-hover border border-surface-border dark:border-surface-border-soft rounded-xl text-xs font-mono"
               />
             </div>
 
             <div className="space-y-1">
-              <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
+              <label className="text-xs font-bold text-text-main">
                 Telefon Schüler (Student Phone)
               </label>
               <input
@@ -328,14 +329,14 @@ export const AddStudentModal: React.FC<AddStudentModalProps> = ({ onClose }) => 
                 placeholder="+20 101 123 4567"
                 value={studentPhone}
                 onChange={(e) => setStudentPhone(e.target.value)}
-                className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-mono"
+                className="w-full px-3 py-2 bg-surface-hover border border-surface-border dark:border-surface-border-soft rounded-xl text-xs font-mono"
               />
             </div>
           </div>
 
           {/* Notes */}
           <div className="space-y-1">
-            <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
+            <label className="text-xs font-bold text-text-main">
               Lernnotizen (Student Notes)
             </label>
             <textarea
@@ -343,14 +344,14 @@ export const AddStudentModal: React.FC<AddStudentModalProps> = ({ onClose }) => 
               placeholder="Besondere Schwerpunkte, Schwächen oder Vorkenntnisse..."
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs focus:outline-none"
+              className="w-full px-3 py-2 bg-surface-hover border border-surface-border dark:border-surface-border-soft rounded-xl text-xs focus:outline-none"
             />
           </div>
 
           {/* Submit Button */}
           <button
             type="submit"
-            className="w-full bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-bold text-xs py-3 rounded-lg shadow-md transition-all cursor-pointer"
+            className="w-full bg-primary hover:bg-primary-hover active:scale-95 text-white font-bold text-xs py-3 rounded-lg shadow-md transition-all cursor-pointer active:scale-95 hover:shadow-lg hover:shadow-primary/30"
           >
             Schüler Speichern (Save Student)
           </button>

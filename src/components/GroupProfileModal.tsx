@@ -82,20 +82,21 @@ export const GroupProfileModal: React.FC<GroupProfileModalProps> = ({ group, onC
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 pt-[max(24px,env(safe-area-inset-top,24px))]">
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl w-full max-w-md shadow-2xl overflow-hidden animate-scale-up">
+    <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-end sm:items-center justify-center pt-[max(24px,env(safe-area-inset-top,24px))] p-0 sm:p-4 pb-0">
+      <div className="bg-surface border border-surface-border rounded-t-[28px] sm:rounded-xl pb-safe-bottom sm:pb-0 mb-0 w-full max-w-md shadow-2xl overflow-hidden animate-scale-up">
+        <div className="w-12 h-1.5 bg-slate-200 dark:bg-slate-800 rounded-full mx-auto mt-3 mb-1 sm:hidden shrink-0" />
         {/* Header */}
-        <div className="bg-gradient-to-r from-indigo-700 to-purple-800 p-5 text-white flex items-center justify-between">
+        <div className="bg-gradient-to-r from-primary to-primary-hover p-5 text-white flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <div className="p-2 bg-white/20 rounded-xl">
+            <div className="p-2 bg-surface/20 rounded-xl">
               <Users className="w-5 h-5 text-white" />
             </div>
             <div>
               <h2 className="text-base font-bold">{group.name}</h2>
-              <p className="text-xs text-indigo-100">{group.grade} • {groupStudents.length} Schüler</p>
+              <p className="text-xs text-primary-soft">{group.grade} • {groupStudents.length} Schüler</p>
             </div>
           </div>
-          <button onClick={onClose} className="p-1.5 hover:bg-white/20 rounded-full transition-colors cursor-pointer">
+          <button onClick={onClose} className="p-1.5 hover:bg-surface/20 rounded-full transition-colors cursor-pointer">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -103,18 +104,18 @@ export const GroupProfileModal: React.FC<GroupProfileModalProps> = ({ group, onC
         <form onSubmit={handleSave} className="p-5 space-y-4 max-h-[75vh] overflow-y-auto">
           {/* Group Name */}
           <div className="space-y-1">
-            <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Gruppen Name</label>
+            <label className="text-xs font-bold text-text-main">Gruppen Name</label>
             <input
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-semibold"
+              className="w-full px-3.5 py-2.5 bg-surface-hover border border-surface-border dark:border-surface-border-soft rounded-xl text-xs font-semibold"
             />
           </div>
 
           {/* Payment Cycle Selector */}
           <div className="space-y-1">
-            <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
+            <label className="text-xs font-bold text-text-main">
               Abrechnungsmodell (Payment Option)
             </label>
             <div className="grid grid-cols-2 gap-2 text-xs">
@@ -123,8 +124,8 @@ export const GroupProfileModal: React.FC<GroupProfileModalProps> = ({ group, onC
                 onClick={() => setPaymentCycle('monthly')}
                 className={`py-2 px-2 rounded-xl font-bold border transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
                   paymentCycle === 'monthly'
-                    ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
-                    : 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700'
+                    ? 'bg-primary text-white border-primary-border shadow-xs'
+                    : 'bg-surface-hover text-text-main border-surface-border dark:border-surface-border-soft'
                 }`}
               >
                 <Calendar className="w-3.5 h-3.5" />
@@ -136,8 +137,8 @@ export const GroupProfileModal: React.FC<GroupProfileModalProps> = ({ group, onC
                 onClick={() => setPaymentCycle('per_lesson')}
                 className={`py-2 px-2 rounded-xl font-bold border transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
                   paymentCycle === 'per_lesson'
-                    ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs'
-                    : 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700'
+                    ? 'bg-primary text-white border-primary-border shadow-xs'
+                    : 'bg-surface-hover text-text-main border-surface-border dark:border-surface-border-soft'
                 }`}
               >
                 <DollarSign className="w-3.5 h-3.5" />
@@ -150,61 +151,61 @@ export const GroupProfileModal: React.FC<GroupProfileModalProps> = ({ group, onC
           {paymentCycle === 'monthly' ? (
             <div className="grid grid-cols-2 gap-2">
               <div className="space-y-1">
-                <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                <label className="text-xs font-bold text-text-main">
                   Monatspaket Preis ({profile.currency})
                 </label>
                 <input
                   type="number"
                   value={monthlyPackagePrice}
                   onChange={(e) => setMonthlyPackagePrice(Number(e.target.value))}
-                  className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold font-mono"
+                  className="w-full px-3 py-2 bg-surface-hover border border-surface-border dark:border-surface-border-soft rounded-xl text-xs font-bold font-mono"
                 />
               </div>
 
               <div className="space-y-1">
-                <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                <label className="text-xs font-bold text-text-main">
                   Sitzungen pro Paket
                 </label>
                 <input
                   type="number"
                   value={sessionCount}
                   onChange={(e) => setSessionCount(Number(e.target.value))}
-                  className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold font-mono"
+                  className="w-full px-3 py-2 bg-surface-hover border border-surface-border dark:border-surface-border-soft rounded-xl text-xs font-bold font-mono"
                 />
               </div>
             </div>
           ) : (
             <div className="space-y-1">
-              <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
+              <label className="text-xs font-bold text-text-main">
                 Preis pro Sitzung ({profile.currency})
               </label>
               <input
                 type="number"
                 value={pricePerSession}
                 onChange={(e) => setPricePerSession(Number(e.target.value))}
-                className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold font-mono"
+                className="w-full px-3 py-2 bg-surface-hover border border-surface-border dark:border-surface-border-soft rounded-xl text-xs font-bold font-mono"
               />
             </div>
           )}
 
           {/* Schedule & Calendar Sync */}
-          <div className="p-3 bg-blue-50/60 dark:bg-blue-950/40 border border-blue-200/60 dark:border-blue-900/60 rounded-lg space-y-2.5">
+          <div className="p-3 bg-primary-soft dark:bg-primary-soft/40 border border-primary-border/60 dark:border-primary-border/60 rounded-lg space-y-2.5">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-blue-900 dark:text-blue-200 flex items-center gap-1.5">
-                <Calendar className="w-4 h-4 text-blue-600" />
+              <span className="text-xs font-bold text-primary-hover dark:text-primary/70 flex items-center gap-1.5">
+                <Calendar className="w-4 h-4 text-primary" />
                 <span>Unterrichtstage & Kalender (Group Schedule)</span>
               </span>
               <button
                 type="button"
                 onClick={handleGenerateCalendar}
-                className="px-2.5 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-[11px] font-bold transition-all shadow-2xs cursor-pointer"
+                className="px-2.5 py-1 bg-primary hover:bg-primary-hover text-white rounded-lg text-[11px] font-bold transition-all shadow-2xs cursor-pointer active:scale-95 hover:shadow-lg hover:shadow-primary/30"
               >
                 + In Kalender eintragen
               </button>
             </div>
 
             <div className="space-y-1">
-              <label className="text-[11px] font-bold text-slate-600 dark:text-slate-400">
+              <label className="text-[11px] font-bold text-text-muted">
                 Wochentage wählen:
               </label>
               <div className="flex flex-wrap gap-1">
@@ -215,8 +216,8 @@ export const GroupProfileModal: React.FC<GroupProfileModalProps> = ({ group, onC
                     onClick={() => toggleScheduleDay(day)}
                     className={`px-2 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                       scheduleDays.includes(day)
-                        ? 'bg-blue-600 text-white shadow-2xs'
-                        : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700'
+                        ? 'bg-primary text-white shadow-2xs'
+                        : 'bg-surface dark:bg-slate-800 text-text-muted border border-surface-border dark:border-surface-border-soft'
                     }`}
                   >
                     {day}
@@ -227,28 +228,28 @@ export const GroupProfileModal: React.FC<GroupProfileModalProps> = ({ group, onC
 
             {scheduleDays.length === 0 && (
               <div className="space-y-1">
-                <label className="text-[11px] font-bold text-slate-600 dark:text-slate-400">
+                <label className="text-[11px] font-bold text-text-muted">
                   Standard-Uhrzeit (Standard Time):
                 </label>
                 <input
                   type="time"
                   value={scheduleTime}
                   onChange={(e) => setScheduleTime(e.target.value)}
-                  className="w-full px-3 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-mono font-bold"
+                  className="w-full px-3 py-1.5 bg-surface dark:bg-slate-800 border border-surface-border dark:border-surface-border-soft rounded-xl text-xs font-mono font-bold"
                 />
               </div>
             )}
 
             {/* Per-Day Custom Times */}
             {scheduleDays.length > 0 && (
-              <div className="space-y-1.5 pt-2 border-t border-blue-200/60 dark:border-blue-900/60">
-                <label className="text-[11px] font-bold text-blue-900 dark:text-blue-200 block">
+              <div className="space-y-1.5 pt-2 border-t border-primary-border/60 dark:border-primary-border/60">
+                <label className="text-[11px] font-bold text-primary-hover dark:text-primary/70 block">
                   Uhrzeit pro Wochentag (Individual Times per Day):
                 </label>
                 <div className="grid grid-cols-2 gap-2">
                   {scheduleDays.map(day => (
-                    <div key={day} className="flex items-center gap-1.5 bg-white dark:bg-slate-800 p-1.5 rounded-xl border border-slate-200 dark:border-slate-700">
-                      <span className="text-xs font-black text-blue-600 dark:text-blue-400 w-6 shrink-0">{day}:</span>
+                    <div key={day} className="flex items-center gap-1.5 bg-surface dark:bg-slate-800 p-1.5 rounded-xl border border-surface-border dark:border-surface-border-soft">
+                      <span className="text-xs font-black text-primary dark:text-primary w-6 shrink-0">{day}:</span>
                       <input
                         type="time"
                         value={dayTimes[day] || scheduleTime || '17:00'}
@@ -262,14 +263,14 @@ export const GroupProfileModal: React.FC<GroupProfileModalProps> = ({ group, onC
             )}
 
             {/* Lesson Duration per Group */}
-            <div className="pt-2 border-t border-blue-200/60 dark:border-blue-900/60 space-y-1">
-              <label className="text-xs font-bold text-blue-900 dark:text-blue-200 flex items-center gap-1.5">
+            <div className="pt-2 border-t border-primary-border/60 dark:border-primary-border/60 space-y-1">
+              <label className="text-xs font-bold text-primary-hover dark:text-primary/70 flex items-center gap-1.5">
                 <span>{t('lesson_duration_label')}:</span>
               </label>
               <select
                 value={lessonDurationMinutes}
                 onChange={(e) => setLessonDurationMinutes(Number(e.target.value))}
-                className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-blue-200 dark:border-blue-800 rounded-xl text-xs font-bold text-blue-700 dark:text-blue-300"
+                className="w-full px-3 py-2 bg-surface border border-primary-border dark:border-primary-border rounded-xl text-xs font-bold text-primary dark:text-primary/70"
               >
                 <option value={60}>60 Min (1 Std / 1 Hour - Default)</option>
                 <option value={75}>75 Min (1h 15m)</option>
@@ -285,19 +286,19 @@ export const GroupProfileModal: React.FC<GroupProfileModalProps> = ({ group, onC
           {/* Type details */}
           {type === 'online' ? (
             <div className="space-y-2">
-              <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Permanent Zoom Link</label>
+              <label className="text-xs font-bold text-text-main">Permanent Zoom Link</label>
               <div className="flex gap-2">
                 <input
                   type="url"
                   value={zoomLink}
                   onChange={(e) => setZoomLink(e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-mono"
+                  className="w-full px-3 py-2 bg-surface-hover border border-surface-border dark:border-surface-border-soft rounded-xl text-xs font-mono"
                 />
                 <a
                   href={zoomLink}
                   target="_blank"
                   rel="noreferrer"
-                  className="p-2 bg-blue-600 text-white rounded-xl flex items-center justify-center shrink-0"
+                  className="p-2 bg-primary text-white rounded-xl flex items-center justify-center shrink-0 active:scale-95 hover:shadow-lg hover:shadow-primary/30 transition-all hover:bg-primary-hover"
                 >
                   <ExternalLink className="w-4 h-4" />
                 </a>
@@ -305,26 +306,26 @@ export const GroupProfileModal: React.FC<GroupProfileModalProps> = ({ group, onC
             </div>
           ) : (
             <div className="space-y-2">
-              <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Address / Location</label>
+              <label className="text-xs font-bold text-text-main">Address / Location</label>
               <input
                 type="text"
                 value={address}
                 onChange={(e) => setAddress(e.target.value)}
-                className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs"
+                className="w-full px-3 py-2 bg-surface-hover border border-surface-border dark:border-surface-border-soft rounded-xl text-xs"
               />
             </div>
           )}
 
           {/* Students in group */}
-          <div className="space-y-2 pt-2 border-t border-slate-100 dark:border-slate-800">
-            <p className="text-xs font-bold text-slate-700 dark:text-slate-300">
+          <div className="space-y-2 pt-2 border-t border-slate-100 dark:border-surface-border">
+            <p className="text-xs font-bold text-text-main">
               Schüler in dieser Gruppe ({groupStudents.length}):
             </p>
             <div className="space-y-1 max-h-36 overflow-y-auto">
               {groupStudents.map(s => (
-                <div key={s.id} className="p-2 bg-slate-50 dark:bg-slate-800 rounded-xl text-xs flex justify-between font-semibold">
+                <div key={s.id} className="p-2 bg-surface-hover rounded-xl text-xs flex justify-between font-semibold">
                   <span>{s.name}</span>
-                  <span className="text-slate-400 font-mono">{s.parentPhone}</span>
+                  <span className="text-text-muted/70 font-mono">{s.parentPhone}</span>
                 </div>
               ))}
             </div>
@@ -334,7 +335,7 @@ export const GroupProfileModal: React.FC<GroupProfileModalProps> = ({ group, onC
             <button
               type="button"
               onClick={() => setIsConfirmingDelete(true)}
-              className="bg-red-50 hover:bg-red-100 dark:bg-red-950/40 dark:hover:bg-red-900/60 text-red-600 dark:text-red-400 font-bold text-xs px-4 py-3 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer shrink-0 border border-red-200 dark:border-red-800"
+              className="bg-red-50 hover:bg-red-100 dark:bg-red-950/40 dark:hover:bg-primary-soft text-red-600 dark:text-red-400 font-bold text-xs px-4 py-3 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer shrink-0 border border-red-200 dark:border-red-800"
               title="Gruppe löschen / archivieren"
             >
               <Trash2 className="w-4 h-4" />
@@ -343,7 +344,7 @@ export const GroupProfileModal: React.FC<GroupProfileModalProps> = ({ group, onC
 
             <button
               type="submit"
-              className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs py-3 rounded-lg shadow-md transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+              className="flex-1 bg-primary hover:bg-primary-hover text-white font-bold text-xs py-3 rounded-lg shadow-md transition-all flex items-center justify-center gap-1.5 cursor-pointer"
             >
               <Save className="w-4 h-4" />
               <span>Änderungen Speichern</span>

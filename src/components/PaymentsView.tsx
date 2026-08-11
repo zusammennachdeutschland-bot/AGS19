@@ -1,27 +1,12 @@
 import React, { useState, useMemo } from 'react';
 import { useApp } from '../context/AppContext';
 import { PaymentRecord, Student, Group } from '../types';
-import { getStudentCyclePricing } from '../utils/paymentUtils';
+import { getStudentCyclePricing, calculateDuePaymentCycles, DuePaymentCycle } from '../utils/paymentUtils';
 import { 
   DollarSign, CheckCircle2, Clock, Send, Search, 
   Check, X, Sparkles, History, Calendar, AlertCircle, TrendingUp, ChevronRight
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
-
-export interface DuePaymentCycle {
-  id: string; // unique key
-  studentId: string;
-  studentName: string;
-  groupId: string;
-  groupName: string;
-  cycleLength: number; // e.g. 4
-  amountDue: number; // e.g. 400
-  lessonDates: string[]; // e.g. ["01/08/2026", "03/08/2026", "05/08/2026", "08/08/2026"]
-  lessonIds: string[];
-  status: 'due' | 'not_yet';
-  parentPhone?: string;
-  existingPaymentRecordId?: string;
-}
 
 export const PaymentsView: React.FC = () => {
   const { 
@@ -100,96 +85,7 @@ export const PaymentsView: React.FC = () => {
   // CALCULATE DUE PAYMENT CYCLES (ONLY STUDENTS WHO REACHED END OF CYCLE)
   // --------------------------------------------------------------------------
   const dueCycles = useMemo(() => {
-    const list: DuePaymentCycle[] = [];
-
-    // Map paid lesson IDs for fast lookup
-    const paidLessonIds = new Set<string>();
-    payments.forEach(p => {
-      if (p.status === 'paid' && p.lessonIds && p.lessonIds.length > 0) {
-        p.lessonIds.forEach(id => paidLessonIds.add(id));
-      }
-    });
-
-    students.forEach(st => {
-      // Find assigned group
-      const grp = groups.find(g => g.id === st.groupId);
-
-      // Determine cycle length (N) and package price (P) using canonical pricing utility
-      const { cycleLength, amountDue } = getStudentCyclePricing(st, grp);
-
-      // Collect all completed attended lessons for this student that have NOT been paid for
-      const stCompletedLessons = lessons.filter(l => {
-        if (l.status !== 'completed') return false;
-        const matchesGroup = grp ? l.groupId === grp.id : false;
-        const matchesStudent = l.studentId === st.id || l.studentName === st.name;
-        if (!matchesGroup && !matchesStudent) return false;
-
-        // Attendance check
-        const att = l.report?.studentAttendance?.[st.id] || l.report?.attendanceStatus || 'present';
-        if (att === 'absent') return false;
-
-        // Check if this lesson ID has already been marked paid
-        if (paidLessonIds.has(l.id)) return false;
-
-        return true;
-      });
-
-      // Sort chronologically
-      stCompletedLessons.sort((a, b) => a.date.localeCompare(b.date));
-
-      // Check if student has an existing unpaid payment record in `payments`
-      const unpaidRec = payments.find(p => p.studentId === st.id && p.status !== 'paid');
-
-      // Check if student completed their cycle (unbilled lessons >= cycleLength)
-      if (stCompletedLessons.length >= cycleLength) {
-        let remaining = [...stCompletedLessons];
-        let chunkIndex = 0;
-
-        while (remaining.length >= cycleLength) {
-          const currentChunk = remaining.slice(0, cycleLength);
-          const lessonDates = currentChunk.map(l => formatDateDisplay(l.date));
-          const lessonIds = currentChunk.map(l => l.id);
-
-          list.push({
-            id: (chunkIndex === 0 && unpaidRec?.id) ? unpaidRec.id : `due_cycle_${st.id}_${currentChunk[0]?.id || Date.now()}_chunk_${chunkIndex}`,
-            studentId: st.id,
-            studentName: st.name,
-            groupId: st.groupId || grp?.id || '',
-            groupName: grp?.name || 'Gruppe',
-            cycleLength,
-            amountDue,
-            lessonDates,
-            lessonIds,
-            status: (chunkIndex === 0 && unpaidRec) ? 'not_yet' : 'due',
-            parentPhone: st.parentPhone || st.studentPhone || '',
-            existingPaymentRecordId: chunkIndex === 0 ? unpaidRec?.id : undefined
-          });
-
-          remaining = remaining.slice(cycleLength);
-          chunkIndex++;
-        }
-      } else if (unpaidRec) {
-        // Unpaid record exists from past cycle
-        list.push({
-          id: unpaidRec.id,
-          studentId: st.id,
-          studentName: st.name,
-          groupId: st.groupId || grp?.id || '',
-          groupName: grp?.name || unpaidRec.groupName || 'Gruppe',
-          cycleLength: unpaidRec.bundleSize || cycleLength,
-          amountDue: unpaidRec.amountDue || amountDue,
-          lessonDates: unpaidRec.lessonDates || [],
-          lessonIds: unpaidRec.lessonIds || [],
-          status: 'not_yet',
-          parentPhone: st.parentPhone || st.studentPhone || '',
-          existingPaymentRecordId: unpaidRec.id
-        });
-      }
-      // Note: If stCompletedLessons.length < cycleLength and no unpaid record exists,
-      // student is NOT due for payment and will NOT appear on Payments page!
-    });
-
-    return list;
+    return calculateDuePaymentCycles(students, groups, lessons, payments);
   }, [students, groups, lessons, payments]);
 
   // Filtered Due Cycles based on search & group filter
@@ -365,62 +261,100 @@ ${datesFormatted}
   };
 
   return (
-    <div className="space-y-5 pb-24 font-sans max-w-4xl mx-auto">
-      {/* TOP BANNER */}
-      <div className="bg-white dark:bg-slate-900 p-4 rounded-lg border border-slate-250 dark:border-slate-800 shadow-xs flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
-        {/* SMALL GAIN SUMMARY BUTTONS - HORIZONTAL EQUAL SIZE */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 flex-1">
-          <button
+    <div className="space-y-3  font-sans max-w-4xl mx-auto">
+      {/* FINANCIAL DASHBOARD */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-1">
+        <div className="bg-surface hover:bg-surface-hover transition-colors p-3.5 rounded-2xl border border-surface-border flex flex-col justify-center relative overflow-hidden shadow-sm">
+          <div className="absolute -right-2 -top-2 w-12 h-12 bg-primary/5 rounded-full blur-xl pointer-events-none" />
+          <span className="text-[10px] font-black text-text-muted uppercase tracking-wider mb-1 flex items-center gap-1">
+            <CheckCircle2 className="w-3 h-3 text-primary" />
+            {t('payments_total_collected') || 'Collected'}
+          </span>
+          <span className="text-lg font-black text-primary font-mono">{monthlyTotal} <span className="text-[10px] text-primary/70">{currency}</span></span>
+        </div>
+        <div className="bg-surface hover:bg-surface-hover transition-colors p-3.5 rounded-2xl border border-surface-border flex flex-col justify-center relative overflow-hidden shadow-sm">
+          <div className="absolute -right-2 -top-2 w-12 h-12 bg-amber-500/5 rounded-full blur-xl pointer-events-none" />
+          <span className="text-[10px] font-black text-text-muted uppercase tracking-wider mb-1 flex items-center gap-1">
+            <Clock className="w-3 h-3 text-amber-500" />
+            {t('payments_total_pending') || 'Pending'}
+          </span>
+          <span className="text-lg font-black text-amber-500 font-mono">{totalAmountDue} <span className="text-[10px] text-amber-500/70">{currency}</span></span>
+        </div>
+        <div className="bg-surface hover:bg-surface-hover transition-colors p-3.5 rounded-2xl border border-surface-border flex flex-col justify-center relative overflow-hidden shadow-sm">
+          <div className="absolute -right-2 -top-2 w-12 h-12 bg-red-500/5 rounded-full blur-xl pointer-events-none" />
+          <span className="text-[10px] font-black text-text-muted uppercase tracking-wider mb-1 flex items-center gap-1">
+            <AlertCircle className="w-3 h-3 text-red-500" />
+            {t('payments_overdue')}
+          </span>
+          <span className="text-lg font-black text-red-500 font-mono">0 <span className="text-[10px] text-red-500/70">{currency}</span></span>
+        </div>
+        <div className="bg-surface hover:bg-surface-hover transition-colors p-3.5 rounded-2xl border border-surface-border flex flex-col justify-center relative overflow-hidden shadow-sm">
+          <div className="absolute -right-2 -top-2 w-12 h-12 bg-indigo-500/5 rounded-full blur-xl pointer-events-none" />
+          <span className="text-[10px] font-black text-text-muted uppercase tracking-wider mb-1 flex items-center gap-1">
+            <DollarSign className="w-3 h-3 text-indigo-500" />
+            {t('payments_expected')}
+          </span>
+          <span className="text-lg font-black text-indigo-500 font-mono">{totalAmountDue + monthlyTotal} <span className="text-[10px] text-indigo-500/70">{currency}</span></span>
+        </div>
+      </div>
+
+      {/* REVENUE OVERVIEW CARD */}
+      <div className="bg-gradient-to-br from-primary/5 via-surface to-surface border border-primary-border/20 p-4 rounded-2xl shadow-sm mb-4 relative overflow-hidden">
+        <div className="absolute top-0 right-0 p-4 opacity-10 pointer-events-none">
+          <TrendingUp className="w-24 h-24 text-primary" />
+        </div>
+        
+        <div className="flex items-center justify-between mb-4 relative z-10">
+          <div className="flex items-center gap-2">
+            <div className="p-1.5 bg-primary/10 rounded-lg">
+              <TrendingUp className="w-4 h-4 text-primary" />
+            </div>
+            <h3 className="text-xs font-bold text-text-main uppercase tracking-wider">{t('payments_revenue_overview')}</h3>
+          </div>
+        </div>
+        
+        <div className="grid grid-cols-3 gap-2 relative z-10">
+          <button 
             type="button"
-            onClick={() => setSelectedGainPeriod('daily')}
-            className="px-3 py-2.5 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700/80 text-slate-800 dark:text-slate-200 rounded-xl text-xs font-black border border-slate-200 dark:border-slate-700 transition-all flex items-center justify-center gap-1.5 cursor-pointer text-center"
+            onClick={() => setSelectedGainPeriod('daily')} 
+            className="flex flex-col items-center p-3 bg-surface hover:bg-primary-soft transition-colors rounded-xl border border-surface-border cursor-pointer group"
           >
-            <TrendingUp className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
-            <span>{t('payments_daily_gain')}:</span>
-            <span className="font-mono font-bold whitespace-nowrap text-emerald-600 dark:text-emerald-400">{dailyTotal} {currency}</span>
+            <span className="text-[10px] font-bold text-text-muted uppercase tracking-wider mb-1 group-hover:text-primary transition-colors">{t('payments_daily_gain_title') || 'Today'}</span>
+            <span className="text-base sm:text-lg font-black text-text-main font-mono">{dailyTotal}</span>
+            <div className="mt-1.5 flex items-center justify-center text-[9px] text-emerald-500 font-bold bg-emerald-500/10 px-1.5 py-0.5 rounded-full"><TrendingUp className="w-2.5 h-2.5 mr-0.5"/> +0%</div>
+          </button>
+          
+          <button 
+            type="button"
+            onClick={() => setSelectedGainPeriod('weekly')} 
+            className="flex flex-col items-center p-3 bg-surface hover:bg-primary-soft transition-colors rounded-xl border border-surface-border cursor-pointer group"
+          >
+            <span className="text-[10px] font-bold text-text-muted uppercase tracking-wider mb-1 group-hover:text-primary transition-colors">{t('payments_weekly_gain_title') || 'Weekly'}</span>
+            <span className="text-base sm:text-lg font-black text-text-main font-mono">{weeklyTotal}</span>
+            <div className="mt-1.5 flex items-center justify-center text-[9px] text-emerald-500 font-bold bg-emerald-500/10 px-1.5 py-0.5 rounded-full"><TrendingUp className="w-2.5 h-2.5 mr-0.5"/> +0%</div>
           </button>
 
-          <button
+          <button 
             type="button"
-            onClick={() => setSelectedGainPeriod('weekly')}
-            className="px-3 py-2.5 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700/80 text-slate-800 dark:text-slate-200 rounded-xl text-xs font-black border border-slate-200 dark:border-slate-700 transition-all flex items-center justify-center gap-1.5 cursor-pointer text-center"
+            onClick={() => setSelectedGainPeriod('monthly')} 
+            className="flex flex-col items-center p-3 bg-surface hover:bg-primary-soft transition-colors rounded-xl border border-surface-border cursor-pointer group"
           >
-            <TrendingUp className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 shrink-0" />
-            <span>{t('payments_weekly_gain')}:</span>
-            <span className="font-mono font-bold whitespace-nowrap text-blue-600 dark:text-blue-400">{weeklyTotal} {currency}</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setSelectedGainPeriod('monthly')}
-            className="px-3 py-2.5 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700/80 text-slate-800 dark:text-slate-200 rounded-xl text-xs font-black border border-slate-200 dark:border-slate-700 transition-all flex items-center justify-center gap-1.5 cursor-pointer text-center"
-          >
-            <TrendingUp className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400 shrink-0" />
-            <span>{t('payments_monthly_gain')}:</span>
-            <span className="font-mono font-bold whitespace-nowrap text-indigo-600 dark:text-indigo-400">{monthlyTotal} {currency}</span>
+            <span className="text-[10px] font-bold text-text-muted uppercase tracking-wider mb-1 group-hover:text-primary transition-colors">{t('payments_monthly_gain_title') || 'Monthly'}</span>
+            <span className="text-base sm:text-lg font-black text-text-main font-mono">{monthlyTotal}</span>
+            <div className="mt-1.5 flex items-center justify-center text-[9px] text-emerald-500 font-bold bg-emerald-500/10 px-1.5 py-0.5 rounded-full"><TrendingUp className="w-2.5 h-2.5 mr-0.5"/> +0%</div>
           </button>
         </div>
-
-        {/* SUMMARY BADGE */}
-        {dueCycles.length > 0 && (
-          <div className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-4 py-2 rounded-xl text-right shrink-0 flex sm:flex-col items-center sm:items-end justify-between sm:justify-center">
-            <span className="text-[9px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider block">{t('payments_total_due')}</span>
-            <div className="text-sm font-black text-emerald-600 dark:text-emerald-400 font-mono">
-              {totalAmountDue} <span className="text-xs font-normal text-slate-500">{currency}</span>
-            </div>
-          </div>
-        )}
       </div>
 
       {/* SEGMENT TABS */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 border-b border-slate-200 dark:border-slate-800 pb-2">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 border-b border-surface-border pb-2">
         <div className="grid grid-cols-2 gap-2 flex-1 max-w-lg">
           <button
             onClick={() => setActiveTab('due')}
             className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-2 ${
               activeTab === 'due'
-                ? 'bg-blue-600 text-white shadow-xs'
-                : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
+                ? 'bg-primary text-white shadow-xs'
+                : 'bg-surface-hover text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
             }`}
           >
             <Clock className="w-4 h-4 shrink-0" />
@@ -431,8 +365,8 @@ ${datesFormatted}
             onClick={() => setActiveTab('history')}
             className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-2 ${
               activeTab === 'history'
-                ? 'bg-blue-600 text-white shadow-xs'
-                : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
+                ? 'bg-primary text-white shadow-xs'
+                : 'bg-surface-hover text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
             }`}
           >
             <History className="w-4 h-4 shrink-0" />
@@ -445,7 +379,7 @@ ${datesFormatted}
           <select
             value={selectedGroupId}
             onChange={e => setSelectedGroupId(e.target.value)}
-            className="px-3 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold focus:outline-none"
+            className="px-3 py-1.5 bg-surface border border-surface-border rounded-xl text-xs font-bold focus:outline-none"
           >
             <option value="all">{t('students_all_groups')}</option>
             {groups.map(g => (
@@ -459,16 +393,19 @@ ${datesFormatted}
       {activeTab === 'due' && (
         <div className="space-y-3">
           {filteredDueCycles.length === 0 ? (
-            <div className="bg-white dark:bg-slate-900 p-8 rounded-xl border border-slate-200 dark:border-slate-800 text-center space-y-3">
-              <div className="w-12 h-12 bg-emerald-100 dark:bg-emerald-950 text-emerald-600 rounded-lg flex items-center justify-center mx-auto">
-                <CheckCircle2 className="w-6 h-6" />
+            <div className="py-12 sm:py-20 text-center flex flex-col items-center justify-center space-y-4">
+              <div className="relative mb-2">
+                <div className="absolute inset-0 bg-primary/20 rounded-full blur-2xl pointer-events-none" />
+                <div className="w-20 h-20 bg-primary-soft dark:bg-primary-soft text-primary rounded-3xl flex items-center justify-center mx-auto relative z-10 shadow-sm border border-primary-border/30 rotate-3">
+                  <CheckCircle2 className="w-10 h-10 -rotate-3" />
+                </div>
               </div>
-              <div className="space-y-1">
-                <h3 className="text-sm font-black text-slate-900 dark:text-white">
-                  {t('payments_no_due')} ✨
+              <div className="space-y-2 relative z-10">
+                <h3 className="text-base sm:text-lg font-black text-text-main tracking-tight">
+                  {t('payments_no_due_title') || t('payments_no_due')}
                 </h3>
-                <p className="text-xs text-slate-500 dark:text-slate-400 max-w-md mx-auto leading-relaxed">
-                  {t('payments_no_due_sub')}
+                <p className="text-sm text-text-muted max-w-md mx-auto leading-relaxed">
+                  {t('payments_no_due_desc') || t('payments_no_due_sub')}
                 </p>
               </div>
             </div>
@@ -476,26 +413,26 @@ ${datesFormatted}
             filteredDueCycles.map((item, idx) => (
               <div
                 key={`${item.id}_${idx}`}
-                className="bg-white dark:bg-slate-900 p-4 sm:p-5 rounded-xl border border-amber-200/80 dark:border-amber-950/80 shadow-xs space-y-3.5 relative overflow-hidden"
+                className="bg-surface p-4 sm:p-5 rounded-xl border border-primary-border dark:border-primary-border shadow-xs space-y-3.5 relative overflow-hidden"
               >
                 {/* TOP ROW: STUDENT INFO & AMOUNT DUE */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-3">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-surface-border pb-3">
                   <div>
                     <div className="flex items-center gap-2">
-                      <h3 className="text-base font-black text-slate-900 dark:text-white">
+                      <h3 className="text-base font-black text-text-main">
                         {item.studentName}
                       </h3>
-                      <span className="px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold">
+                      <span className="px-2.5 py-0.5 rounded-full bg-surface-hover text-text-main text-xs font-bold">
                         {item.groupName}
                       </span>
                     </div>
 
                     <div className="flex items-center gap-2 mt-1">
-                      <span className="px-2 py-0.5 rounded-md bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300 text-[11px] font-black">
+                      <span className="px-2 py-0.5 rounded-md bg-primary-soft dark:bg-primary-soft text-primary dark:text-primary text-[11px] font-black">
                         {t('payments_completed_cycle')}: {item.cycleLength} / {item.cycleLength} {t('payment_plan_lessons')}
                       </span>
                       {item.status === 'not_yet' && (
-                        <span className="text-[11px] font-bold text-slate-400">
+                        <span className="text-[11px] font-bold text-text-muted/70">
                           ({t('payments_pending_tag')} ⏳)
                         </span>
                       )}
@@ -503,17 +440,17 @@ ${datesFormatted}
                   </div>
 
                   <div className="text-right shrink-0">
-                    <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">{t('payments_amount_due')}</span>
-                    <div className="text-xl font-black text-emerald-600 dark:text-emerald-400 font-mono">
-                      {item.amountDue} <span className="text-xs font-normal text-slate-400">{currency}</span>
+                    <span className="text-[10px] font-extrabold text-text-muted/70 uppercase tracking-wider block">{t('payments_amount_due')}</span>
+                    <div className="text-xl font-black text-primary dark:text-primary font-mono">
+                      {item.amountDue} <span className="text-xs font-normal text-text-muted/70">{currency}</span>
                     </div>
                   </div>
                 </div>
 
                 {/* LESSON DATES INCLUDED IN THIS CYCLE */}
                 <div className="space-y-1.5">
-                  <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 flex items-center gap-1">
-                    <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                  <span className="text-[11px] font-bold text-text-muted flex items-center gap-1">
+                    <Calendar className="w-3.5 h-3.5 text-text-muted/70" />
                     <span>{t('payments_completed_dates')}:</span>
                   </span>
 
@@ -522,13 +459,13 @@ ${datesFormatted}
                       item.lessonDates.map((d, idx) => (
                         <span
                           key={idx}
-                          className="px-2.5 py-1 bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 rounded-lg text-xs font-mono font-bold border border-slate-200 dark:border-slate-700"
+                          className="px-2.5 py-1 bg-surface-hover text-slate-800 dark:text-slate-200 rounded-lg text-xs font-mono font-bold border border-surface-border dark:border-surface-border-soft"
                         >
                           🗓️ {d}
                         </span>
                       ))
                     ) : (
-                      <span className="text-xs text-slate-400 italic">
+                      <span className="text-xs text-text-muted/70 italic">
                         {item.cycleLength} {t('payment_plan_lessons')}
                       </span>
                     )}
@@ -542,7 +479,7 @@ ${datesFormatted}
                     <button
                       type="button"
                       onClick={() => handleMarkPaid(item)}
-                      className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white text-xs font-black rounded-xl transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
+                      className="px-4 py-2 bg-primary hover:bg-primary-hover active:scale-95 text-white text-xs font-black rounded-xl transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
                     >
                       <Check className="w-4 h-4 stroke-[3]" />
                       <span>{t('payments_paid_btn')} (Paid)</span>
@@ -552,9 +489,9 @@ ${datesFormatted}
                     <button
                       type="button"
                       onClick={() => handleMarkNotYet(item)}
-                      className="px-3.5 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold rounded-xl transition-all cursor-pointer flex items-center gap-1.5"
+                      className="px-3.5 py-2 bg-surface-hover hover:bg-slate-200 dark:hover:bg-slate-700 text-text-main text-xs font-bold rounded-xl transition-all cursor-pointer flex items-center gap-1.5"
                     >
-                      <Clock className="w-3.5 h-3.5 text-slate-400" />
+                      <Clock className="w-3.5 h-3.5 text-text-muted/70" />
                       <span>{t('payments_not_yet_btn')} (Not Yet)</span>
                     </button>
                   </div>
@@ -563,9 +500,9 @@ ${datesFormatted}
                   <button
                     type="button"
                     onClick={() => setSelectedCycleForWhatsApp(item)}
-                    className="px-3 py-2 bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-100 text-emerald-700 dark:text-emerald-300 text-xs font-bold rounded-xl transition-all border border-emerald-200 dark:border-emerald-800/60 cursor-pointer flex items-center gap-1.5"
+                    className="px-3 py-2 bg-primary-soft dark:bg-primary-soft hover:bg-primary-soft text-primary dark:text-primary text-xs font-bold rounded-xl transition-all border border-primary-border dark:border-primary-border cursor-pointer flex items-center gap-1.5"
                   >
-                    <Send className="w-3.5 h-3.5 text-emerald-600" />
+                    <Send className="w-3.5 h-3.5 text-primary" />
                     <span>{t('payments_parent_notice')} (WhatsApp)</span>
                   </button>
                 </div>
@@ -574,46 +511,46 @@ ${datesFormatted}
           )}
 
           {/* Section: Flexible & Prorated Billing (إنهاء الدورة مبكراً والفوترة الجزئية) */}
-          <div className="pt-6 border-t border-slate-200 dark:border-slate-800 space-y-4">
+          <div className="pt-4 border-t border-surface-border space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-right dir-rtl">
               <div>
-                <h3 className="text-sm font-black text-slate-900 dark:text-white flex items-center justify-end gap-1.5">
-                  <Sparkles className="w-4 h-4 text-amber-500" />
+                <h3 className="text-sm font-black text-text-main flex items-center justify-end gap-1.5">
+                  <Sparkles className="w-4 h-4 text-primary" />
                   <span>الفوترة الجزئية وإنهاء الدورة مبكراً (Flexible & Prorated Billing)</span>
                 </h3>
-                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+                <p className="text-[11px] text-text-muted mt-1">
                   يمكنك إنهاء الدورة الحالية للطلاب مبكراً والمطالبة بالدفع بناءً على الحصص التي حضروها فعلياً.
                 </p>
               </div>
             </div>
 
             {filteredInProgressCycles.length === 0 ? (
-              <div className="bg-slate-50 dark:bg-slate-800/30 p-4 rounded-lg text-center border border-slate-100 dark:border-slate-800/50">
-                <p className="text-xs text-slate-400 font-medium">لا يوجد طلاب لديهم حصص مكتملة غير مفوترة حالياً تحت الحد الأقصى للدورة.</p>
+              <div className="bg-surface-hover/30 p-4 rounded-lg text-center border border-slate-100 dark:border-surface-border/50">
+                <p className="text-xs text-text-muted/70 font-medium">لا يوجد طلاب لديهم حصص مكتملة غير مفوترة حالياً تحت الحد الأقصى للدورة.</p>
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
                 {filteredInProgressCycles.map((item, idx) => (
-                  <div key={`${item.id}_${idx}`} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 rounded-lg space-y-3 shadow-xs relative text-right dir-rtl">
+                  <div key={`${item.id}_${idx}`} className="bg-surface border border-surface-border p-4 rounded-lg space-y-3 shadow-xs relative text-right dir-rtl">
                     <div className="flex justify-between items-start flex-row-reverse">
                       <div>
-                        <h4 className="text-xs font-black text-slate-800 dark:text-white text-right">{item.studentName}</h4>
-                        <span className="text-[10px] bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold px-1.5 py-0.5 rounded-md inline-block mt-0.5">{item.groupName}</span>
+                        <h4 className="text-xs font-black text-text-main text-right">{item.studentName}</h4>
+                        <span className="text-[10px] bg-surface-hover text-slate-600 dark:text-slate-300 font-bold px-1.5 py-0.5 rounded-md inline-block mt-0.5">{item.groupName}</span>
                       </div>
                       <div className="text-left">
-                        <span className="text-[9px] font-extrabold text-slate-400 uppercase tracking-wider block">القيمة المقترحة (Prorated)</span>
-                        <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400 font-mono">{item.amountDue} {currency}</span>
+                        <span className="text-[9px] font-extrabold text-text-muted/70 uppercase tracking-wider block">القيمة المقترحة (Prorated)</span>
+                        <span className="text-sm font-bold text-primary dark:text-primary font-mono">{item.amountDue} {currency}</span>
                       </div>
                     </div>
 
-                    <div className="bg-slate-50 dark:bg-slate-800/40 p-2.5 rounded-xl border border-slate-100 dark:border-slate-800/50 text-[11px] space-y-1">
+                    <div className="bg-surface-hover/40 p-2.5 rounded-xl border border-slate-100 dark:border-surface-border/50 text-[11px] space-y-1">
                       <div className="flex justify-between flex-row-reverse">
                         <span className="text-slate-500">الحصص المكتملة (Attended):</span>
-                        <span className="font-bold text-amber-600 dark:text-amber-400">{item.lessonDates.length} / {item.cycleLength} حصة</span>
+                        <span className="font-bold text-primary dark:text-primary">{item.lessonDates.length} / {item.cycleLength} حصة</span>
                       </div>
-                      <div className="text-[10px] text-slate-400 font-mono flex flex-wrap gap-1 mt-1 justify-end">
+                      <div className="text-[10px] text-text-muted/70 font-mono flex flex-wrap gap-1 mt-1 justify-end">
                         {item.lessonDates.map((d, idx) => (
-                          <span key={idx} className="bg-white dark:bg-slate-900 px-1.5 py-0.5 rounded border border-slate-200 dark:border-slate-800">🗓️ {d}</span>
+                          <span key={idx} className="bg-surface px-1.5 py-0.5 rounded border border-surface-border">🗓️ {d}</span>
                         ))}
                       </div>
                     </div>
@@ -624,9 +561,9 @@ ${datesFormatted}
                         setProrateModalItem(item);
                         setCustomProrateAmount(item.amountDue);
                       }}
-                      className="w-full py-1.5 bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/60 active:scale-95 transition-all text-xs font-black rounded-xl border border-blue-200/50 dark:border-blue-800 flex items-center justify-center gap-1.5 cursor-pointer"
+                      className="w-full py-1.5 bg-primary-soft dark:bg-primary-soft/40 text-primary dark:text-primary hover:bg-primary-soft dark:hover:bg-primary-soft active:scale-95 transition-all text-xs font-black rounded-xl border border-primary-border/50 dark:border-primary-border flex items-center justify-center gap-1.5 cursor-pointer"
                     >
-                      <Sparkles className="w-3.5 h-3.5 text-blue-500" />
+                      <Sparkles className="w-3.5 h-3.5 text-primary" />
                       <span>إنهاء الدورة والفوترة (Force Cycle & Bill)</span>
                     </button>
                   </div>
@@ -641,20 +578,20 @@ ${datesFormatted}
       {activeTab === 'history' && (
         <div className="space-y-3">
           {paidHistory.length === 0 ? (
-            <div className="bg-white dark:bg-slate-900 p-8 rounded-xl border border-slate-200 dark:border-slate-800 text-center space-y-1">
-              <p className="text-sm font-bold text-slate-700 dark:text-slate-300">{t('payments_no_history')}</p>
-              <p className="text-xs text-slate-400">{t('payments_history_sub')}</p>
+            <div className="bg-surface p-5 rounded-xl border border-surface-border text-center space-y-1">
+              <p className="text-sm font-bold text-text-main">{t('payments_no_history')}</p>
+              <p className="text-xs text-text-muted/70">{t('payments_history_sub')}</p>
             </div>
           ) : (
             paidHistory.map(p => (
               <div
                 key={p.id}
-                className="bg-white dark:bg-slate-900 p-4 rounded-lg border border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                className="bg-surface p-4 rounded-lg border border-surface-border flex flex-col sm:flex-row sm:items-center justify-between gap-3"
               >
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
-                    <h4 className="text-sm font-black text-slate-900 dark:text-white">{p.studentName}</h4>
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+                    <h4 className="text-sm font-black text-text-main">{p.studentName}</h4>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-surface-hover text-slate-600 dark:text-slate-300">
                       {p.groupName}
                     </span>
                   </div>
@@ -662,7 +599,7 @@ ${datesFormatted}
                   {p.lessonDates && p.lessonDates.length > 0 && (
                     <div className="flex flex-wrap items-center gap-1 pt-1">
                       {p.lessonDates.map((d, i) => (
-                        <span key={i} className="text-[10px] font-mono bg-slate-50 dark:bg-slate-800/60 px-2 py-0.5 rounded border border-slate-200/60 dark:border-slate-700 text-slate-600 dark:text-slate-300">
+                        <span key={i} className="text-[10px] font-mono bg-surface-hover/60 px-2 py-0.5 rounded border border-surface-border/60 dark:border-surface-border-soft text-slate-600 dark:text-slate-300">
                           {d}
                         </span>
                       ))}
@@ -671,10 +608,10 @@ ${datesFormatted}
                 </div>
 
                 <div className="text-right shrink-0">
-                  <span className="text-xs font-black text-emerald-600 dark:text-emerald-400 font-mono">
+                  <span className="text-xs font-black text-primary dark:text-primary font-mono">
                     ✓ {p.amountPaid} {currency}
                   </span>
-                  <span className="text-[10px] text-slate-400 block">
+                  <span className="text-[10px] text-text-muted/70 block">
                     {t('payments_paid_on')}: {p.paidDate || p.dueDate}
                   </span>
                 </div>
@@ -686,22 +623,23 @@ ${datesFormatted}
 
       {/* WHATSAPP RECEIPT / NOTICE MODAL */}
       {selectedCycleForWhatsApp && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-900 rounded-xl max-w-md w-full p-6 border border-slate-200 dark:border-slate-800 shadow-2xl space-y-4 animate-scale-up">
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4 pb-0">
+          <div className="bg-surface rounded-t-[28px] sm:rounded-xl pb-safe-bottom sm:pb-0 mb-0 max-w-md w-full p-4 border border-surface-border shadow-2xl space-y-4 animate-scale-up">
+        <div className="w-12 h-1.5 bg-slate-200 dark:bg-slate-800 rounded-full mx-auto mt-3 mb-1 sm:hidden shrink-0" />
             <div className="flex items-center justify-between">
-              <h2 className="text-base font-black text-slate-900 dark:text-white flex items-center gap-2">
-                <Send className="w-5 h-5 text-emerald-500" />
+              <h2 className="text-base font-black text-text-main flex items-center gap-2">
+                <Send className="w-5 h-5 text-primary" />
                 <span>{t('payments_parent_notice')}</span>
               </h2>
               <button
                 onClick={() => setSelectedCycleForWhatsApp(null)}
-                className="p-1 rounded-xl text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
+                className="p-1 rounded-xl text-text-muted/70 hover:bg-surface-hover cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <div className="p-4 bg-emerald-50 dark:bg-emerald-950/40 rounded-lg border border-emerald-200 dark:border-emerald-800 text-slate-800 dark:text-slate-100 text-xs font-mono whitespace-pre-wrap leading-relaxed dir-rtl text-right">
+            <div className="p-4 bg-primary-soft dark:bg-primary-soft rounded-lg border border-primary-border dark:border-primary-border text-text-main text-xs font-mono whitespace-pre-wrap leading-relaxed dir-rtl text-right">
               {generateWhatsAppMessage(selectedCycleForWhatsApp)}
             </div>
 
@@ -709,7 +647,7 @@ ${datesFormatted}
               <button
                 type="button"
                 onClick={() => handleCopyMessage(generateWhatsAppMessage(selectedCycleForWhatsApp))}
-                className="flex-1 py-2.5 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 rounded-xl font-bold text-xs cursor-pointer flex items-center justify-center gap-1.5"
+                className="flex-1 py-2.5 bg-surface-hover text-text-main rounded-xl font-bold text-xs cursor-pointer flex items-center justify-center gap-1.5"
               >
                 <span>{copiedSuccess ? `${t('reports_copied')} ✓` : t('payments_copy_text')}</span>
               </button>
@@ -722,7 +660,7 @@ ${datesFormatted}
                     generateWhatsAppMessage(selectedCycleForWhatsApp)
                   );
                 }}
-                className="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs cursor-pointer shadow-sm flex items-center justify-center gap-1.5"
+                className="flex-1 py-2.5 bg-primary hover:bg-primary-hover text-white rounded-xl font-bold text-xs cursor-pointer shadow-sm flex items-center justify-center gap-1.5"
               >
                 <Send className="w-4 h-4" />
                 <span>{t('payments_open_whatsapp')}</span>
@@ -734,20 +672,21 @@ ${datesFormatted}
 
       {/* GAIN SUMMARY MODAL */}
       {selectedGainPeriod && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-900 rounded-xl max-w-lg w-full p-6 border border-slate-200 dark:border-slate-800 shadow-2xl space-y-4 animate-scale-up">
-            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4 pb-0">
+          <div className="bg-surface rounded-t-[28px] sm:rounded-xl pb-safe-bottom sm:pb-0 mb-0 max-w-lg w-full p-4 border border-surface-border shadow-2xl space-y-4 animate-scale-up">
+        <div className="w-12 h-1.5 bg-slate-200 dark:bg-slate-800 rounded-full mx-auto mt-3 mb-1 sm:hidden shrink-0" />
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-surface-border pb-3">
               <div className="flex items-center gap-2.5">
-                <div className="w-10 h-10 rounded-lg bg-emerald-100 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold">
+                <div className="w-10 h-10 rounded-lg bg-primary-soft dark:bg-primary-soft text-primary dark:text-primary flex items-center justify-center font-bold">
                   <TrendingUp className="w-5 h-5" />
                 </div>
                 <div>
-                  <h2 className="text-base font-black text-slate-900 dark:text-white">
+                  <h2 className="text-base font-black text-text-main">
                     {selectedGainPeriod === 'daily' && t('payments_daily_summary')}
                     {selectedGainPeriod === 'weekly' && t('payments_weekly_summary')}
                     {selectedGainPeriod === 'monthly' && t('payments_monthly_summary')}
                   </h2>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+                  <p className="text-xs text-text-muted font-medium">
                     {t('payments_gain_summary_sub')}
                   </p>
                 </div>
@@ -755,22 +694,22 @@ ${datesFormatted}
               <button
                 type="button"
                 onClick={() => setSelectedGainPeriod(null)}
-                className="p-2 rounded-xl text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer transition-colors"
+                className="p-2 rounded-xl text-text-muted/70 hover:bg-surface-hover cursor-pointer transition-colors"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             {/* TOTAL STAT CARD */}
-            <div className="bg-gradient-to-br from-emerald-600 to-teal-700 text-white p-5 rounded-lg shadow-md flex items-center justify-between">
+            <div className="bg-gradient-to-br from-primary to-primary-hover text-white p-5 rounded-lg shadow-md flex items-center justify-between">
               <div>
-                <span className="text-[10px] font-extrabold text-emerald-100 uppercase tracking-wider block">{t('payments_total_gains')}</span>
+                <span className="text-[10px] font-extrabold text-primary-soft uppercase tracking-wider block">{t('payments_total_gains')}</span>
                 <div className="text-2xl font-black font-mono mt-0.5">
-                  {selectedGainPeriod === 'daily' ? dailyTotal : selectedGainPeriod === 'weekly' ? weeklyTotal : monthlyTotal} <span className="text-sm font-normal text-emerald-100">{currency}</span>
+                  {selectedGainPeriod === 'daily' ? dailyTotal : selectedGainPeriod === 'weekly' ? weeklyTotal : monthlyTotal} <span className="text-sm font-normal text-primary-soft">{currency}</span>
                 </div>
               </div>
               <div className="text-right">
-                <span className="text-[10px] font-extrabold text-emerald-100 uppercase tracking-wider block">{t('payments_paid_cycles')}</span>
+                <span className="text-[10px] font-extrabold text-primary-soft uppercase tracking-wider block">{t('payments_paid_cycles')}</span>
                 <div className="text-2xl font-black font-mono mt-0.5">
                   {selectedGainPeriod === 'daily' ? dailyPayments.length : selectedGainPeriod === 'weekly' ? weeklyPayments.length : monthlyPayments.length}
                 </div>
@@ -779,23 +718,23 @@ ${datesFormatted}
 
             {/* LIST OF PAYMENTS IN THIS PERIOD */}
             <div className="space-y-2">
-              <h3 className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400">{t('payments_details_heading')}</h3>
+              <h3 className="text-[11px] font-extrabold uppercase tracking-wider text-text-muted/70">{t('payments_details_heading')}</h3>
               <div className="max-h-60 overflow-y-auto space-y-2 pr-1">
                 {(selectedGainPeriod === 'daily' ? dailyPayments : selectedGainPeriod === 'weekly' ? weeklyPayments : monthlyPayments).length === 0 ? (
-                  <div className="p-4 text-center text-xs text-slate-400 bg-slate-50 dark:bg-slate-800/50 rounded-lg border border-slate-100 dark:border-slate-800">
+                  <div className="p-4 text-center text-xs text-text-muted/70 bg-surface-hover/50 rounded-lg border border-slate-100 dark:border-surface-border">
                     {t('payments_no_cycles_period')}
                   </div>
                 ) : (
                   (selectedGainPeriod === 'daily' ? dailyPayments : selectedGainPeriod === 'weekly' ? weeklyPayments : monthlyPayments).map(p => (
                     <div
                       key={p.id}
-                      className="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-lg border border-slate-200/60 dark:border-slate-700/60 flex items-center justify-between text-xs"
+                      className="p-3 bg-surface-hover/60 rounded-lg border border-surface-border/60 dark:border-surface-border-soft/60 flex items-center justify-between text-xs"
                     >
                       <div>
-                        <div className="font-bold text-slate-900 dark:text-white">{p.studentName}</div>
-                        <div className="text-[10px] text-slate-400 mt-0.5">{p.groupName} • {p.paidDate || p.dueDate}</div>
+                        <div className="font-bold text-text-main">{p.studentName}</div>
+                        <div className="text-[10px] text-text-muted/70 mt-0.5">{p.groupName} • {p.paidDate || p.dueDate}</div>
                       </div>
-                      <div className="font-black font-mono text-emerald-600 dark:text-emerald-400 text-sm">
+                      <div className="font-black font-mono text-primary dark:text-primary text-sm">
                         +{p.amountPaid || p.amountDue} {currency}
                       </div>
                     </div>
@@ -817,16 +756,17 @@ ${datesFormatted}
 
       {/* FORCE CYCLE / PRORATE MODAL */}
       {prorateModalItem && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-900 rounded-xl max-w-md w-full p-6 border border-slate-200 dark:border-slate-800 shadow-2xl space-y-4 animate-scale-up text-right dir-rtl">
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4 pb-0">
+          <div className="bg-surface rounded-t-[28px] sm:rounded-xl pb-safe-bottom sm:pb-0 mb-0 max-w-md w-full p-4 border border-surface-border shadow-2xl space-y-4 animate-scale-up text-right dir-rtl">
+        <div className="w-12 h-1.5 bg-slate-200 dark:bg-slate-800 rounded-full mx-auto mt-3 mb-1 sm:hidden shrink-0" />
             <div className="flex items-center justify-between flex-row-reverse">
-              <h2 className="text-base font-black text-slate-900 dark:text-white flex items-center gap-2">
-                <Sparkles className="w-5 h-5 text-amber-500" />
+              <h2 className="text-base font-black text-text-main flex items-center gap-2">
+                <Sparkles className="w-5 h-5 text-primary" />
                 <span>إنهاء الدورة الحالية والمطالبة بالدفع</span>
               </h2>
               <button
                 onClick={() => setProrateModalItem(null)}
-                className="p-1 rounded-xl text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
+                className="p-1 rounded-xl text-text-muted/70 hover:bg-surface-hover cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -834,24 +774,24 @@ ${datesFormatted}
 
             <div className="space-y-3.5">
               {/* Student info card */}
-              <div className="p-4 bg-slate-50 dark:bg-slate-800/40 rounded-lg border border-slate-100 dark:border-slate-800/60 text-sm space-y-2 text-right">
+              <div className="p-4 bg-surface-hover/40 rounded-lg border border-slate-100 dark:border-surface-border/60 text-sm space-y-2 text-right">
                 <div>
-                  <span className="text-xs text-slate-400 font-bold block">اسم الطالب (Student):</span>
-                  <span className="font-black text-slate-900 dark:text-white">{prorateModalItem.studentName}</span>
+                  <span className="text-xs text-text-muted/70 font-bold block">اسم الطالب (Student):</span>
+                  <span className="font-black text-text-main">{prorateModalItem.studentName}</span>
                 </div>
                 <div>
-                  <span className="text-xs text-slate-400 font-bold block">المجموعة (Group):</span>
+                  <span className="text-xs text-text-muted/70 font-bold block">المجموعة (Group):</span>
                   <span className="font-black text-slate-800 dark:text-slate-200">{prorateModalItem.groupName}</span>
                 </div>
                 <div>
-                  <span className="text-xs text-slate-400 font-bold block">معدل الحضور (Attendance Progress):</span>
-                  <span className="font-bold text-amber-600 dark:text-amber-400">حضر {prorateModalItem.lessonDates.length} حصص من أصل دورة من {prorateModalItem.cycleLength} حصص</span>
+                  <span className="text-xs text-text-muted/70 font-bold block">معدل الحضور (Attendance Progress):</span>
+                  <span className="font-bold text-primary dark:text-primary">حضر {prorateModalItem.lessonDates.length} حصص من أصل دورة من {prorateModalItem.cycleLength} حصص</span>
                 </div>
                 <div>
-                  <span className="text-xs text-slate-400 font-bold block">تواريخ الحصص المنجزة:</span>
+                  <span className="text-xs text-text-muted/70 font-bold block">تواريخ الحصص المنجزة:</span>
                   <div className="flex flex-wrap gap-1 mt-1 justify-end">
                     {prorateModalItem.lessonDates.map((d, idx) => (
-                      <span key={idx} className="bg-white dark:bg-slate-900 text-[10px] font-mono px-2 py-0.5 rounded border border-slate-200 dark:border-slate-700">🗓️ {d}</span>
+                      <span key={idx} className="bg-surface text-[10px] font-mono px-2 py-0.5 rounded border border-surface-border dark:border-surface-border-soft">🗓️ {d}</span>
                     ))}
                   </div>
                 </div>
@@ -859,7 +799,7 @@ ${datesFormatted}
 
               {/* Amount editor */}
               <div className="space-y-1.5">
-                <label className="block text-xs font-black text-slate-700 dark:text-slate-300 text-right">
+                <label className="block text-xs font-black text-text-main text-right">
                   تعديل القيمة المستحقة للدفع الجزئي (Prorated Due Amount):
                 </label>
                 <div className="relative">
@@ -867,13 +807,13 @@ ${datesFormatted}
                     type="number"
                     value={customProrateAmount}
                     onChange={(e) => setCustomProrateAmount(Math.max(0, Number(e.target.value)))}
-                    className="w-full pl-12 pr-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-black font-mono focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-left"
+                    className="w-full pl-12 pr-4 py-2.5 bg-background border border-surface-border dark:border-surface-border-soft rounded-xl text-sm font-black font-mono focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary text-left"
                   />
-                  <div className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400 font-mono">
+                  <div className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-text-muted/70 font-mono">
                     {currency}
                   </div>
                 </div>
-                <p className="text-[10px] text-slate-400 leading-relaxed text-right">
+                <p className="text-[10px] text-text-muted/70 leading-relaxed text-right">
                   * تم حساب القيمة المقترحة تلقائياً بناءً على متوسط قيمة الحصة الواحدة. يمكنك تعديل المبلغ يدوياً قبل تأكيد الفاتورة.
                 </p>
               </div>
@@ -896,7 +836,7 @@ ${datesFormatted}
                   setProrateModalItem(null);
                   confetti({ particleCount: 30, spread: 40 });
                 }}
-                className="w-full py-2.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl font-bold text-xs cursor-pointer shadow-xs flex items-center justify-center gap-1.5 transition-all active:scale-95"
+                className="w-full py-2.5 bg-primary hover:bg-primary text-white rounded-xl font-bold text-xs cursor-pointer shadow-xs flex items-center justify-center gap-1.5 transition-all active:scale-95"
               >
                 <span>تسجيل كفاتورة غير مدفوعة (Mark Unpaid)</span>
               </button>
@@ -918,7 +858,7 @@ ${datesFormatted}
                   setProrateModalItem(null);
                   confetti({ particleCount: 50, spread: 50 });
                 }}
-                className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs cursor-pointer shadow-xs flex items-center justify-center gap-1.5 transition-all active:scale-95"
+                className="w-full py-2.5 bg-primary hover:bg-primary-hover text-white rounded-xl font-bold text-xs cursor-pointer shadow-xs flex items-center justify-center gap-1.5 transition-all active:scale-95"
               >
                 <span>تسجيل كمدفوع بالكامل فوراً (Mark Paid Now)</span>
               </button>
@@ -926,7 +866,7 @@ ${datesFormatted}
               <button
                 type="button"
                 onClick={() => setProrateModalItem(null)}
-                className="w-full py-2 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 rounded-xl font-bold text-xs cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                className="w-full py-2 bg-surface-hover text-text-main rounded-xl font-bold text-xs cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
               >
                 <span>إلغاء (Cancel)</span>
               </button>

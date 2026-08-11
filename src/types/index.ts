@@ -9,7 +9,7 @@ export type LessonStatus = 'scheduled' | 'in_progress' | 'completed' | 'cancelle
 
 export type AppLanguage = 'ar' | 'en' | 'de';
 
-export type AccentColor = 'blue' | 'green' | 'purple' | 'orange' | 'red' | 'teal' | 'indigo';
+export type AccentColor = 'blue' | 'green' | 'purple' | 'orange' | 'red' | 'teal' | 'indigo' | 'rose' | 'amber' | 'emerald' | 'fuchsia' | 'cyan' | 'violet' | 'slate';
 
 export type PaymentStatus = 'paid' | 'pending' | 'partial';
 
@@ -200,6 +200,44 @@ export interface Lesson {
 
 export type SyncStatus = 'synced' | 'pending' | 'error';
 
+export type NotificationPriority = 'low' | 'normal' | 'high' | 'max';
+export type NotificationSound = 'default' | 'beep' | 'chime' | 'bell' | 'gentle';
+
+export interface CategoryNotificationConfig {
+  enabled: boolean;
+  sound: NotificationSound;
+  priority: NotificationPriority;
+}
+
+export interface NotificationSettings {
+  masterEnabled: boolean;
+  
+  // Category configs
+  lessonReminder: CategoryNotificationConfig;
+  lessonStart: CategoryNotificationConfig;
+  paymentDue: CategoryNotificationConfig;
+  dailySummary: CategoryNotificationConfig;
+  attendanceReminder: CategoryNotificationConfig;
+
+  // Reminder timing controls
+  lessonReminderMinutesBefore: number; // 5, 10, 15, 30, 60 or custom
+
+  // Daily summary controls
+  dailySummaryTime: string; // e.g. "20:00"
+  dailySummaryIncludeLessons: boolean;
+  dailySummaryIncludeIncome: boolean;
+  dailySummaryIncludePendingPayments: boolean;
+}
+
+export interface ScheduledNotificationItem {
+  id: number;
+  title: string;
+  body: string;
+  scheduledAt: string; // ISO date string or formatted date
+  category: 'lessonReminder' | 'lessonStart' | 'paymentDue' | 'dailySummary' | 'attendanceReminder' | 'general';
+  extra?: Record<string, any>;
+}
+
 export interface BackupData {
   timestamp: string;
   version: string;
@@ -209,6 +247,7 @@ export interface BackupData {
   lessons: Lesson[];
   payments: PaymentRecord[];
   notifications: NotificationItem[];
+  notificationSettings?: NotificationSettings;
   inspirationSettings?: InspirationSettings;
   inspirationMessages?: InspirationMessage[];
   syncQueue: any[];

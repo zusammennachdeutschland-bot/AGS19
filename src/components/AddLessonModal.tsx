@@ -101,20 +101,21 @@ export const AddLessonModal: React.FC<AddLessonModalProps> = ({ onClose }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 pt-[max(24px,env(safe-area-inset-top,24px))] overflow-y-auto">
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl w-full max-w-md shadow-2xl overflow-hidden my-auto animate-scale-up font-sans">
+    <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-end sm:items-center justify-center pt-[max(24px,env(safe-area-inset-top,24px))] overflow-y-auto p-0 sm:p-4 pb-0">
+      <div className="bg-surface border border-surface-border rounded-t-[28px] sm:rounded-xl pb-safe-bottom sm:pb-0 mb-0 w-full max-w-md shadow-2xl overflow-hidden animate-scale-up font-sans">
+        <div className="w-12 h-1.5 bg-slate-200 dark:bg-slate-800 rounded-full mx-auto mt-3 mb-1 sm:hidden shrink-0" />
         {/* Header */}
-        <div className="bg-gradient-to-r from-blue-600 to-indigo-700 p-5 text-white flex items-center justify-between">
+        <div className="bg-gradient-to-r from-primary to-primary-hover p-5 text-white flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <div className="p-2 bg-white/20 rounded-xl">
+            <div className="p-2 bg-surface/20 rounded-xl">
               <Calendar className="w-5 h-5 text-white" />
             </div>
             <div>
               <h2 className="text-base font-bold">{t('schedule_lesson_title')}</h2>
-              <p className="text-xs text-blue-100">Weekly Recurring & Google Calendar Sync</p>
+              <p className="text-xs text-primary-soft">Weekly Recurring & Google Calendar Sync</p>
             </div>
           </div>
-          <button onClick={onClose} className="p-1.5 hover:bg-white/20 rounded-full transition-colors cursor-pointer">
+          <button onClick={onClose} className="p-1.5 hover:bg-surface/20 rounded-full transition-colors cursor-pointer">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -123,7 +124,7 @@ export const AddLessonModal: React.FC<AddLessonModalProps> = ({ onClose }) => {
         <form onSubmit={handleSubmit} className="p-5 space-y-4 max-h-[75vh] overflow-y-auto">
           {/* Select Group */}
           <div className="space-y-1">
-            <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
+            <label className="text-xs font-bold text-text-main">
               Gruppe / Kurs *
             </label>
             <select
@@ -137,7 +138,7 @@ export const AddLessonModal: React.FC<AddLessonModalProps> = ({ onClose }) => {
                   if (g.lessonDurationMinutes) setDurationMinutes(g.lessonDurationMinutes);
                 }
               }}
-              className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-semibold focus:outline-none"
+              className="w-full px-3.5 py-2.5 bg-surface-hover border border-surface-border dark:border-surface-border-soft rounded-xl text-xs font-semibold focus:outline-none"
             >
               {groups.map(g => (
                 <option key={g.id} value={g.id}>
@@ -149,13 +150,13 @@ export const AddLessonModal: React.FC<AddLessonModalProps> = ({ onClose }) => {
 
           {/* Individual Student (Optional if group lesson) */}
           <div className="space-y-1">
-            <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
+            <label className="text-xs font-bold text-text-main">
               Einzelner Schüler (Optional)
             </label>
             <select
               value={studentId}
               onChange={(e) => setStudentId(e.target.value)}
-              className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-semibold focus:outline-none"
+              className="w-full px-3.5 py-2.5 bg-surface-hover border border-surface-border dark:border-surface-border-soft rounded-xl text-xs font-semibold focus:outline-none"
             >
               <option value="">-- Gesamte Gruppe ({selectedGroup?.name}) --</option>
               {groupStudents.map(s => (
@@ -167,42 +168,42 @@ export const AddLessonModal: React.FC<AddLessonModalProps> = ({ onClose }) => {
           {/* Date & Time */}
           <div className="grid grid-cols-2 gap-2">
             <div className="space-y-1">
-              <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Startdatum (Start Date)</label>
+              <label className="text-xs font-bold text-text-main">Startdatum (Start Date)</label>
               <input
                 type="date"
                 required
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
-                className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-mono font-bold"
+                className="w-full px-3 py-2 bg-surface-hover border border-surface-border dark:border-surface-border-soft rounded-xl text-xs font-mono font-bold"
               />
             </div>
 
             <div className="space-y-1">
-              <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Uhrzeit (Time)</label>
+              <label className="text-xs font-bold text-text-main">Uhrzeit (Time)</label>
               <input
                 type="time"
                 required
                 value={time}
                 onChange={(e) => setTime(e.target.value)}
-                className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-mono font-bold"
+                className="w-full px-3 py-2 bg-surface-hover border border-surface-border dark:border-surface-border-soft rounded-xl text-xs font-mono font-bold"
               />
             </div>
           </div>
 
           {/* WEEKLY RECURRING PANEL */}
-          <div className="p-3 bg-indigo-50/70 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-900/60 rounded-lg space-y-2.5">
+          <div className="p-3 bg-primary-soft dark:bg-primary-soft border border-primary-border dark:border-primary-border rounded-lg space-y-2.5">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-indigo-900 dark:text-indigo-200 flex items-center gap-1.5">
-                <Repeat className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+              <span className="text-xs font-bold text-primary dark:text-primary flex items-center gap-1.5">
+                <Repeat className="w-4 h-4 text-primary dark:text-primary" />
                 <span>Wöchentlich Wiederholen (Weekly Recurring)</span>
               </span>
 
-              <label className="flex items-center gap-1.5 cursor-pointer text-xs font-bold text-indigo-700 dark:text-indigo-300">
+              <label className="flex items-center gap-1.5 cursor-pointer text-xs font-bold text-primary dark:text-primary">
                 <input
                   type="checkbox"
                   checked={isWeeklyRecurring}
                   onChange={(e) => setIsWeeklyRecurring(e.target.checked)}
-                  className="rounded text-indigo-600 focus:ring-indigo-500 w-4 h-4"
+                  className="rounded text-primary focus:ring-primary w-4 h-4"
                 />
                 <span>Aktiv</span>
               </label>
@@ -221,15 +222,15 @@ export const AddLessonModal: React.FC<AddLessonModalProps> = ({ onClose }) => {
                       onClick={() => setRepeatWeeks(num)}
                       className={`py-1.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${
                         repeatWeeks === num
-                          ? 'bg-indigo-600 text-white shadow-2xs'
-                          : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700'
+                          ? 'bg-primary text-white shadow-2xs'
+                          : 'bg-surface dark:bg-slate-800 text-text-main border border-surface-border dark:border-surface-border-soft'
                       }`}
                     >
                       {num} Wochen ({num} Termine)
                     </button>
                   ))}
                 </div>
-                <p className="text-[10px] text-indigo-800 dark:text-indigo-300 font-semibold italic mt-1">
+                <p className="text-[10px] text-primary dark:text-primary font-semibold italic mt-1">
                   ✓ Lektionen werden jeden {new Date(date).toLocaleDateString('de-DE', { weekday: 'long' })} um {time} Uhr automatisch eingetragen.
                 </p>
               </div>
@@ -251,8 +252,8 @@ export const AddLessonModal: React.FC<AddLessonModalProps> = ({ onClose }) => {
 
           {/* SUGGESTED TIME SLOTS */}
           <div className="space-y-1.5">
-            <label className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1">
-              <Sparkles className="w-3.5 h-3.5 text-blue-600" />
+            <label className="text-xs font-bold text-text-main flex items-center gap-1">
+              <Sparkles className="w-3.5 h-3.5 text-primary" />
               <span>Freie Zeitfenster (Suggested Available Slots):</span>
             </label>
             <div className="flex flex-wrap gap-1.5">
@@ -263,8 +264,8 @@ export const AddLessonModal: React.FC<AddLessonModalProps> = ({ onClose }) => {
                   onClick={() => setTime(slot)}
                   className={`px-2.5 py-1 rounded-lg text-xs font-mono font-bold border transition-all cursor-pointer ${
                     time === slot
-                      ? 'bg-blue-600 text-white border-blue-600'
-                      : 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200'
+                      ? 'bg-primary text-white border-primary'
+                      : 'bg-surface-hover text-text-main border-surface-border'
                   }`}
                 >
                   {slot} Uhr
@@ -275,13 +276,13 @@ export const AddLessonModal: React.FC<AddLessonModalProps> = ({ onClose }) => {
 
           {/* Type selector */}
           <div className="space-y-1">
-            <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Lesson Type</label>
+            <label className="text-xs font-bold text-text-main">Lesson Type</label>
             <div className="grid grid-cols-2 gap-2 text-xs">
               <button
                 type="button"
                 onClick={() => setType('online')}
                 className={`py-2 rounded-xl font-bold border ${
-                  type === 'online' ? 'bg-blue-600 text-white' : 'bg-slate-50 text-slate-700'
+                  type === 'online' ? 'bg-primary text-white' : 'bg-background text-slate-700'
                 }`}
               >
                 Online
@@ -290,7 +291,7 @@ export const AddLessonModal: React.FC<AddLessonModalProps> = ({ onClose }) => {
                 type="button"
                 onClick={() => setType('offline')}
                 className={`py-2 rounded-xl font-bold border ${
-                  type === 'offline' ? 'bg-amber-600 text-white' : 'bg-slate-50 text-slate-700'
+                  type === 'offline' ? 'bg-primary text-white' : 'bg-background text-slate-700'
                 }`}
               >
                 Offline
@@ -305,7 +306,7 @@ export const AddLessonModal: React.FC<AddLessonModalProps> = ({ onClose }) => {
             className={`w-full font-bold text-xs py-3 rounded-lg shadow-md transition-all cursor-pointer ${
               hasConflict
                 ? 'bg-slate-300 text-slate-500 cursor-not-allowed'
-                : 'bg-blue-600 hover:bg-blue-700 text-white'
+                : 'bg-primary hover:bg-primary-hover text-white'
             }`}
           >
             {hasConflict ? 'Konflikt beheben' : isWeeklyRecurring ? `${repeatWeeks} Wöchentliche Lektionen Speichern` : t('save_lesson_btn')}

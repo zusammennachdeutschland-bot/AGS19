@@ -89,27 +89,28 @@ ${lessonDatesStr || 'لا توجد حصص مسجلة حتى الآن'}
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl w-full max-w-lg shadow-2xl overflow-hidden my-auto animate-scale-up space-y-0 font-sans">
+    <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-end sm:items-center justify-center sm: overflow-y-auto p-0 sm:p-4 pb-0">
+      <div className="bg-surface border border-surface-border rounded-t-[28px] sm:rounded-xl pb-safe-bottom sm:pb-0 mb-0 w-full max-w-lg shadow-2xl overflow-hidden animate-scale-up space-y-0 font-sans">
+        <div className="w-12 h-1.5 bg-slate-200 dark:bg-slate-800 rounded-full mx-auto mt-3 mb-1 sm:hidden shrink-0" />
         
         {/* Header */}
-        <div className="bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 p-5 text-white flex items-center justify-between">
+        <div className="bg-gradient-to-r from-primary via-primary to-primary-hover p-5 text-white flex items-center justify-between">
           <div>
-            <span className="text-[10px] font-black uppercase tracking-widest text-emerald-100 bg-white/20 px-2.5 py-0.5 rounded-full">
+            <span className="text-[10px] font-black uppercase tracking-widest text-primary-soft bg-surface/20 px-2.5 py-0.5 rounded-full">
               WhatsApp الرسالة التلقائية
             </span>
             <h3 className="text-lg font-black mt-1 flex items-center gap-2">
               <MessageSquare className="w-5 h-5 fill-white" />
               <span>إرسال ملخص السداد والحضور (Send Payment Summary)</span>
             </h3>
-            <p className="text-xs text-emerald-100">
+            <p className="text-xs text-primary-soft">
               تقرير الحضور والمستحقات المالية لولي الأمر باللغة العربية.
             </p>
           </div>
 
           <button
             onClick={onClose}
-            className="p-2 hover:bg-white/20 rounded-full text-white transition-colors cursor-pointer"
+            className="p-2 hover:bg-surface/20 rounded-full text-white transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
@@ -118,25 +119,25 @@ ${lessonDatesStr || 'لا توجد حصص مسجلة حتى الآن'}
         <div className="p-5 space-y-4">
           {/* Target Phone */}
           <div className="space-y-1">
-            <label className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center justify-between">
+            <label className="text-xs font-bold text-text-main flex items-center justify-between">
               <span>رقم هاتف ولي الأمر (WhatsApp Number):</span>
-              <span className="text-[10px] text-emerald-600 font-extrabold">{student.parentName}</span>
+              <span className="text-[10px] text-primary font-extrabold">{student.parentName}</span>
             </label>
             <input
               type="text"
               value={customPhone}
               onChange={(e) => setCustomPhone(e.target.value)}
               placeholder="01012345678"
-              className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold font-mono text-slate-900 dark:text-white"
+              className="w-full px-3 py-2 bg-surface-hover border border-surface-border dark:border-surface-border-soft rounded-xl text-xs font-bold font-mono text-text-main"
             />
           </div>
 
           {/* Formatted Text Box */}
           <div className="space-y-1">
-            <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
+            <label className="text-xs font-bold text-text-main">
               معاينة النص المرسل:
             </label>
-            <div dir="rtl" className="bg-emerald-50/70 dark:bg-slate-800/80 p-4 rounded-lg border border-emerald-200 dark:border-slate-700 text-xs leading-relaxed text-slate-800 dark:text-slate-100 font-sans whitespace-pre-wrap max-h-60 overflow-y-auto shadow-inner">
+            <div dir="rtl" className="bg-primary-soft dark:bg-slate-800/80 p-4 rounded-lg border border-primary-border dark:border-surface-border-soft text-xs leading-relaxed text-text-main font-sans whitespace-pre-wrap max-h-60 overflow-y-auto shadow-inner">
               {arabicMessage}
             </div>
           </div>
@@ -145,15 +146,15 @@ ${lessonDatesStr || 'لا توجد حصص مسجلة حتى الآن'}
           <div className="grid grid-cols-2 gap-3 pt-2">
             <button
               onClick={handleCopyText}
-              className="py-3 px-4 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-bold text-xs rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+              className="py-3 px-4 bg-surface-hover hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-bold text-xs rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer"
             >
-              {copied ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4" />}
+              {copied ? <Check className="w-4 h-4 text-primary" /> : <Copy className="w-4 h-4" />}
               <span>{copied ? 'تم النسخ!' : 'نسخ النص (Copy)'}</span>
             </button>
 
             <button
               onClick={handleSendWhatsApp}
-              className="py-3 px-4 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-black text-xs rounded-lg shadow-md transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+              className="py-3 px-4 bg-gradient-to-r from-primary to-primary-hover hover:from-primary-hover hover:to-primary-hover text-white font-black text-xs rounded-lg shadow-md transition-all flex items-center justify-center gap-1.5 cursor-pointer"
             >
               <Send className="w-4 h-4" />
               <span>فتح WhatsApp الآن 📱</span>

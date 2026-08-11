@@ -77,22 +77,23 @@ AGS19 🇩🇪`;
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 pt-[max(24px,env(safe-area-inset-top,24px))]">
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl w-full max-w-lg shadow-2xl overflow-hidden animate-scale-up">
+    <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-end sm:items-center justify-center pt-[max(24px,env(safe-area-inset-top,24px))] p-0 sm:p-4 pb-0">
+      <div className="bg-surface border border-surface-border rounded-t-[28px] sm:rounded-xl pb-safe-bottom sm:pb-0 mb-0 w-full max-w-lg shadow-2xl overflow-hidden animate-scale-up">
+        <div className="w-12 h-1.5 bg-slate-200 dark:bg-slate-800 rounded-full mx-auto mt-3 mb-1 sm:hidden shrink-0" />
         {/* Modal Header */}
-        <div className="bg-gradient-to-r from-blue-600 to-indigo-700 p-5 text-white flex items-center justify-between">
+        <div className="bg-gradient-to-r from-primary to-primary-hover p-5 text-white flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <div className="p-2 bg-white/20 rounded-xl">
+            <div className="p-2 bg-surface/20 rounded-xl">
               <MessageSquare className="w-5 h-5 text-white" />
             </div>
             <div>
               <h2 className="text-base font-bold">Parent Summary & Communication</h2>
-              <p className="text-xs text-blue-100">{lesson.title} • {lesson.date}</p>
+              <p className="text-xs text-primary-soft">{lesson.title} • {lesson.date}</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 hover:bg-white/20 rounded-full transition-colors cursor-pointer"
+            className="p-1.5 hover:bg-surface/20 rounded-full transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
@@ -103,14 +104,14 @@ AGS19 🇩🇪`;
           {/* Formatted Text Preview */}
           <div className="space-y-1.5">
             <div className="flex items-center justify-between">
-              <label className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+              <label className="text-xs font-bold uppercase tracking-wider text-text-muted">
                 Automatisch generierter Bericht (German Summary)
               </label>
               <button
                 onClick={handleCopy}
-                className="text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1"
+                className="text-xs font-bold text-primary dark:text-primary hover:underline flex items-center gap-1"
               >
-                {copied ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
+                {copied ? <Check className="w-3.5 h-3.5 text-primary" /> : <Copy className="w-3.5 h-3.5" />}
                 {copied ? 'Kopiert!' : 'Text kopieren'}
               </button>
             </div>
@@ -119,20 +120,20 @@ AGS19 🇩🇪`;
               readOnly
               rows={11}
               value={summaryText}
-              className="w-full bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-lg p-3.5 text-xs font-mono text-slate-800 dark:text-slate-200 focus:outline-none resize-none leading-relaxed"
+              className="w-full bg-surface-hover/80 border border-surface-border dark:border-surface-border-soft rounded-lg p-3.5 text-sm font-mono text-slate-800 dark:text-slate-200 focus:outline-none resize-none leading-relaxed"
             />
           </div>
 
           {/* Direct Communication Buttons */}
-          <div className="space-y-2 pt-2 border-t border-slate-100 dark:border-slate-800">
-            <p className="text-xs font-bold text-slate-700 dark:text-slate-300">
+          <div className="space-y-2 pt-2 border-t border-slate-100 dark:border-surface-border">
+            <p className="text-xs font-bold text-text-main">
               Direkte Eltern-Kommunikation:
             </p>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
               <button
                 onClick={handleWhatsAppSend}
-                className="bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-bold text-xs py-2.5 px-3 rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-sm"
+                className="bg-primary hover:bg-primary-hover active:scale-95 text-white font-bold text-xs py-2.5 px-3 rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-sm"
               >
                 <Send className="w-4 h-4" />
                 <span>WhatsApp</span>
@@ -140,7 +141,7 @@ AGS19 🇩🇪`;
 
               <a
                 href={`tel:${parentPhone}`}
-                className="bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-bold text-xs py-2.5 px-3 rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer text-center"
+                className="bg-primary hover:bg-primary-hover active:scale-95 text-white font-bold text-xs py-2.5 px-3 rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer text-center active:scale-95 hover:shadow-lg hover:shadow-primary/30"
               >
                 <Phone className="w-4 h-4" />
                 <span>Call Parent</span>
@@ -158,7 +159,7 @@ AGS19 🇩🇪`;
         </div>
 
         {/* Footer */}
-        <div className="p-4 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-100 dark:border-slate-800 flex justify-end">
+        <div className="p-4 bg-surface-hover/50 border-t border-slate-100 dark:border-surface-border flex justify-end">
           <button
             onClick={onClose}
             className="px-5 py-2 rounded-xl bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 text-slate-800 dark:text-slate-200 font-bold text-xs cursor-pointer"

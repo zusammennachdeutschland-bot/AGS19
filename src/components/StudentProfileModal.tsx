@@ -139,18 +139,19 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({ studen
   const parentDisplay = [student.parentName, student.parentPhone].filter(Boolean).join(' • ');
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 pt-[max(24px,env(safe-area-inset-top,24px))] overflow-y-auto">
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl w-full max-w-xl shadow-2xl overflow-hidden my-auto animate-scale-up">
+    <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-end sm:items-center justify-center sm: pt-[max(24px,env(safe-area-inset-top,24px))] overflow-y-auto p-0 sm:p-4 pb-0">
+      <div className="bg-surface border border-surface-border rounded-t-[28px] sm:rounded-xl pb-safe-bottom sm:pb-0 mb-0 w-full max-w-xl shadow-2xl overflow-hidden animate-scale-up">
+        <div className="w-12 h-1.5 bg-slate-200 dark:bg-slate-800 rounded-full mx-auto mt-3 mb-1 sm:hidden shrink-0" />
         {/* Profile Header Banner */}
-        <div className="bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 p-5 text-white relative">
+        <div className="bg-gradient-to-br from-slate-900 via-primary/20 to-slate-900 p-5 text-white relative">
           {/* Symmetrical Header Row */}
           <div className="flex items-center justify-between mb-4 border-b border-white/5 pb-2.5">
-            <span className="text-[10px] font-bold tracking-wider text-slate-400 uppercase">
+            <span className="text-[10px] font-bold tracking-wider text-text-muted/70 uppercase">
               Schüler-Profil / Student Profile
             </span>
             <button
               onClick={onClose}
-              className="p-1 hover:bg-white/10 rounded-lg transition-colors cursor-pointer text-slate-300 hover:text-white"
+              className="p-1 hover:bg-surface/10 rounded-lg transition-colors cursor-pointer text-slate-300 hover:text-white"
               title="Schließen"
             >
               <X className="w-5 h-5" />
@@ -164,10 +165,10 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({ studen
                 <img
                   src={student.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200'}
                   alt={student.name}
-                  className="w-16 h-16 rounded-xl object-cover ring-2 ring-indigo-500/30 shadow-md"
+                  className="w-16 h-16 rounded-xl object-cover ring-2 ring-primary/30 shadow-md"
                 />
                 <label 
-                  className="absolute -bottom-1 -right-1 p-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg shadow-md cursor-pointer transition-transform hover:scale-110 flex items-center justify-center"
+                  className="absolute -bottom-1 -right-1 p-1.5 bg-primary hover:bg-primary-hover text-white rounded-lg shadow-md cursor-pointer transition-transform hover:scale-110 flex items-center justify-center"
                   title="Foto ändern / hochladen"
                 >
                   <Camera className="w-3.5 h-3.5" />
@@ -177,7 +178,7 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({ studen
 
               <div className="space-y-1">
                 <div className="flex items-center gap-1.5 flex-wrap">
-                  <span className="bg-indigo-500/25 text-indigo-300 text-[10px] font-bold px-2 py-0.5 rounded border border-indigo-400/20">
+                  <span className="bg-primary/25 text-primary text-[10px] font-bold px-2 py-0.5 rounded border border-primary-border/20">
                     {student.grade}
                   </span>
                   {assignedGroup?.name && (
@@ -198,20 +199,20 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({ studen
               <button
                 type="button"
                 onClick={() => setActiveTab('edit')}
-                className="px-3 py-1.5 bg-white/10 hover:bg-white/15 text-slate-200 hover:text-white rounded-lg transition-all cursor-pointer text-xs font-bold flex items-center gap-1.5 border border-white/5"
+                className="px-3 py-1.5 bg-surface/10 hover:bg-surface/15 text-slate-200 hover:text-white rounded-lg transition-all cursor-pointer text-xs font-bold flex items-center gap-1.5 border border-white/5"
                 title="Daten bearbeiten"
               >
-                <Edit3 className="w-3.5 h-3.5 text-amber-400" />
+                <Edit3 className="w-3.5 h-3.5 text-primary" />
                 <span>Bearbeiten</span>
               </button>
 
               <button
                 type="button"
                 onClick={() => setIsConfirmingDelete(true)}
-                className="px-3 py-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 hover:text-rose-100 rounded-lg transition-all cursor-pointer text-xs font-bold flex items-center gap-1.5 border border-rose-500/10"
+                className="px-3 py-1.5 bg-primary/10 hover:bg-primary/20 text-primary hover:text-primary rounded-lg transition-all cursor-pointer text-xs font-bold flex items-center gap-1.5 border border-primary-border/10"
                 title="Löschen / Archivieren"
               >
-                <Trash2 className="w-3.5 h-3.5 text-rose-400" />
+                <Trash2 className="w-3.5 h-3.5 text-primary" />
                 <span>Löschen</span>
               </button>
             </div>
@@ -223,7 +224,7 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({ studen
               href={`https://wa.me/${cleanParentPhone}`}
               target="_blank"
               rel="noreferrer"
-              className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs py-2 rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs"
+              className="bg-primary hover:bg-primary-hover text-white font-bold text-xs py-2 rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs"
             >
               <Send className="w-3.5 h-3.5" />
               <span>WhatsApp</span>
@@ -233,7 +234,7 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({ studen
               href={student.parentPhone ? `tel:${student.parentPhone}` : '#'}
               className={`font-bold text-xs py-2 rounded-lg transition-all flex items-center justify-center gap-1.5 text-center ${
                 student.parentPhone 
-                  ? 'bg-blue-600 hover:bg-blue-700 text-white cursor-pointer' 
+                  ? 'bg-primary hover:bg-primary-hover text-white cursor-pointer' 
                   : 'bg-slate-800 text-slate-500 cursor-not-allowed pointer-events-none'
               }`}
             >
@@ -256,11 +257,11 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({ studen
         </div>
 
         {/* Profile Tabs Navigation */}
-        <div className="flex items-center gap-1 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 p-2 overflow-x-auto text-xs font-bold">
+        <div className="flex items-center gap-1 border-b border-surface-border bg-surface-hover/50 p-2 overflow-x-auto text-xs font-bold">
           <button
             onClick={() => setActiveTab('overview')}
             className={`px-3 py-1.5 rounded-xl transition-all whitespace-nowrap ${
-              activeTab === 'overview' ? 'bg-blue-600 text-white shadow-xs' : 'text-slate-600 dark:text-slate-400'
+              activeTab === 'overview' ? 'bg-primary text-white shadow-xs' : 'text-text-muted'
             }`}
           >
             Übersicht
@@ -269,7 +270,7 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({ studen
           <button
             onClick={() => setActiveTab('attendance')}
             className={`px-3 py-1.5 rounded-xl transition-all whitespace-nowrap ${
-              activeTab === 'attendance' ? 'bg-blue-600 text-white shadow-xs' : 'text-slate-600 dark:text-slate-400'
+              activeTab === 'attendance' ? 'bg-primary text-white shadow-xs' : 'text-text-muted'
             }`}
           >
             Anwesenheit ({presentCount + lateCount + absentCount})
@@ -278,7 +279,7 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({ studen
           <button
             onClick={() => setActiveTab('scores')}
             className={`px-3 py-1.5 rounded-xl transition-all whitespace-nowrap ${
-              activeTab === 'scores' ? 'bg-blue-600 text-white shadow-xs' : 'text-slate-600 dark:text-slate-400'
+              activeTab === 'scores' ? 'bg-primary text-white shadow-xs' : 'text-text-muted'
             }`}
           >
             Noten & Aufgaben
@@ -287,7 +288,7 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({ studen
           <button
             onClick={() => setActiveTab('payments')}
             className={`px-3 py-1.5 rounded-xl transition-all whitespace-nowrap ${
-              activeTab === 'payments' ? 'bg-blue-600 text-white shadow-xs' : 'text-slate-600 dark:text-slate-400'
+              activeTab === 'payments' ? 'bg-primary text-white shadow-xs' : 'text-text-muted'
             }`}
           >
             Zahlungen
@@ -296,7 +297,7 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({ studen
           <button
             onClick={() => setActiveTab('files')}
             className={`px-3 py-1.5 rounded-xl transition-all whitespace-nowrap ${
-              activeTab === 'files' ? 'bg-indigo-600 text-white shadow-xs' : 'text-slate-600 dark:text-slate-400'
+              activeTab === 'files' ? 'bg-primary text-white shadow-xs' : 'text-text-muted'
             }`}
           >
             Dateien ({student.documents.length})
@@ -305,7 +306,7 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({ studen
           <button
             onClick={() => setActiveTab('edit')}
             className={`px-3 py-1.5 rounded-xl transition-all whitespace-nowrap flex items-center gap-1 ${
-              activeTab === 'edit' ? 'bg-amber-600 text-white shadow-xs font-bold' : 'text-amber-600 dark:text-amber-400 font-bold bg-amber-50 dark:bg-amber-950/60'
+              activeTab === 'edit' ? 'bg-primary text-white shadow-xs font-bold' : 'text-primary dark:text-primary font-bold bg-primary-soft dark:bg-primary-soft'
             }`}
           >
             <Edit3 className="w-3.5 h-3.5" />
@@ -320,35 +321,35 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({ studen
             <div className="space-y-4">
               {/* Quick Metrics */}
               <div className="grid grid-cols-3 gap-2 text-center text-xs font-bold">
-                <div className="p-3 bg-blue-50 dark:bg-blue-950/40 rounded-lg border border-blue-200 dark:border-blue-900/40">
+                <div className="p-3 bg-primary-soft dark:bg-primary-soft/40 rounded-lg border border-primary-border dark:border-primary-border/40">
                   <span className="block text-[10px] text-slate-500 uppercase">Sitzungen</span>
-                  <span className="text-xl text-blue-600 font-mono">{studentLessons.length}</span>
+                  <span className="text-xl text-primary font-mono">{studentLessons.length}</span>
                 </div>
-                <div className="p-3 bg-emerald-50 dark:bg-emerald-950/40 rounded-lg border border-emerald-200 dark:border-emerald-900/40">
+                <div className="p-3 bg-primary-soft dark:bg-primary-soft rounded-lg border border-primary-border dark:border-primary-border">
                   <span className="block text-[10px] text-slate-500 uppercase">Anwesend</span>
-                  <span className="text-xl text-emerald-600 font-mono">{presentCount}</span>
+                  <span className="text-xl text-primary font-mono">{presentCount}</span>
                 </div>
-                <div className="p-3 bg-amber-50 dark:bg-amber-950/40 rounded-lg border border-amber-200 dark:border-amber-900/40">
+                <div className="p-3 bg-primary-soft dark:bg-primary-soft rounded-lg border border-primary-border dark:border-primary-border">
                   <span className="block text-[10px] text-slate-500 uppercase">Paketzyklus</span>
-                  <span className="text-xl text-amber-600 font-mono">{currentCycleProgress} / {cycleLength}</span>
+                  <span className="text-xl text-primary font-mono">{currentCycleProgress} / {cycleLength}</span>
                 </div>
               </div>
 
               {/* Student Details */}
-              <div className="p-4 bg-slate-50 dark:bg-slate-800/60 rounded-lg border border-slate-200 dark:border-slate-700 space-y-2 text-xs">
-                <h4 className="font-bold text-slate-900 dark:text-white uppercase tracking-wider text-[11px]">Allgemeine Informationen</h4>
+              <div className="p-4 bg-surface-hover/60 rounded-lg border border-surface-border dark:border-surface-border-soft space-y-2 text-xs">
+                <h4 className="font-bold text-text-main uppercase tracking-wider text-[11px]">Allgemeine Informationen</h4>
                 <div className="grid grid-cols-2 gap-2 text-slate-600 dark:text-slate-300">
-                  <div><span className="font-semibold text-slate-400">Gruppe:</span> {assignedGroup?.name || 'Keine'}</div>
-                  <div><span className="font-semibold text-slate-400">Klasse:</span> {student.grade}</div>
-                  <div><span className="font-semibold text-slate-400">Elternteil:</span> {student.parentName}</div>
-                  <div><span className="font-semibold text-slate-400">Telefon Eltern:</span> {student.parentPhone}</div>
-                  <div><span className="font-semibold text-slate-400">Telefon Schüler:</span> {student.studentPhone || 'N/A'}</div>
-                  <div><span className="font-semibold text-slate-400">Beigetreten:</span> {student.joinedDate || 'Standard'}</div>
+                  <div><span className="font-semibold text-text-muted/70">Gruppe:</span> {assignedGroup?.name || 'Keine'}</div>
+                  <div><span className="font-semibold text-text-muted/70">Klasse:</span> {student.grade}</div>
+                  <div><span className="font-semibold text-text-muted/70">Elternteil:</span> {student.parentName}</div>
+                  <div><span className="font-semibold text-text-muted/70">Telefon Eltern:</span> {student.parentPhone}</div>
+                  <div><span className="font-semibold text-text-muted/70">Telefon Schüler:</span> {student.studentPhone || 'N/A'}</div>
+                  <div><span className="font-semibold text-text-muted/70">Beigetreten:</span> {student.joinedDate || 'Standard'}</div>
                 </div>
                 {student.notes && (
-                  <div className="pt-2 border-t border-slate-200 dark:border-slate-700">
-                    <span className="font-semibold text-slate-400">Notizen:</span>
-                    <p className="mt-1 text-slate-700 dark:text-slate-200 italic">{student.notes}</p>
+                  <div className="pt-2 border-t border-surface-border dark:border-surface-border-soft">
+                    <span className="font-semibold text-text-muted/70">Notizen:</span>
+                    <p className="mt-1 text-text-main italic">{student.notes}</p>
                   </div>
                 )}
               </div>
@@ -359,37 +360,37 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({ studen
           {activeTab === 'attendance' && (
             <div className="space-y-3">
               <div className="grid grid-cols-3 gap-2 text-center text-xs font-bold">
-                <div className="p-2.5 bg-emerald-50 dark:bg-emerald-950/40 rounded-xl border border-emerald-200">
+                <div className="p-2.5 bg-primary-soft dark:bg-primary-soft rounded-xl border border-primary-border">
                   <span className="block text-[10px] text-slate-500">✓ Anwesend</span>
-                  <span className="text-lg text-emerald-600 font-mono">{presentCount}</span>
+                  <span className="text-lg text-primary font-mono">{presentCount}</span>
                 </div>
-                <div className="p-2.5 bg-amber-50 dark:bg-amber-950/40 rounded-xl border border-amber-200">
+                <div className="p-2.5 bg-primary-soft dark:bg-primary-soft rounded-xl border border-primary-border">
                   <span className="block text-[10px] text-slate-500">⚠️ Verspätet</span>
-                  <span className="text-lg text-amber-600 font-mono">{lateCount}</span>
+                  <span className="text-lg text-primary font-mono">{lateCount}</span>
                 </div>
-                <div className="p-2.5 bg-rose-50 dark:bg-rose-950/40 rounded-xl border border-rose-200">
+                <div className="p-2.5 bg-primary-soft dark:bg-primary-soft rounded-xl border border-primary-border">
                   <span className="block text-[10px] text-slate-500">✕ Abwesend</span>
-                  <span className="text-lg text-rose-600 font-mono">{absentCount}</span>
+                  <span className="text-lg text-primary font-mono">{absentCount}</span>
                 </div>
               </div>
 
               <div className="space-y-2">
                 <h4 className="text-xs font-bold text-slate-500 uppercase">Anwesenheitsprotokoll</h4>
                 {studentLessons.length === 0 ? (
-                  <p className="text-xs text-slate-400 italic">Noch keine Sitzungen vorhanden.</p>
+                  <p className="text-xs text-text-muted/70 italic">Noch keine Sitzungen vorhanden.</p>
                 ) : (
                   studentLessons.map((l) => {
                     const status = l.report?.studentAttendance?.[student.id] || l.report?.attendanceStatus || 'present';
                     return (
-                      <div key={l.id} className="p-3 bg-slate-50 dark:bg-slate-800/80 rounded-lg border border-slate-200/80 dark:border-slate-700 flex items-center justify-between text-xs">
+                      <div key={l.id} className="p-3 bg-surface-hover/80 rounded-lg border border-surface-border/80 dark:border-surface-border-soft flex items-center justify-between text-xs">
                         <div>
-                          <p className="font-bold text-slate-900 dark:text-white">{l.title}</p>
+                          <p className="font-bold text-text-main">{l.title}</p>
                           <p className="text-[11px] text-slate-500">{l.date} • {l.time} Uhr</p>
                         </div>
                         <span className={`px-2.5 py-1 rounded-lg font-bold text-[11px] ${
-                          status === 'present' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300' :
-                          status === 'late' ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300' :
-                          'bg-rose-100 text-rose-800 dark:bg-rose-900/40 dark:text-rose-300'
+                          status === 'present' ? 'bg-primary-soft text-primary dark:bg-primary-soft dark:text-primary' :
+                          status === 'late' ? 'bg-primary-soft text-primary dark:bg-primary-soft dark:text-primary' :
+                          'bg-primary-soft text-primary dark:bg-primary-soft dark:text-primary'
                         }`}>
                           {status === 'present' ? 'Anwesend' : status === 'late' ? 'Verspätet' : 'Abwesend'}
                         </span>
@@ -406,15 +407,15 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({ studen
             <div className="space-y-3">
               <h3 className="text-xs font-bold text-slate-500 uppercase">Hausaufgaben & Prüfungsergebnisse</h3>
               {studentLessons.filter(l => l.report?.homeworkTitle || l.report?.scores).length === 0 ? (
-                <p className="text-xs text-slate-400 italic">Keine Prüfungsergebnisse oder Hausaufgaben verzeichnet.</p>
+                <p className="text-xs text-text-muted/70 italic">Keine Prüfungsergebnisse oder Hausaufgaben verzeichnet.</p>
               ) : (
                 studentLessons.filter(l => l.report?.homeworkTitle || l.report?.scores).map((l) => (
-                  <div key={l.id} className="p-3 bg-slate-50 dark:bg-slate-800/80 rounded-lg border border-slate-200/80 dark:border-slate-700 text-xs space-y-2">
+                  <div key={l.id} className="p-3 bg-surface-hover/80 rounded-lg border border-surface-border/80 dark:border-surface-border-soft text-xs space-y-2">
                     <div className="flex items-center justify-between font-bold">
-                      <span className="text-slate-900 dark:text-white">{l.title} ({l.date})</span>
+                      <span className="text-text-main">{l.title} ({l.date})</span>
                       {l.report?.homeworkStatus && (
                         <span className={`text-[10px] px-2 py-0.5 rounded-full ${
-                          l.report?.homeworkStatus === 'completed' ? 'bg-emerald-100 text-emerald-800' : 'bg-blue-100 text-blue-800'
+                          l.report?.homeworkStatus === 'completed' ? 'bg-primary-soft text-primary' : 'bg-primary-soft text-primary-hover'
                         }`}>
                           {l.report?.homeworkStatus === 'completed' ? 'Hausaufgabe erledigt' : 'Aufgegeben'}
                         </span>
@@ -436,15 +437,15 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({ studen
             <div className="space-y-2">
               <h3 className="text-xs font-bold text-slate-500 uppercase">Zahlungshistorie (Payment History)</h3>
               {studentPayments.length === 0 ? (
-                <p className="text-xs text-slate-400 italic">Keine Zahlungsunterlagen vorhanden.</p>
+                <p className="text-xs text-text-muted/70 italic">Keine Zahlungsunterlagen vorhanden.</p>
               ) : (
                 studentPayments.map((p) => (
-                  <div key={p.id} className="p-3 bg-slate-50 dark:bg-slate-800/80 rounded-lg border border-slate-200/80 dark:border-slate-700 flex items-center justify-between text-xs">
+                  <div key={p.id} className="p-3 bg-surface-hover/80 rounded-lg border border-surface-border/80 dark:border-surface-border-soft flex items-center justify-between text-xs">
                     <div>
-                      <p className="font-bold text-slate-900 dark:text-white">{p.groupName}</p>
+                      <p className="font-bold text-text-main">{p.groupName}</p>
                       <p className="text-[10px] text-slate-500">Fällig am: {p.dueDate}</p>
                     </div>
-                    <span className={`font-mono font-bold text-xs ${p.status === 'paid' ? 'text-emerald-600' : 'text-red-600'}`}>
+                    <span className={`font-mono font-bold text-xs ${p.status === 'paid' ? 'text-primary' : 'text-red-600'}`}>
                       {p.amountDue} {profile.currency} ({p.status.toUpperCase()})
                     </span>
                   </div>
@@ -463,7 +464,7 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({ studen
                 <select
                   value={selectedCategory}
                   onChange={(e) => setSelectedCategory(e.target.value as 'homework' | 'exam' | 'doc')}
-                  className="px-2 py-1 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-[11px] font-bold"
+                  className="px-2 py-1 bg-surface-hover border border-surface-border dark:border-surface-border-soft rounded-lg text-[11px] font-bold"
                 >
                   <option value="homework">Homework File</option>
                   <option value="exam">Exam File</option>
@@ -472,8 +473,8 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({ studen
               </div>
 
               {/* Upload Input */}
-              <label className="border-2 border-dashed border-indigo-300 dark:border-indigo-800 hover:border-indigo-500 bg-indigo-50/40 dark:bg-indigo-950/20 rounded-lg p-4 flex flex-col items-center justify-center text-center cursor-pointer transition-colors">
-                <Upload className="w-6 h-6 text-indigo-600 dark:text-indigo-400 mb-1" />
+              <label className="border-2 border-dashed border-primary-border dark:border-primary-border hover:border-primary-border bg-primary-soft dark:bg-primary-soft rounded-lg p-4 flex flex-col items-center justify-center text-center cursor-pointer transition-colors">
+                <Upload className="w-6 h-6 text-primary dark:text-primary mb-1" />
                 <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
                   Klicken zum Hochladen (Upload PDF / Document)
                 </span>
@@ -484,23 +485,23 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({ studen
               {/* Uploaded Files List */}
               <div className="space-y-2">
                 {student.documents.length === 0 ? (
-                  <p className="text-xs text-slate-400 text-center py-3 italic">
+                  <p className="text-xs text-text-muted/70 text-center py-3 italic">
                     Keine Dokumente hochgeladen.
                   </p>
                 ) : (
                   student.documents.map((doc) => (
                     <div
                       key={doc.id}
-                      className="p-3 bg-slate-50 dark:bg-slate-800/80 rounded-lg border border-slate-200/80 dark:border-slate-700 flex items-center justify-between text-xs"
+                      className="p-3 bg-surface-hover/80 rounded-lg border border-surface-border/80 dark:border-surface-border-soft flex items-center justify-between text-xs"
                     >
                       <div className="flex items-center gap-2.5">
-                        <div className="p-2 bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-300 rounded-xl">
+                        <div className="p-2 bg-primary-soft dark:bg-primary-soft text-primary dark:text-primary rounded-xl">
                           <FileText className="w-4 h-4" />
                         </div>
                         <div>
-                          <p className="font-bold text-slate-900 dark:text-white line-clamp-1">{doc.fileName}</p>
+                          <p className="font-bold text-text-main line-clamp-1">{doc.fileName}</p>
                           <p className="text-[10px] text-slate-500">
-                            {doc.fileSize} • Hochgeladen am {doc.uploadedAt} • <span className="uppercase font-bold text-indigo-600">{doc.category}</span>
+                            {doc.fileSize} • Hochgeladen am {doc.uploadedAt} • <span className="uppercase font-bold text-primary">{doc.category}</span>
                           </p>
                         </div>
                       </div>
@@ -509,7 +510,7 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({ studen
                         <a
                           href={doc.url}
                           download={doc.fileName}
-                          className="p-1.5 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg transition-colors text-blue-600"
+                          className="p-1.5 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg transition-colors text-primary"
                           title="Herunterladen"
                         >
                           <Download className="w-4 h-4" />
@@ -532,18 +533,18 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({ studen
           {/* EDIT STUDENT DATA TAB */}
           {activeTab === 'edit' && (
             <form onSubmit={handleSaveStudent} className="space-y-3.5">
-              <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-2">
-                <h3 className="text-xs font-bold uppercase text-amber-600 dark:text-amber-400 flex items-center gap-1.5">
+              <div className="flex items-center justify-between border-b border-surface-border pb-2">
+                <h3 className="text-xs font-bold uppercase text-primary dark:text-primary flex items-center gap-1.5">
                   <Edit3 className="w-4 h-4" />
                   <span>Schülerdaten Bearbeiten (Edit Student Data)</span>
                 </h3>
-                <span className="text-[10px] text-slate-400 font-mono">ID: {student.id}</span>
+                <span className="text-[10px] text-text-muted/70 font-mono">ID: {student.id}</span>
               </div>
 
               {/* Avatar Selection Section */}
-              <div className="space-y-2 bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/80 p-3 rounded-lg">
+              <div className="space-y-2 bg-surface-hover/60 border border-surface-border/80 dark:border-surface-border-soft/80 p-3 rounded-lg">
                 <label className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
-                  <Sparkles className="w-4 h-4 text-amber-500" />
+                  <Sparkles className="w-4 h-4 text-primary" />
                   <span>Cartoon Avatar wählen (Choose Avatar)</span>
                 </label>
 
@@ -557,14 +558,14 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({ studen
                         onClick={() => setEditAvatarUrl(av.url)}
                         className={`relative rounded-xl overflow-hidden aspect-square border-2 transition-all cursor-pointer group hover:scale-105 ${
                           isSelected
-                            ? 'border-amber-500 ring-2 ring-amber-500/30 scale-105'
-                            : 'border-slate-200 dark:border-slate-700 hover:border-slate-400'
+                            ? 'border-primary-border ring-2 ring-primary/30 scale-105'
+                            : 'border-surface-border dark:border-surface-border-soft hover:border-slate-400'
                         }`}
                         title={av.name}
                       >
                         <img src={av.url} alt={av.name} className="w-full h-full object-cover" />
                         {isSelected && (
-                          <div className="absolute inset-0 bg-amber-600/30 flex items-center justify-center">
+                          <div className="absolute inset-0 bg-primary/30 flex items-center justify-center">
                             <Check className="w-4 h-4 text-white drop-shadow-md stroke-[3]" />
                           </div>
                         )}
@@ -576,7 +577,7 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({ studen
 
               {/* Student Name */}
               <div className="space-y-1">
-                <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                <label className="text-xs font-bold text-text-main">
                   Schüler Name (Student Name) *
                 </label>
                 <input
@@ -584,20 +585,20 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({ studen
                   required
                   value={editName}
                   onChange={(e) => setEditName(e.target.value)}
-                  className="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-amber-500"
+                  className="w-full px-3.5 py-2 bg-surface-hover border border-surface-border dark:border-surface-border-soft rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-primary"
                 />
               </div>
 
               {/* Group & Grade */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                  <label className="text-xs font-bold text-text-main">
                     Zugewiesene Gruppe (Group)
                   </label>
                   <select
                     value={editGroupId}
                     onChange={(e) => setEditGroupId(e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-amber-500"
+                    className="w-full px-3 py-2 bg-surface-hover border border-surface-border dark:border-surface-border-soft rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-primary"
                   >
                     {groups.map(g => (
                       <option key={g.id} value={g.id}>
@@ -608,13 +609,13 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({ studen
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                  <label className="text-xs font-bold text-text-main">
                     Klassenstufe / Niveau (Grade)
                   </label>
                   <select
                     value={editGrade}
                     onChange={(e) => setEditGrade(e.target.value as GradeLevel)}
-                    className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-amber-500"
+                    className="w-full px-3 py-2 bg-surface-hover border border-surface-border dark:border-surface-border-soft rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-primary"
                   >
                     {Array.from({ length: 12 }, (_, i) => `Grade ${i + 1}`).map(g => (
                       <option key={g} value={g}>{g}</option>
@@ -626,7 +627,7 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({ studen
               {/* Parent Name & Phone */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                  <label className="text-xs font-bold text-text-main">
                     Eltern Name (Parent Name)
                   </label>
                   <input
@@ -634,12 +635,12 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({ studen
                     value={editParentName}
                     onChange={(e) => setEditParentName(e.target.value)}
                     placeholder="Herr / Frau Ali"
-                    className="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-amber-500"
+                    className="w-full px-3.5 py-2 bg-surface-hover border border-surface-border dark:border-surface-border-soft rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-primary"
                   />
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                  <label className="text-xs font-bold text-text-main">
                     Eltern Telefon / WhatsApp
                   </label>
                   <input
@@ -647,7 +648,7 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({ studen
                     value={editParentPhone}
                     onChange={(e) => setEditParentPhone(e.target.value)}
                     placeholder="+20 10..."
-                    className="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-amber-500"
+                    className="w-full px-3.5 py-2 bg-surface-hover border border-surface-border dark:border-surface-border-soft rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-primary"
                   />
                 </div>
               </div>
@@ -655,7 +656,7 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({ studen
               {/* Student Phone & Status */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                  <label className="text-xs font-bold text-text-main">
                     Schüler Telefon (Student Direct Phone)
                   </label>
                   <input
@@ -663,18 +664,18 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({ studen
                     value={editStudentPhone}
                     onChange={(e) => setEditStudentPhone(e.target.value)}
                     placeholder="+20 11..."
-                    className="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-amber-500"
+                    className="w-full px-3.5 py-2 bg-surface-hover border border-surface-border dark:border-surface-border-soft rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-primary"
                   />
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                  <label className="text-xs font-bold text-text-main">
                     Status (Student Status)
                   </label>
                   <select
                     value={editStatus}
                     onChange={(e) => setEditStatus(e.target.value as 'active' | 'archived')}
-                    className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold focus:outline-none focus:ring-2 focus:ring-amber-500"
+                    className="w-full px-3 py-2 bg-surface-hover border border-surface-border dark:border-surface-border-soft rounded-xl text-xs font-bold focus:outline-none focus:ring-2 focus:ring-primary"
                   >
                     <option value="active">🟢 Aktiv (Active Student)</option>
                     <option value="archived">⚪ Pausiert / Archiviert (Archived)</option>
@@ -684,7 +685,7 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({ studen
 
               {/* Notes */}
               <div className="space-y-1">
-                <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                <label className="text-xs font-bold text-text-main">
                   Notizen (Teacher Notes)
                 </label>
                 <textarea
@@ -692,12 +693,12 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({ studen
                   value={editNotes}
                   onChange={(e) => setEditNotes(e.target.value)}
                   placeholder="Notizen zum Schüler, Lernstand..."
-                  className="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-amber-500"
+                  className="w-full px-3.5 py-2 bg-surface-hover border border-surface-border dark:border-surface-border-soft rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-primary"
                 />
               </div>
 
               {saveSuccessToast && (
-                <div className="bg-emerald-600 text-white text-xs font-bold p-2.5 rounded-xl flex items-center justify-center gap-2 animate-scale-up">
+                <div className="bg-primary text-white text-xs font-bold p-2.5 rounded-xl flex items-center justify-center gap-2 animate-scale-up">
                   <Check className="w-4 h-4" />
                   <span>✓ Schülerdaten erfolgreich aktualisiert!</span>
                 </div>
@@ -705,7 +706,7 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({ studen
 
               <button
                 type="submit"
-                className="w-full bg-amber-600 hover:bg-amber-700 active:scale-[0.99] text-white font-black text-xs py-3 rounded-xl shadow-md transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                className="w-full bg-primary hover:bg-primary-hover active:scale-[0.99] text-white font-black text-xs py-3 rounded-xl shadow-md transition-all cursor-pointer flex items-center justify-center gap-1.5"
               >
                 <Save className="w-4 h-4" />
                 <span>Änderungen Speichern (Save Changes)</span>

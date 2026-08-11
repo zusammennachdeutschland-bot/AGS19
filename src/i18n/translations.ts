@@ -217,6 +217,25 @@ export type TranslationKey =
   | 'payments_paid_cycles'
   | 'payments_details_header'
   | 'payments_no_paid_period'
+  | 'payments_monthly_gain'
+  | 'payments_weekly_gain'
+  | 'payments_daily_gain'
+  | 'payments_weekly_summary'
+  | 'payments_pending_tag'
+  | 'payments_parent_notice'
+  | 'payments_paid_btn'
+  | 'payments_not_yet_btn'
+  | 'payments_no_due_sub'
+  | 'payments_no_cycles_period'
+  | 'payments_monthly_summary'
+  | 'payments_history_sub'
+  | 'payments_due_tab'
+  | 'payments_details_heading'
+  | 'payments_daily_summary'
+  | 'payments_completed_cycle'
+  | 'payments_overdue'
+  | 'payments_expected'
+  | 'payments_revenue_overview'
   | 'reports_title'
   | 'reports_header_sub'
   | 'reports_print_pdf'
@@ -254,6 +273,23 @@ export type TranslationKey =
   | 'daily_stats_groups'
   | 'daily_stats_completed_short'
   | 'daily_stats_revenue'
+  | 'tomorrows_lessons_title'
+  | 'no_lessons_tomorrow'
+  | 'weekly_overview_title'
+  | 'weekly_overview_sub'
+  | 'stat_remaining'
+  | 'stat_cancelled'
+  | 'stat_uncollected'
+  | 'stat_total_expected'
+  | 'smart_summary_title'
+  | 'smart_summary_badge'
+  | 'smart_summary_today'
+  | 'smart_summary_expected_income'
+  | 'smart_summary_first_lesson'
+  | 'smart_summary_overdue_students'
+  | 'smart_summary_todays_lessons'
+  | 'smart_summary_todays_students'
+  | 'smart_summary_no_lessons_regular'
   | 'next_action_title'
   | 'next_action_no_lessons'
   | 'next_action_today'
@@ -480,6 +516,25 @@ export const translations: Record<AppLanguage, Record<TranslationKey, string>> =
     payments_title: 'إدارة المدفوعات',
     payments_total_collected: 'المحصل',
     payments_total_pending: 'المتبقي',
+    payments_completed_cycle: 'الدورة اكتملت',
+    payments_daily_summary: 'ملخص اليوم',
+    payments_details_heading: 'التفاصيل',
+    payments_due_tab: 'المستحقات',
+    payments_history_sub: 'تاريخ سداد المدفوعات',
+    payments_monthly_summary: 'ملخص الشهر',
+    payments_no_cycles_period: 'لا توجد دورات مسددة',
+    payments_no_due_sub: 'لا توجد مستحقات سداد حاليا',
+    payments_not_yet_btn: 'لم يتم السداد',
+    payments_paid_btn: 'تم السداد',
+    payments_parent_notice: 'إشعار لولي الأمر',
+    payments_pending_tag: 'في الانتظار',
+    payments_weekly_summary: 'ملخص الأسبوع',
+    payments_daily_gain: 'أرباح اليوم',
+    payments_weekly_gain: 'أرباح الأسبوع',
+    payments_monthly_gain: 'أرباح الشهر',
+    payments_overdue: 'متأخر',
+    payments_expected: 'المتوقع',
+    payments_revenue_overview: 'نظرة عامة على الإيرادات',
     payments_record: 'تسجيل دفعة',
     payments_send_reminder: 'تذكير بالدفع',
     payments_paid: 'مدفوع',
@@ -558,6 +613,23 @@ export const translations: Record<AppLanguage, Record<TranslationKey, string>> =
     daily_stats_groups: 'المجموعات',
     daily_stats_completed_short: 'المكتملة',
     daily_stats_revenue: 'الإيرادات',
+    tomorrows_lessons_title: 'حصص الغد',
+    no_lessons_tomorrow: 'لا توجد حصص مجدولة لغداً ✨',
+    weekly_overview_title: 'المعاينة الأسبوعية',
+    weekly_overview_sub: 'الجمعة - الخميس',
+    stat_remaining: 'المتبقية',
+    stat_cancelled: 'الملغاة',
+    stat_uncollected: 'غير محصلة',
+    stat_total_expected: 'الإجمالي المتوقع',
+    smart_summary_title: 'ملخص اليوم الذكي',
+    smart_summary_badge: 'تحديث ذكي',
+    smart_summary_today: 'اليوم',
+    smart_summary_expected_income: 'متوقع تحصيله',
+    smart_summary_first_lesson: 'أول حصة',
+    smart_summary_overdue_students: 'طلاب متأخرون',
+    smart_summary_todays_lessons: 'حصص اليوم',
+    smart_summary_todays_students: 'طلاب اليوم',
+    smart_summary_no_lessons_regular: 'لا توجد حصص مجدولة لليوم. جميع الدفوعات منتظمة بالكامل ✨',
     next_action_title: 'الحصة القادمة',
     next_action_no_lessons: 'لا توجد حصص قادمة للمرشح المحدد',
     next_action_today: 'اليوم',
@@ -784,6 +856,25 @@ export const translations: Record<AppLanguage, Record<TranslationKey, string>> =
     payments_title: 'Payment Management',
     payments_total_collected: 'Collected',
     payments_total_pending: 'Pending',
+    payments_completed_cycle: 'Completed Cycle',
+    payments_daily_summary: 'Daily Summary',
+    payments_details_heading: 'Details',
+    payments_due_tab: 'Due',
+    payments_history_sub: 'Payment history records',
+    payments_monthly_summary: 'Monthly Summary',
+    payments_no_cycles_period: 'No paid cycles.',
+    payments_no_due_sub: 'No payments are due right now.',
+    payments_not_yet_btn: 'Not Yet',
+    payments_paid_btn: 'Paid',
+    payments_parent_notice: 'Parent Notice',
+    payments_pending_tag: 'Pending',
+    payments_weekly_summary: 'Weekly Summary',
+    payments_daily_gain: 'Daily Revenue',
+    payments_weekly_gain: 'Weekly Revenue',
+    payments_monthly_gain: 'Monthly Revenue',
+    payments_overdue: 'Overdue',
+    payments_expected: 'Expected',
+    payments_revenue_overview: 'Revenue Overview',
     payments_record: 'Record payment',
     payments_send_reminder: 'Send reminder',
     payments_paid: 'Paid',
@@ -862,6 +953,23 @@ export const translations: Record<AppLanguage, Record<TranslationKey, string>> =
     daily_stats_groups: 'Groups',
     daily_stats_completed_short: 'Completed',
     daily_stats_revenue: 'Revenue',
+    tomorrows_lessons_title: "Tomorrow's Lessons",
+    no_lessons_tomorrow: 'No lessons scheduled for tomorrow ✨',
+    weekly_overview_title: 'Weekly Overview',
+    weekly_overview_sub: 'Friday - Thursday',
+    stat_remaining: 'Remaining',
+    stat_cancelled: 'Cancelled',
+    stat_uncollected: 'Uncollected',
+    stat_total_expected: 'Total Expected',
+    smart_summary_title: 'Smart Daily Summary',
+    smart_summary_badge: 'Smart Update',
+    smart_summary_today: 'Today',
+    smart_summary_expected_income: 'Expected Income',
+    smart_summary_first_lesson: 'First Lesson',
+    smart_summary_overdue_students: 'Overdue Students',
+    smart_summary_todays_lessons: "Today's Lessons",
+    smart_summary_todays_students: "Today's Students",
+    smart_summary_no_lessons_regular: 'No lessons scheduled for today. All payments are up to date ✨',
     next_action_title: 'NEXT LESSON',
     next_action_no_lessons: 'No upcoming lessons for the selected filter',
     next_action_today: 'Today',
@@ -1088,6 +1196,25 @@ export const translations: Record<AppLanguage, Record<TranslationKey, string>> =
     payments_title: 'Zahlungsverwaltung',
     payments_total_collected: 'Eingenommen',
     payments_total_pending: 'Ausstehend',
+    payments_completed_cycle: 'Abgeschlossener Zyklus',
+    payments_daily_summary: 'Tagesübersicht',
+    payments_details_heading: 'Details',
+    payments_due_tab: 'Fällig',
+    payments_history_sub: 'Verlauf der Zahlungen',
+    payments_monthly_summary: 'Monatsübersicht',
+    payments_no_cycles_period: 'Keine bezahlten Zyklen.',
+    payments_no_due_sub: 'Derzeit keine fälligen Zahlungen.',
+    payments_not_yet_btn: 'Noch nicht',
+    payments_paid_btn: 'Bezahlt',
+    payments_parent_notice: 'Elternnotiz',
+    payments_pending_tag: 'Ausstehend',
+    payments_weekly_summary: 'Wochenübersicht',
+    payments_daily_gain: 'Tagesumsatz',
+    payments_weekly_gain: 'Wochenumsatz',
+    payments_monthly_gain: 'Monatsumsatz',
+    payments_overdue: 'Überfällig',
+    payments_expected: 'Erwartet',
+    payments_revenue_overview: 'Umsatzübersicht',
     payments_record: 'Zahlung erfassen',
     payments_send_reminder: 'Erinnerung senden',
     payments_paid: 'Bezahlt',
@@ -1166,6 +1293,23 @@ export const translations: Record<AppLanguage, Record<TranslationKey, string>> =
     daily_stats_groups: 'Gruppen',
     daily_stats_completed_short: 'Abgeschlossen',
     daily_stats_revenue: 'Umsatz',
+    tomorrows_lessons_title: 'Stunden morgen',
+    no_lessons_tomorrow: 'Keine Stunden für morgen geplant ✨',
+    weekly_overview_title: 'Wöchentliche Übersicht',
+    weekly_overview_sub: 'Freitag - Donnerstag',
+    stat_remaining: 'Verbleibend',
+    stat_cancelled: 'Storniert',
+    stat_uncollected: 'Ausstehend',
+    stat_total_expected: 'Gesamt erwartet',
+    smart_summary_title: 'Kluge Tageszusammenfassung',
+    smart_summary_badge: 'Kluges Update',
+    smart_summary_today: 'Heute',
+    smart_summary_expected_income: 'Erwartete Einnahmen',
+    smart_summary_first_lesson: 'Erste Stunde',
+    smart_summary_overdue_students: 'Überfällige Schüler',
+    smart_summary_todays_lessons: 'Stunden heute',
+    smart_summary_todays_students: 'Schüler heute',
+    smart_summary_no_lessons_regular: 'Keine Stunden für heute geplant. Alle Zahlungen sind aktuell ✨',
     next_action_title: 'NÄCHSTE STUNDE',
     next_action_no_lessons: 'Keine bevorstehenden Stunden für den gewählten Filter',
     next_action_today: 'Heute',

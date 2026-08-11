@@ -98,12 +98,12 @@ export const SessionHistoryView: React.FC = () => {
   const totalHours = (lessons.reduce((acc, l) => acc + (l.durationMinutes || l.duration || 60), 0) / 60).toFixed(1);
 
   return (
-    <div className="space-y-4 pb-20 font-sans">
+    <div className="space-y-4  font-sans">
       {/* Header Banner - redesigned to modern flat theme */}
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-2xs space-y-4">
+      <div className="bg-surface border border-surface-border rounded-xl p-4 shadow-2xs space-y-4">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-lg bg-blue-50 dark:bg-blue-950/40 flex items-center justify-center border border-blue-200/50 dark:border-blue-900/40 shrink-0">
-            <History className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+          <div className="w-9 h-9 rounded-lg bg-primary-soft dark:bg-primary-soft/40 flex items-center justify-center border border-primary-border/50 dark:border-primary-border/40 shrink-0">
+            <History className="w-5 h-5 text-primary dark:text-primary" />
           </div>
           <div>
             <h1 className="text-xs font-black uppercase tracking-wider text-slate-800 dark:text-slate-200">{t('history_title')}</h1>
@@ -112,37 +112,37 @@ export const SessionHistoryView: React.FC = () => {
         </div>
 
         {/* Quick Stats Grid - elegant solid styling with high contrast */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-3 border-t border-slate-100 dark:border-slate-800/80 text-center">
-          <div className="bg-slate-50 dark:bg-slate-800 p-2.5 rounded-lg border border-slate-200 dark:border-slate-700/80">
-            <span className="block text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase truncate">{t('history_total_lessons')}</span>
-            <span className="text-sm font-black text-slate-800 dark:text-slate-100 mt-1 block">{totalCount}</span>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-3 border-t border-slate-100 dark:border-surface-border/80 text-center">
+          <div className="bg-surface-hover p-2.5 rounded-lg border border-surface-border dark:border-surface-border-soft/80">
+            <span className="block text-[10px] text-text-muted font-bold uppercase truncate">{t('history_total_lessons')}</span>
+            <span className="text-sm font-black text-text-main mt-1 block">{totalCount}</span>
           </div>
-          <div className="bg-emerald-50 dark:bg-emerald-950/30 p-2.5 rounded-lg border border-emerald-200 dark:border-emerald-900/40">
-            <span className="block text-[10px] text-emerald-600 dark:text-emerald-400 font-bold uppercase truncate">{t('history_completed')}</span>
-            <span className="text-sm font-black text-emerald-700 dark:text-emerald-300 mt-1 block">{completedCount}</span>
+          <div className="bg-primary-soft dark:bg-primary-soft p-2.5 rounded-lg border border-primary-border dark:border-primary-border">
+            <span className="block text-[10px] text-primary dark:text-primary font-bold uppercase truncate">{t('history_completed')}</span>
+            <span className="text-sm font-black text-primary dark:text-primary mt-1 block">{completedCount}</span>
           </div>
-          <div className="bg-rose-50 dark:bg-rose-950/30 p-2.5 rounded-lg border border-rose-200 dark:border-rose-900/40">
-            <span className="block text-[10px] text-rose-600 dark:text-rose-400 font-bold uppercase truncate">{t('status_cancelled')}</span>
-            <span className="text-sm font-black text-rose-700 dark:text-rose-300 mt-1 block">{cancelledCount}</span>
+          <div className="bg-primary-soft dark:bg-primary-soft p-2.5 rounded-lg border border-primary-border dark:border-primary-border">
+            <span className="block text-[10px] text-primary dark:text-primary font-bold uppercase truncate">{t('status_cancelled')}</span>
+            <span className="text-sm font-black text-primary dark:text-primary mt-1 block">{cancelledCount}</span>
           </div>
-          <div className="bg-blue-50 dark:bg-blue-950/30 p-2.5 rounded-lg border border-blue-200 dark:border-blue-900/40">
-            <span className="block text-[10px] text-blue-600 dark:text-blue-400 font-bold uppercase truncate">{t('history_total_hours')}</span>
-            <span className="text-sm font-black text-blue-700 dark:text-blue-300 mt-1 block">{totalHours} hrs</span>
+          <div className="bg-primary-soft dark:bg-primary-soft/30 p-2.5 rounded-lg border border-primary-border dark:border-primary-border/40">
+            <span className="block text-[10px] text-primary dark:text-primary font-bold uppercase truncate">{t('history_total_hours')}</span>
+            <span className="text-sm font-black text-primary dark:text-primary/70 mt-1 block">{totalHours} hrs</span>
           </div>
         </div>
       </div>
 
       {/* Filter and Search Section */}
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3.5 space-y-3.5 shadow-2xs">
+      <div className="bg-surface border border-surface-border rounded-xl p-3.5 space-y-3.5 shadow-2xs">
         {/* Search Bar */}
         <div className="relative">
-          <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+          <Search className="w-3.5 h-3.5 text-text-muted/70 absolute left-3 top-1/2 -translate-y-1/2" />
           <input
             type="text"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder={t('history_search_placeholder')}
-            className="w-full pl-9 pr-3 py-1.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-bold focus:outline-none focus:ring-1 focus:ring-blue-500"
+            className="w-full pl-9 pr-3 py-1.5 bg-surface-hover/80 border border-surface-border dark:border-surface-border-soft rounded-lg text-xs font-bold focus:outline-none focus:ring-1 focus:ring-primary"
           />
         </div>
 
@@ -152,8 +152,8 @@ export const SessionHistoryView: React.FC = () => {
             onClick={() => setStatusFilter('all')}
             className={`px-2.5 py-1.5 rounded transition-all cursor-pointer whitespace-nowrap ${
               statusFilter === 'all'
-                ? 'bg-blue-600 text-white border border-transparent shadow-2xs'
-                : 'bg-slate-50 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400 border border-slate-200/60 dark:border-slate-700/60'
+                ? 'bg-primary text-white border border-transparent shadow-2xs'
+                : 'bg-surface-hover/60 text-text-muted border border-surface-border/60 dark:border-surface-border-soft/60'
             }`}
           >
             {t('all')} ({lessons.length})
@@ -162,8 +162,8 @@ export const SessionHistoryView: React.FC = () => {
             onClick={() => setStatusFilter('completed')}
             className={`px-2.5 py-1.5 rounded transition-all cursor-pointer whitespace-nowrap ${
               statusFilter === 'completed'
-                ? 'bg-emerald-600 text-white border border-transparent shadow-2xs'
-                : 'bg-slate-50 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400 border border-slate-200/60 dark:border-slate-700/60'
+                ? 'bg-primary text-white border border-transparent shadow-2xs'
+                : 'bg-surface-hover/60 text-text-muted border border-surface-border/60 dark:border-surface-border-soft/60'
             }`}
           >
             ✓ {t('history_completed')} ({completedCount})
@@ -172,8 +172,8 @@ export const SessionHistoryView: React.FC = () => {
             onClick={() => setStatusFilter('cancelled')}
             className={`px-2.5 py-1.5 rounded transition-all cursor-pointer whitespace-nowrap ${
               statusFilter === 'cancelled'
-                ? 'bg-rose-600 text-white border border-transparent shadow-2xs'
-                : 'bg-slate-50 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400 border border-slate-200/60 dark:border-slate-700/60'
+                ? 'bg-primary text-white border border-transparent shadow-2xs'
+                : 'bg-surface-hover/60 text-text-muted border border-surface-border/60 dark:border-surface-border-soft/60'
             }`}
           >
             🚫 {t('status_cancelled')} ({cancelledCount})
@@ -182,8 +182,8 @@ export const SessionHistoryView: React.FC = () => {
             onClick={() => setStatusFilter('pending')}
             className={`px-2.5 py-1.5 rounded transition-all cursor-pointer whitespace-nowrap ${
               statusFilter === 'pending'
-                ? 'bg-amber-600 text-white border border-transparent shadow-2xs'
-                : 'bg-slate-50 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400 border border-slate-200/60 dark:border-slate-700/60'
+                ? 'bg-primary text-white border border-transparent shadow-2xs'
+                : 'bg-surface-hover/60 text-text-muted border border-surface-border/60 dark:border-surface-border-soft/60'
             }`}
           >
             ⚠️ {t('status_pending')} ({pendingCount})
@@ -193,11 +193,11 @@ export const SessionHistoryView: React.FC = () => {
         {/* Filter Row 2: Entity & Period Dropdowns */}
         <div className="grid grid-cols-2 gap-3 text-xs">
           <div>
-            <label className="block text-[10px] font-bold text-slate-400 mb-1 uppercase tracking-wider">{t('history_filter_entity_label')}</label>
+            <label className="block text-[10px] font-bold text-text-muted/70 mb-1 uppercase tracking-wider">{t('history_filter_entity_label')}</label>
             <select
               value={entityFilter}
               onChange={(e) => setEntityFilter(e.target.value)}
-              className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-bold px-2.5 py-1.5 rounded-lg focus:outline-none cursor-pointer text-xs"
+              className="w-full bg-surface-hover border border-surface-border dark:border-surface-border-soft font-bold px-2.5 py-1.5 rounded-lg focus:outline-none cursor-pointer text-xs"
             >
               <option value="all">{t('history_all_entities')}</option>
               <optgroup label={t('history_groups_category')}>
@@ -214,11 +214,11 @@ export const SessionHistoryView: React.FC = () => {
           </div>
 
           <div>
-            <label className="block text-[10px] font-bold text-slate-400 mb-1 uppercase tracking-wider">{t('history_filter_period_label')}</label>
+            <label className="block text-[10px] font-bold text-text-muted/70 mb-1 uppercase tracking-wider">{t('history_filter_period_label')}</label>
             <select
               value={periodFilter}
               onChange={(e) => setPeriodFilter(e.target.value as any)}
-              className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-bold px-2.5 py-1.5 rounded-lg focus:outline-none cursor-pointer text-xs"
+              className="w-full bg-surface-hover border border-surface-border dark:border-surface-border-soft font-bold px-2.5 py-1.5 rounded-lg focus:outline-none cursor-pointer text-xs"
             >
               <option value="all">{t('history_period_all')}</option>
               <option value="today">{t('history_period_today')}</option>
@@ -243,7 +243,7 @@ export const SessionHistoryView: React.FC = () => {
                 setEntityFilter('all');
                 setPeriodFilter('all');
               }}
-              className="text-blue-600 dark:text-blue-400 font-black hover:underline cursor-pointer"
+              className="text-primary dark:text-primary font-black hover:underline cursor-pointer"
             >
               {t('history_reset_filters')}
             </button>
@@ -251,12 +251,12 @@ export const SessionHistoryView: React.FC = () => {
         </div>
 
         {filteredLessons.length === 0 ? (
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-8 text-center space-y-2">
-            <div className="w-10 h-10 rounded-lg bg-slate-50 dark:bg-slate-850 flex items-center justify-center mx-auto text-slate-400 border border-slate-100 dark:border-slate-800">
+          <div className="bg-surface border border-surface-border rounded-xl p-5 text-center space-y-2">
+            <div className="w-10 h-10 rounded-lg bg-background dark:bg-slate-850 flex items-center justify-center mx-auto text-text-muted/70 border border-slate-100 dark:border-surface-border">
               <History className="w-5 h-5" />
             </div>
             <div>
-              <p className="font-bold text-slate-700 dark:text-slate-300 text-xs">{t('next_action_no_lessons')}</p>
+              <p className="font-bold text-text-main text-xs">{t('next_action_no_lessons')}</p>
             </div>
           </div>
         ) : (
@@ -267,32 +267,32 @@ export const SessionHistoryView: React.FC = () => {
             // Attendance Status formatting
             const reportAtt = lesson.report?.attendanceStatus || (lesson.status === 'completed' ? 'present' : lesson.status === 'cancelled' ? 'absent' : 'present');
             const attBadgeClass = 
-              reportAtt === 'present' ? 'bg-emerald-50 dark:bg-emerald-950/25 text-emerald-700 dark:text-emerald-300 border-emerald-200/40 dark:border-emerald-800/40'
-              : reportAtt === 'late' ? 'bg-amber-50 dark:bg-amber-950/25 text-amber-700 dark:text-amber-300 border-amber-200/40 dark:border-amber-800/40'
-              : 'bg-rose-50 dark:bg-rose-950/25 text-rose-700 dark:text-rose-300 border-rose-200/40 dark:border-rose-800/40';
+              reportAtt === 'present' ? 'bg-primary-soft dark:bg-primary-soft text-primary dark:text-primary border-primary-border dark:border-primary-border'
+              : reportAtt === 'late' ? 'bg-primary-soft dark:bg-primary-soft text-primary dark:text-primary border-primary-border dark:border-primary-border'
+              : 'bg-primary-soft dark:bg-primary-soft text-primary dark:text-primary border-primary-border dark:border-primary-border';
 
             const attText = reportAtt === 'present' ? `${t('att_present')} ✓` : reportAtt === 'late' ? `${t('att_late')} ⚠️` : `${t('att_absent')} ✕`;
 
             // Payment badge
             const isPaid = lesson.paymentStatus === 'paid';
             const payBadgeClass = isPaid
-              ? 'bg-emerald-50 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-300 border border-emerald-200/30'
-              : 'bg-amber-50 dark:bg-amber-950/20 text-amber-700 dark:text-amber-300 border border-amber-200/30';
+              ? 'bg-primary-soft dark:bg-primary-soft text-primary dark:text-primary border border-primary-border'
+              : 'bg-primary-soft dark:bg-primary-soft text-primary dark:text-primary border border-primary-border';
 
             return (
               <div
                 key={lesson.id}
-                className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 space-y-3 hover:bg-slate-50/20 transition-all"
+                className="bg-surface border border-surface-border rounded-xl p-4 space-y-3 hover:bg-background/20 active:scale-[0.99] active:bg-surface-hover transition-all"
               >
                 {/* Top Status & Date Line */}
                 <div className="flex items-center justify-between text-[11px] font-bold border-b border-slate-100 dark:border-slate-850 pb-2.5">
                   <div className="flex items-center gap-2">
                     <span className="font-mono text-slate-600 dark:text-slate-300 flex items-center gap-1">
-                      <Calendar className="w-3.5 h-3.5 text-blue-500" />
+                      <Calendar className="w-3.5 h-3.5 text-primary" />
                       <span>{formattedDate}</span>
                     </span>
-                    <span className="font-mono text-slate-400 flex items-center gap-1">
-                      <Clock className="w-3.5 h-3.5 text-slate-400" />
+                    <span className="font-mono text-text-muted/70 flex items-center gap-1">
+                      <Clock className="w-3.5 h-3.5 text-text-muted/70" />
                       <span>{lesson.time} ({lesson.durationMinutes || lesson.duration || 60} min)</span>
                     </span>
                   </div>
@@ -315,12 +315,12 @@ export const SessionHistoryView: React.FC = () => {
                         {lesson.title || lesson.groupName || lesson.studentName}
                       </span>
                       {isGroup ? (
-                        <span className="text-[9px] bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 font-bold px-1.5 py-0.5 rounded border border-blue-200/30 flex items-center gap-0.5">
+                        <span className="text-[9px] bg-primary-soft dark:bg-primary-soft/40 text-primary dark:text-primary/70 font-bold px-1.5 py-0.5 rounded border border-primary-border/30 flex items-center gap-0.5 active:scale-95 transition-all hover:bg-primary/20">
                           <Users className="w-2.5 h-2.5" />
                           <span>{t('timeline_group')}</span>
                         </span>
                       ) : (
-                        <span className="text-[9px] bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 font-bold px-1.5 py-0.5 rounded flex items-center gap-0.5">
+                        <span className="text-[9px] bg-surface-hover text-text-muted font-bold px-1.5 py-0.5 rounded flex items-center gap-0.5">
                           <User className="w-2.5 h-2.5" />
                           <span>{t('timeline_individual')}</span>
                         </span>
@@ -330,12 +330,12 @@ export const SessionHistoryView: React.FC = () => {
                     <div className="flex items-center gap-2 text-[10px] text-slate-500 font-bold">
                       <span>{t('lesson_session_num')} ({lesson.sessionNumber || 1} / {lesson.totalSessionsInPackage || 8})</span>
                       {lesson.studentName && isGroup && (
-                        <span className="text-slate-400">• {t('daily_stats_student')}: {lesson.studentName}</span>
+                        <span className="text-text-muted/70">• {t('daily_stats_student')}: {lesson.studentName}</span>
                       )}
                     </div>
 
                     {lesson.notes && (
-                      <p className="text-[11px] text-slate-500 bg-slate-50 dark:bg-slate-800/30 p-2 rounded-lg border border-slate-100 dark:border-slate-800 mt-1 line-clamp-2 leading-relaxed">
+                      <p className="text-[11px] text-slate-500 bg-surface-hover/30 p-2 rounded-lg border border-slate-100 dark:border-surface-border mt-1 line-clamp-2 leading-relaxed">
                         💬 {lesson.notes}
                       </p>
                     )}
@@ -344,9 +344,9 @@ export const SessionHistoryView: React.FC = () => {
 
                 {/* Quick Reports & Scores if generated */}
                 {lesson.report?.arabicPerformance && (
-                  <div className="bg-amber-50/45 dark:bg-amber-950/20 border border-amber-200/30 dark:border-amber-900/30 p-2.5 rounded-lg text-[11px] flex items-center justify-between text-amber-900 dark:text-amber-200">
+                  <div className="bg-primary-soft dark:bg-primary-soft border border-primary-border dark:border-primary-border p-2.5 rounded-lg text-[11px] flex items-center justify-between text-primary dark:text-primary">
                     <span className="font-bold flex items-center gap-1">
-                      <Award className="w-3.5 h-3.5 text-amber-500" />
+                      <Award className="w-3.5 h-3.5 text-primary" />
                       <span>{t('reports_title')}: {lesson.report.arabicPerformance}</span>
                     </span>
                     {lesson.report.savedAt && (
@@ -359,15 +359,15 @@ export const SessionHistoryView: React.FC = () => {
                 <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-850">
                   <button
                     onClick={() => setReportModalLesson(lesson)}
-                    className="px-2.5 py-1.5 bg-teal-50 dark:bg-teal-950/30 hover:bg-teal-100/40 text-teal-700 dark:text-teal-300 font-bold rounded text-xs border border-teal-200/30 dark:border-teal-800/30 flex items-center gap-1 cursor-pointer transition-all"
+                    className="px-2.5 py-1.5 bg-primary-soft dark:bg-primary-soft hover:bg-primary-soft text-primary dark:text-primary font-bold rounded text-xs border border-primary-border dark:border-primary-border flex items-center gap-1 cursor-pointer transition-all"
                   >
-                    <FileText className="w-3 h-3 text-teal-600 dark:text-teal-400" />
+                    <FileText className="w-3 h-3 text-primary dark:text-primary" />
                     <span>{t('lesson_parent_report_btn')}</span>
                   </button>
 
                   <button
                     onClick={() => openLessonControl(lesson)}
-                    className="px-2.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded text-xs flex items-center gap-1 cursor-pointer shadow-2xs transition-all"
+                    className="px-2.5 py-1.5 bg-primary hover:bg-primary-hover text-white font-bold rounded text-xs flex items-center gap-1 cursor-pointer shadow-2xs transition-all active:scale-95 hover:shadow-lg hover:shadow-primary/30"
                   >
                     <Settings className="w-3 h-3" />
                     <span>{t('lesson_control_title')}</span>

@@ -1,4 +1,20 @@
-import { TeacherProfile, Group, Student, Lesson, PaymentRecord, NotificationItem, GradeLevel, InspirationSettings, InspirationMessage } from '../types';
+import { TeacherProfile, Group, Student, Lesson, PaymentRecord, NotificationItem, GradeLevel, InspirationSettings, InspirationMessage, NotificationSettings } from '../types';
+
+export const DEFAULT_NOTIFICATION_SETTINGS: NotificationSettings = {
+  masterEnabled: true,
+  lessonReminder: { enabled: true, sound: 'beep', priority: 'high' },
+  lessonStart: { enabled: true, sound: 'default', priority: 'max' },
+  paymentDue: { enabled: true, sound: 'default', priority: 'normal' },
+  dailySummary: { enabled: true, sound: 'gentle', priority: 'normal' },
+  attendanceReminder: { enabled: true, sound: 'chime', priority: 'normal' },
+
+  lessonReminderMinutesBefore: 15,
+
+  dailySummaryTime: '20:00',
+  dailySummaryIncludeLessons: true,
+  dailySummaryIncludeIncome: true,
+  dailySummaryIncludePendingPayments: true,
+};
 
 export const PREDEFINED_GRADES: GradeLevel[] = [
   'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4',

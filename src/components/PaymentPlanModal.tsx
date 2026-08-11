@@ -34,27 +34,28 @@ export const PaymentPlanModal: React.FC<PaymentPlanModalProps> = ({ student, onC
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl w-full max-w-md shadow-2xl overflow-hidden my-auto animate-scale-up space-y-0 font-sans">
+    <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-end sm:items-center justify-center sm: overflow-y-auto p-0 sm:p-4 pb-0">
+      <div className="bg-surface border border-surface-border rounded-t-[28px] sm:rounded-xl pb-safe-bottom sm:pb-0 mb-0 w-full max-w-md shadow-2xl overflow-hidden animate-scale-up space-y-0 font-sans">
+        <div className="w-12 h-1.5 bg-slate-200 dark:bg-slate-800 rounded-full mx-auto mt-3 mb-1 sm:hidden shrink-0" />
         
         {/* Header */}
-        <div className="bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 p-5 text-white flex items-center justify-between">
+        <div className="bg-gradient-to-r from-primary via-primary to-primary-hover p-5 text-white flex items-center justify-between">
           <div>
-            <span className="text-[10px] font-black uppercase tracking-widest text-blue-100 bg-white/20 px-2.5 py-0.5 rounded-full">
+            <span className="text-[10px] font-black uppercase tracking-widest text-primary-soft bg-surface/20 px-2.5 py-0.5 rounded-full">
               Zahlungsplan anpassen
             </span>
             <h3 className="text-base font-black mt-1 flex items-center gap-1.5">
-              <DollarSign className="w-5 h-5 text-amber-300" />
+              <DollarSign className="w-5 h-5 text-primary" />
               <span>Zahlungsplan für {student.name}</span>
             </h3>
-            <p className="text-xs text-blue-100">
+            <p className="text-xs text-primary-soft">
               Lektionsbasierte Abrechnung & Paketvereinbarung.
             </p>
           </div>
 
           <button
             onClick={onClose}
-            className="p-2 hover:bg-white/20 rounded-full text-white transition-colors cursor-pointer"
+            className="p-2 hover:bg-surface/20 rounded-full text-white transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
@@ -63,7 +64,7 @@ export const PaymentPlanModal: React.FC<PaymentPlanModalProps> = ({ student, onC
         <form onSubmit={handleSave} className="p-5 space-y-4 text-xs">
           {/* Plan Selector */}
           <div className="space-y-1.5">
-            <label className="font-bold text-slate-700 dark:text-slate-300">
+            <label className="font-bold text-text-main">
               Wählen Sie das Abrechnungsmodell:
             </label>
 
@@ -73,8 +74,8 @@ export const PaymentPlanModal: React.FC<PaymentPlanModalProps> = ({ student, onC
                 onClick={() => { setPlan('per_lesson'); setBundleSize(1); }}
                 className={`p-3 rounded-lg border text-left transition-all cursor-pointer ${
                   plan === 'per_lesson'
-                    ? 'bg-blue-50 dark:bg-blue-950/60 border-blue-500 font-extrabold text-blue-900 dark:text-blue-200 shadow-xs'
-                    : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400'
+                    ? 'bg-primary-soft dark:bg-primary-soft/60 border-primary font-extrabold text-primary-hover dark:text-primary/70 shadow-xs'
+                    : 'bg-surface-hover border-surface-border dark:border-surface-border-soft text-text-muted'
                 }`}
               >
                 <div className="font-bold">Pro Einzel-Lektion</div>
@@ -86,8 +87,8 @@ export const PaymentPlanModal: React.FC<PaymentPlanModalProps> = ({ student, onC
                 onClick={() => { setPlan('4_lessons'); setBundleSize(4); }}
                 className={`p-3 rounded-lg border text-left transition-all cursor-pointer ${
                   plan === '4_lessons'
-                    ? 'bg-blue-50 dark:bg-blue-950/60 border-blue-500 font-extrabold text-blue-900 dark:text-blue-200 shadow-xs'
-                    : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400'
+                    ? 'bg-primary-soft dark:bg-primary-soft/60 border-primary font-extrabold text-primary-hover dark:text-primary/70 shadow-xs'
+                    : 'bg-surface-hover border-surface-border dark:border-surface-border-soft text-text-muted'
                 }`}
               >
                 <div className="font-bold">4er Lektionspaket</div>
@@ -99,8 +100,8 @@ export const PaymentPlanModal: React.FC<PaymentPlanModalProps> = ({ student, onC
                 onClick={() => { setPlan('8_lessons'); setBundleSize(8); }}
                 className={`p-3 rounded-lg border text-left transition-all cursor-pointer ${
                   plan === '8_lessons'
-                    ? 'bg-blue-50 dark:bg-blue-950/60 border-blue-500 font-extrabold text-blue-900 dark:text-blue-200 shadow-xs'
-                    : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400'
+                    ? 'bg-primary-soft dark:bg-primary-soft/60 border-primary font-extrabold text-primary-hover dark:text-primary/70 shadow-xs'
+                    : 'bg-surface-hover border-surface-border dark:border-surface-border-soft text-text-muted'
                 }`}
               >
                 <div className="font-bold">8er Paket (Monatlich)</div>
@@ -112,8 +113,8 @@ export const PaymentPlanModal: React.FC<PaymentPlanModalProps> = ({ student, onC
                 onClick={() => { setPlan('12_lessons'); setBundleSize(12); }}
                 className={`p-3 rounded-lg border text-left transition-all cursor-pointer ${
                   plan === '12_lessons'
-                    ? 'bg-blue-50 dark:bg-blue-950/60 border-blue-500 font-extrabold text-blue-900 dark:text-blue-200 shadow-xs'
-                    : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400'
+                    ? 'bg-primary-soft dark:bg-primary-soft/60 border-primary font-extrabold text-primary-hover dark:text-primary/70 shadow-xs'
+                    : 'bg-surface-hover border-surface-border dark:border-surface-border-soft text-text-muted'
                 }`}
               >
                 <div className="font-bold">12er Paket (Quartal)</div>
@@ -123,7 +124,7 @@ export const PaymentPlanModal: React.FC<PaymentPlanModalProps> = ({ student, onC
           </div>
 
           {/* Pricing Details */}
-          <div className="bg-slate-50 dark:bg-slate-800/60 p-3.5 rounded-lg border border-slate-200 dark:border-slate-700 space-y-3">
+          <div className="bg-surface-hover/60 p-3.5 rounded-lg border border-surface-border dark:border-surface-border-soft space-y-3">
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="block text-[10px] font-bold text-slate-500 mb-1">
@@ -133,7 +134,7 @@ export const PaymentPlanModal: React.FC<PaymentPlanModalProps> = ({ student, onC
                   type="number"
                   value={pricePerLesson}
                   onChange={(e) => setPricePerLesson(Number(e.target.value))}
-                  className="w-full p-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl font-bold font-mono"
+                  className="w-full p-2 bg-surface border border-surface-border dark:border-surface-border-soft rounded-xl font-bold font-mono"
                 />
               </div>
 
@@ -145,7 +146,7 @@ export const PaymentPlanModal: React.FC<PaymentPlanModalProps> = ({ student, onC
                   type="number"
                   value={bundleSize}
                   onChange={(e) => setBundleSize(Number(e.target.value))}
-                  className="w-full p-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl font-bold font-mono"
+                  className="w-full p-2 bg-surface border border-surface-border dark:border-surface-border-soft rounded-xl font-bold font-mono"
                 />
               </div>
             </div>
@@ -161,14 +162,14 @@ export const PaymentPlanModal: React.FC<PaymentPlanModalProps> = ({ student, onC
                   setPlan('custom_bundle');
                   setCustomBundlePrice(Number(e.target.value));
                 }}
-                className="w-full p-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl font-bold font-mono text-emerald-600"
+                className="w-full p-2 bg-surface border border-surface-border dark:border-surface-border-soft rounded-xl font-bold font-mono text-primary"
               />
             </div>
           </div>
 
           <button
             type="submit"
-            className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-black rounded-lg shadow-md transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+            className="w-full py-3 bg-primary hover:bg-primary-hover text-white font-black rounded-lg shadow-md transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 hover:shadow-lg hover:shadow-primary/30"
           >
             <Save className="w-4 h-4" />
             <span>Zahlungsplan Speichern</span>

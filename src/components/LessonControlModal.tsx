@@ -264,9 +264,15 @@ export const LessonControlModal: React.FC = () => {
   };
 
   const handleEndLesson = () => {
-    handlePauseLesson();
     setIsTimerRunning(false);
+    endActiveLessonTimer();
+    if (selectedLesson) {
+      updateLesson(selectedLesson.id, { status: 'completed' });
+    }
     setShowReportForm(true);
+    try {
+      confetti({ particleCount: 50, spread: 60 });
+    } catch {}
   };
 
   const handleSaveReport = (e: React.FormEvent) => {
@@ -285,6 +291,7 @@ export const LessonControlModal: React.FC = () => {
     };
 
     saveLessonReport(selectedLesson.id, reportData, packageChoice);
+    endActiveLessonTimer();
     storage.removeItem(`dl_draft_report_${selectedLesson.id}`);
     setIsEditingReport(false);
     setShowParentSummaryModal(true);
@@ -334,23 +341,24 @@ export const LessonControlModal: React.FC = () => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 pt-[max(24px,env(safe-area-inset-top,24px))] overflow-y-auto">
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl w-full max-w-xl shadow-2xl overflow-hidden my-auto animate-scale-up">
+    <div className="fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-xs flex items-end sm:items-center justify-center sm: pt-[max(24px,env(safe-area-inset-top,24px))] overflow-y-auto p-0 sm:p-4 pb-0">
+      <div className="bg-surface border border-surface-border rounded-t-[28px] sm:rounded-xl pb-safe-bottom sm:pb-0 mb-0 w-full max-w-xl shadow-2xl overflow-hidden animate-scale-up">
+        <div className="w-12 h-1.5 bg-slate-200 dark:bg-slate-800 rounded-full mx-auto mt-3 mb-1 sm:hidden shrink-0" />
         {/* Top Header */}
         <div className="bg-slate-900 text-white p-5 flex items-center justify-between relative">
           <div className="flex items-center gap-3">
             <div className={`p-2.5 rounded-lg ${
-              selectedLesson.type === 'online' ? 'bg-blue-600' : 'bg-amber-600'
+              selectedLesson.type === 'online' ? 'bg-primary' : 'bg-primary'
             }`}>
               {selectedLesson.type === 'online' ? <Video className="w-5 h-5 text-white" /> : <MapPin className="w-5 h-5 text-white" />}
             </div>
 
             <div>
               <div className="flex items-center gap-2">
-                <span className="bg-blue-500/20 text-blue-300 font-mono text-[10px] font-bold px-2 py-0.5 rounded border border-blue-400/30">
+                <span className="bg-primary/20 text-primary/70 font-mono text-[10px] font-bold px-2 py-0.5 rounded border border-primary/30">
                   {selectedLesson.type.toUpperCase()}
                 </span>
-                <span className="text-xs text-slate-400 font-medium">{selectedLesson.grade}</span>
+                <span className="text-xs text-text-muted/70 font-medium">{selectedLesson.grade}</span>
               </div>
               <h2 className="text-lg font-black tracking-tight">{selectedLesson.title}</h2>
             </div>
@@ -358,23 +366,23 @@ export const LessonControlModal: React.FC = () => {
 
           <button
             onClick={closeLessonControl}
-            className="p-2 hover:bg-white/10 rounded-full transition-colors cursor-pointer text-slate-300 hover:text-white"
+            className="p-2 hover:bg-surface/10 rounded-full transition-colors cursor-pointer text-slate-300 hover:text-white"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Modal Body */}
-        <div className="p-5 space-y-5 max-h-[78vh] overflow-y-auto font-sans">
+        <div className="p-5 space-y-3 max-h-[78vh] overflow-y-auto font-sans">
           {/* Quick Lesson Banner & Convert Action */}
           {selectedLesson.isQuickLesson && (
-            <div className="p-3 bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-800 rounded-lg flex items-center justify-between gap-3">
+            <div className="p-3 bg-primary-soft dark:bg-primary-soft border border-primary-border dark:border-primary-border rounded-lg flex items-center justify-between gap-3">
               <div className="space-y-0.5">
-                <span className="text-xs font-black text-amber-900 dark:text-amber-200 flex items-center gap-1.5">
-                  <Zap className="w-4 h-4 text-amber-600 fill-amber-500" />
+                <span className="text-xs font-black text-primary dark:text-primary flex items-center gap-1.5">
+                  <Zap className="w-4 h-4 text-primary fill-primary" />
                   <span>⚡ Quick Lesson (Einmal-Lektion ohne Profil)</span>
                 </span>
-                <p className="text-[11px] text-amber-800 dark:text-amber-300">
+                <p className="text-[11px] text-primary dark:text-primary">
                   Schüler: {selectedLesson.studentName} {selectedLesson.quickStudentPhone && `• Tel: ${selectedLesson.quickStudentPhone}`}
                 </p>
               </div>
@@ -387,7 +395,7 @@ export const LessonControlModal: React.FC = () => {
                     closeLessonControl();
                   }
                 }}
-                className="bg-blue-600 hover:bg-blue-700 text-white font-black text-xs px-3 py-2 rounded-xl shadow-xs transition-all flex items-center gap-1.5 shrink-0 cursor-pointer"
+                className="bg-primary hover:bg-primary-hover text-white font-black text-xs px-3 py-2 rounded-xl shadow-xs transition-all flex items-center gap-1.5 shrink-0 cursor-pointer active:scale-95 hover:shadow-lg hover:shadow-primary/30"
               >
                 <UserPlus className="w-4 h-4" />
                 <span>Convert to Student</span>
@@ -398,27 +406,27 @@ export const LessonControlModal: React.FC = () => {
           {/* SAVED REPORT QUICK REVIEW OR ACTIVE FORM */}
           {selectedLesson.report && !isEditingReport ? (
             /* QUICK REVIEW SUMMARY CARD */
-            <div className="bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 rounded-lg p-4 space-y-3 shadow-xs">
-              <div className="flex items-center justify-between pb-2 border-b border-slate-200/80 dark:border-slate-700/80">
+            <div className="bg-surface-hover/80 border border-surface-border dark:border-surface-border-soft/80 rounded-lg p-4 space-y-3 shadow-xs">
+              <div className="flex items-center justify-between pb-2 border-b border-surface-border/80 dark:border-surface-border-soft/80">
                 <div className="flex items-center gap-2">
-                  <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                  <CheckCircle2 className="w-5 h-5 text-primary dark:text-primary" />
                   <span className="text-xs font-black uppercase tracking-wider text-slate-800 dark:text-slate-200">
                     Kurze Zusammenfassung (Quick Review)
                   </span>
                 </div>
-                <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-950 px-2.5 py-1 rounded-full border border-emerald-300 dark:border-emerald-800">
+                <span className="text-[10px] font-bold text-primary dark:text-primary bg-primary-soft dark:bg-primary-soft px-2.5 py-1 rounded-full border border-primary-border dark:border-primary-border">
                   ✓ Bericht gespeichert
                 </span>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs">
                 {/* Attendance Summary */}
-                <div className="p-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-200/80 dark:border-slate-800 space-y-1">
-                  <span className="block text-[10px] font-black uppercase text-slate-400">1. Anwesenheit (Attendance)</span>
+                <div className="p-3 bg-surface rounded-xl border border-surface-border/80 dark:border-surface-border space-y-1">
+                  <span className="block text-[10px] font-black uppercase text-text-muted/70">1. Anwesenheit (Attendance)</span>
                   <span className={`font-black flex items-center gap-1 ${
-                    selectedLesson.report.attendanceStatus === 'present' ? 'text-emerald-600 dark:text-emerald-400' :
-                    selectedLesson.report.attendanceStatus === 'late' ? 'text-amber-600 dark:text-amber-400' :
-                    'text-rose-600 dark:text-rose-400'
+                    selectedLesson.report.attendanceStatus === 'present' ? 'text-primary dark:text-primary' :
+                    selectedLesson.report.attendanceStatus === 'late' ? 'text-primary dark:text-primary' :
+                    'text-primary dark:text-primary'
                   }`}>
                     {selectedLesson.report.attendanceStatus === 'present' && '✓ Anwesend (Present)'}
                     {selectedLesson.report.attendanceStatus === 'late' && '⚠️ Verspätet (Late)'}
@@ -427,13 +435,13 @@ export const LessonControlModal: React.FC = () => {
                 </div>
 
                 {/* Homework Summary */}
-                <div className="p-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-200/80 dark:border-slate-800 space-y-1">
-                  <span className="block text-[10px] font-black uppercase text-slate-400">2. Hausaufgaben (Homework)</span>
+                <div className="p-3 bg-surface rounded-xl border border-surface-border/80 dark:border-surface-border space-y-1">
+                  <span className="block text-[10px] font-black uppercase text-text-muted/70">2. Hausaufgaben (Homework)</span>
                   <div className="space-y-0.5">
                     <span className={`font-black text-xs ${
-                      selectedLesson.report.homeworkStatus === 'completed' ? 'text-emerald-600 dark:text-emerald-400' :
-                      selectedLesson.report.homeworkStatus === 'assigned' ? 'text-blue-600 dark:text-blue-400' :
-                      'text-rose-600 dark:text-rose-400'
+                      selectedLesson.report.homeworkStatus === 'completed' ? 'text-primary dark:text-primary' :
+                      selectedLesson.report.homeworkStatus === 'assigned' ? 'text-primary dark:text-primary' :
+                      'text-primary dark:text-primary'
                     }`}>
                       {selectedLesson.report.homeworkStatus === 'completed' && 'Erledigt (Completed)'}
                       {selectedLesson.report.homeworkStatus === 'assigned' && 'Aufgegeben (Assigned)'}
@@ -450,9 +458,9 @@ export const LessonControlModal: React.FC = () => {
 
               {/* Teacher Notes Summary */}
               {selectedLesson.report.teacherNotes && (
-                <div className="p-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-200/80 dark:border-slate-800 space-y-1 text-xs">
-                  <span className="block text-[10px] font-black uppercase text-slate-400">3. Notizen der Lehrkraft (Teacher Notes)</span>
-                  <p className="text-xs font-medium text-slate-700 dark:text-slate-300 italic">
+                <div className="p-3 bg-surface rounded-xl border border-surface-border/80 dark:border-surface-border space-y-1 text-xs">
+                  <span className="block text-[10px] font-black uppercase text-text-muted/70">3. Notizen der Lehrkraft (Teacher Notes)</span>
+                  <p className="text-xs font-medium text-text-main italic">
                     "{selectedLesson.report.teacherNotes}"
                   </p>
                 </div>
@@ -463,7 +471,7 @@ export const LessonControlModal: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setIsEditingReport(true)}
-                  className="text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 underline cursor-pointer"
+                  className="text-xs font-bold text-primary dark:text-primary hover:text-primary dark:hover:text-primary underline cursor-pointer"
                 >
                   Bericht bearbeiten / Edit Report
                 </button>
@@ -472,9 +480,9 @@ export const LessonControlModal: React.FC = () => {
           ) : (
             <>
               {/* BEFORE STARTING SECTION */}
-              <div className="space-y-2 border-b border-slate-100 dark:border-slate-800 pb-4">
-                <p className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
-                  <Sparkles className="w-3.5 h-3.5 text-blue-600" />
+              <div className="space-y-2 border-b border-slate-100 dark:border-surface-border pb-4">
+                <p className="text-xs font-bold uppercase tracking-wider text-text-muted flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-primary" />
                   <span>Vor Unterrichtsbeginn (Before Starting)</span>
                 </p>
 
@@ -483,7 +491,7 @@ export const LessonControlModal: React.FC = () => {
                     <>
                       <button
                         onClick={handleSendConfirmationMessage}
-                        className="bg-blue-50 dark:bg-blue-950/60 hover:bg-blue-100 dark:hover:bg-blue-900/80 border border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300 font-bold text-xs px-3.5 py-2 rounded-xl transition-all flex items-center gap-1.5 cursor-pointer"
+                        className="bg-primary-soft dark:bg-primary-soft/60 hover:bg-primary-soft dark:hover:bg-primary-soft border border-primary-border dark:border-primary-border text-primary dark:text-primary/70 font-bold text-xs px-3.5 py-2 rounded-xl transition-all flex items-center gap-1.5 cursor-pointer active:scale-95"
                       >
                         <Send className="w-3.5 h-3.5" />
                         <span>Send Confirmation Message</span>
@@ -493,7 +501,7 @@ export const LessonControlModal: React.FC = () => {
                         href={selectedLesson.meetingLink || profile.defaultZoomLink}
                         target="_blank"
                         rel="noreferrer"
-                        className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs px-3.5 py-2 rounded-xl transition-all flex items-center gap-1.5 shadow-xs"
+                        className="bg-primary hover:bg-primary-hover text-white font-bold text-xs px-3.5 py-2 rounded-xl transition-all flex items-center gap-1.5 shadow-xs active:scale-95 hover:shadow-lg hover:shadow-primary/30"
                       >
                         <Video className="w-3.5 h-3.5" />
                         <span>Open Zoom Link</span>
@@ -504,7 +512,7 @@ export const LessonControlModal: React.FC = () => {
                         href={profile.defaultMeetLink}
                         target="_blank"
                         rel="noreferrer"
-                        className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-3.5 py-2 rounded-xl transition-all flex items-center gap-1.5 shadow-xs"
+                        className="bg-primary hover:bg-primary-hover text-white font-bold text-xs px-3.5 py-2 rounded-xl transition-all flex items-center gap-1.5 shadow-xs"
                       >
                         <Video className="w-3.5 h-3.5" />
                         <span>Open Google Meet</span>
@@ -515,7 +523,7 @@ export const LessonControlModal: React.FC = () => {
                     <>
                       <button
                         onClick={handleSendOfflineLessonStartMessage}
-                        className="bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs px-3.5 py-2 rounded-xl transition-all flex items-center gap-1.5 cursor-pointer shadow-xs"
+                        className="bg-primary hover:bg-primary-hover text-white font-black text-xs px-3.5 py-2 rounded-xl transition-all flex items-center gap-1.5 cursor-pointer shadow-xs"
                         title="Send Arabic Offline Lesson Started message"
                       >
                         <Send className="w-3.5 h-3.5" />
@@ -524,7 +532,7 @@ export const LessonControlModal: React.FC = () => {
 
                       <button
                         onClick={handleStartTrip}
-                        className="bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs px-3.5 py-2 rounded-xl transition-all flex items-center gap-1.5 cursor-pointer shadow-xs"
+                        className="bg-primary hover:bg-primary-hover text-white font-bold text-xs px-3.5 py-2 rounded-xl transition-all flex items-center gap-1.5 cursor-pointer shadow-xs"
                       >
                         <Navigation className="w-3.5 h-3.5" />
                         <span>Start Trip & Notify Parent</span>
@@ -532,7 +540,7 @@ export const LessonControlModal: React.FC = () => {
 
                       <button
                         onClick={handleSendPaymentRequestMessage}
-                        className="bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs px-3.5 py-2 rounded-xl transition-all flex items-center gap-1.5 cursor-pointer shadow-xs"
+                        className="bg-primary hover:bg-primary-hover text-white font-bold text-xs px-3.5 py-2 rounded-xl transition-all flex items-center gap-1.5 cursor-pointer shadow-xs"
                       >
                         <DollarSign className="w-3.5 h-3.5" />
                         <span>Send Payment Request (إرسال مطالبة)</span>
@@ -542,7 +550,7 @@ export const LessonControlModal: React.FC = () => {
                         onClick={handleOpenMaps}
                         className="bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs px-3.5 py-2 rounded-xl transition-all flex items-center gap-1.5 cursor-pointer shadow-xs"
                       >
-                        <MapPin className="w-3.5 h-3.5 text-amber-400" />
+                        <MapPin className="w-3.5 h-3.5 text-primary" />
                         <span>Open Google Maps Navigation</span>
                         <ExternalLink className="w-3 h-3" />
                       </button>
@@ -551,156 +559,162 @@ export const LessonControlModal: React.FC = () => {
                 </div>
               </div>
 
-              {/* DURING LESSON SECTION: LIVE TIMER */}
-              {!showReportForm && (
-                <div className="bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 rounded-xl p-5 text-white shadow-lg space-y-4 text-center">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold uppercase tracking-wider text-indigo-300 flex items-center gap-1.5">
-                      <Clock className="w-4 h-4 text-indigo-400" />
-                      <span>Live Unterrichts-Timer</span>
-                    </span>
+              {/* DURING LESSON SECTION: LIVE TIMER & LESSON ACTIONS - ALWAYS VISIBLE */}
+              <div className="bg-surface border border-surface-border rounded-2xl p-5 shadow-sm space-y-6 text-center relative overflow-hidden">
+                {/* Background ambient glow when timer is running */}
+                {isTimerRunning && (
+                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-primary/20 rounded-full blur-[60px] pointer-events-none animate-pulse" />
+                )}
+                
+                <div className="flex items-center justify-between relative z-10">
+                  <span className="text-[11px] font-black uppercase tracking-widest text-text-muted flex items-center gap-1.5">
+                    <Clock className={`w-4 h-4 ${isTimerRunning ? 'text-primary animate-pulse' : 'text-text-muted/70'}`} />
+                    <span>Live Lesson Timer</span>
+                  </span>
 
-                    <span className="text-xs bg-indigo-500/20 text-indigo-300 px-2.5 py-1 rounded-full border border-indigo-400/30 font-medium">
-                      Dauer: {selectedLesson.durationMinutes} Min.
-                    </span>
+                  <span className="text-[10px] font-bold text-primary dark:text-primary bg-primary-soft dark:bg-primary-soft px-2 py-1 rounded-md border border-primary-border/30">
+                    المدة: {selectedLesson.durationMinutes} دقيقة
+                  </span>
+                </div>
+
+                {/* Stopwatch Display */}
+                <div className="py-6 relative z-10">
+                  <div className="flex justify-center">
+                    <div className="relative">
+                      <span className={`text-6xl sm:text-7xl font-black font-mono tracking-tight transition-all duration-300 ${isTimerRunning ? 'text-primary drop-shadow-[0_0_15px_rgba(var(--color-primary-rgb),0.4)]' : 'text-slate-700 dark:text-slate-300'}`}>
+                        {formatTimer(timerSeconds)}
+                      </span>
+                    </div>
                   </div>
+                </div>
 
-                  {/* Stopwatch Display */}
-                  <div className="py-2">
-                    <span className="text-5xl font-black font-mono tracking-wider text-emerald-400 drop-shadow-md">
-                      {formatTimer(timerSeconds)}
-                    </span>
-                  </div>
-
-                  {/* Timer & Main Action Buttons */}
-                  <div className="flex flex-wrap items-center justify-center gap-2.5">
+                {/* Timer & Main Action Buttons */}
+                <div className="flex flex-col gap-2.5 relative z-10">
+                  <div className="grid grid-cols-2 gap-2.5">
                     {!isTimerRunning ? (
                       <button
                         type="button"
                         onClick={handleStartLesson}
-                        className="bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 text-slate-950 font-black text-xs sm:text-sm px-5 py-2.5 rounded-lg shadow-md transition-all flex items-center gap-2 cursor-pointer"
+                        className="col-span-2 sm:col-span-1 bg-primary hover:bg-primary-hover active:scale-95 text-white font-bold text-sm px-5 py-3.5 rounded-xl shadow-md shadow-primary/20 transition-all flex items-center justify-center gap-2 cursor-pointer"
                       >
-                        <Play className="w-4 h-4 fill-slate-950" />
-                        <span>{timerSeconds === 0 ? 'Start Lesson' : 'Resume Lesson'}</span>
+                        <Play className="w-4 h-4 fill-white" />
+                        <span>{timerSeconds === 0 ? 'بدء الحصة (Start)' : 'استئناف (Resume)'}</span>
                       </button>
                     ) : (
                       <button
                         type="button"
                         onClick={handlePauseLesson}
-                        className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-black text-xs sm:text-sm px-5 py-2.5 rounded-lg shadow-md transition-all flex items-center gap-2 cursor-pointer"
+                        className="col-span-2 sm:col-span-1 bg-amber-500 hover:bg-amber-600 active:scale-95 text-white font-bold text-sm px-5 py-3.5 rounded-xl shadow-md shadow-amber-500/20 transition-all flex items-center justify-center gap-2 cursor-pointer"
                       >
-                        <Pause className="w-4 h-4 fill-slate-950" />
-                        <span>Pause Lesson</span>
+                        <Pause className="w-4 h-4 fill-white" />
+                        <span>إيقاف مؤقت (Pause)</span>
                       </button>
                     )}
 
-                    {(isTimerRunning || timerSeconds > 0) && (
-                      <button
-                        type="button"
-                        onClick={handleEndLesson}
-                        className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs sm:text-sm px-4 py-2.5 rounded-lg shadow-md transition-all flex items-center gap-1.5 cursor-pointer"
-                      >
-                        <Square className="w-4 h-4 fill-white" />
-                        <span>End Lesson</span>
-                      </button>
-                    )}
-
-                    {!isTimerRunning && timerSeconds === 0 && (
-                      <button
-                        type="button"
-                        onClick={() => setShowReportForm(true)}
-                        className="bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs sm:text-sm px-4 py-2.5 rounded-lg shadow-md transition-all flex items-center gap-1.5 cursor-pointer"
-                      >
-                        <FileText className="w-4 h-4" />
-                        <span>Quick Complete / Submit Report</span>
-                      </button>
-                    )}
-                    {/* CANCEL LESSON ACTION BUTTON (Req 1) */}
                     <button
                       type="button"
-                      onClick={() => setShowCancelPrompt(!showCancelPrompt)}
-                      className="bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 font-bold text-xs sm:text-sm px-4 py-2.5 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer border border-rose-400/30"
-                      title="Lektion Absagen (Cancel Lesson)"
+                      onClick={handleEndLesson}
+                      className={`${isTimerRunning ? 'col-span-2 sm:col-span-1' : 'col-span-2 sm:col-span-1'} bg-surface-hover hover:bg-slate-100 dark:hover:bg-slate-800 text-text-main font-bold text-sm px-5 py-3.5 rounded-xl border border-surface-border transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95`}
                     >
-                      <Ban className="w-4 h-4 text-rose-400" />
-                      <span>Cancel Lesson</span>
+                      <Square className="w-4 h-4 text-text-main" />
+                      <span>إنهاء (End Lesson)</span>
                     </button>
                   </div>
 
-                  {/* CANCELLATION PROMPT BOX */}
-                  {showCancelPrompt && (
-                    <div className="mt-4 p-4 bg-rose-950/80 border border-rose-800 rounded-lg text-left space-y-3 animate-fade-in text-white">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-black uppercase text-rose-300 flex items-center gap-1.5">
-                          <AlertCircle className="w-4 h-4 text-rose-400" />
-                          <span>Lektion absagen (Cancel Lesson)</span>
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => setShowCancelPrompt(false)}
-                          className="text-slate-400 hover:text-white p-1"
-                        >
-                          <X className="w-4 h-4" />
-                        </button>
-                      </div>
+                  <div className="grid grid-cols-2 gap-2.5">
+                    <button
+                      type="button"
+                      onClick={() => setShowReportForm(!showReportForm)}
+                      className="bg-surface-hover hover:bg-slate-100 dark:hover:bg-slate-800 text-text-main font-bold text-xs px-4 py-3 rounded-xl border border-surface-border transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95"
+                    >
+                      <FileText className="w-4 h-4 text-text-main" />
+                      <span>{showReportForm ? 'إخفاء التقرير (Hide)' : 'التقرير (Report)'}</span>
+                    </button>
 
-                      <p className="text-xs text-rose-100">
-                        Sind Sie sicher, dass Sie diese Lektion absagen möchten? Die Lektion wird im Verlauf als <strong className="text-white">Abgesagt</strong> gespeichert und aus den ausstehenden Aufgaben entfernt.
-                      </p>
-
-                      <textarea
-                        rows={2}
-                        value={cancelReasonNote}
-                        onChange={(e) => setCancelReasonNote(e.target.value)}
-                        placeholder="Absagegrund / Anmerkung eingeben (optional)..."
-                        className="w-full p-2.5 bg-slate-900 border border-rose-700/60 rounded-xl text-xs text-white placeholder:text-slate-500 focus:outline-none"
-                      />
-
-                      <div className="flex items-center justify-end gap-2">
-                        <button
-                          type="button"
-                          onClick={() => setShowCancelPrompt(false)}
-                          className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs rounded-xl cursor-pointer"
-                        >
-                          Abbrechen
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            cancelLesson(selectedLesson.id, cancelReasonNote);
-                            setShowCancelPrompt(false);
-                          }}
-                          className="px-4 py-1.5 bg-rose-600 hover:bg-rose-700 text-white font-black text-xs rounded-xl shadow-md cursor-pointer flex items-center gap-1.5"
-                        >
-                          <XCircle className="w-4 h-4" />
-                          <span>Ja, Lektion absagen</span>
-                        </button>
-                      </div>
-                    </div>
-                  )}
+                    <button
+                      type="button"
+                      onClick={() => setShowCancelPrompt(!showCancelPrompt)}
+                      className="bg-red-50/50 dark:bg-red-950/20 hover:bg-red-100 dark:hover:bg-red-900/30 text-red-600 dark:text-red-400 font-bold text-xs px-4 py-3 rounded-xl border border-red-200 dark:border-red-900/50 transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95"
+                    >
+                      <Ban className="w-4 h-4 text-red-500 dark:text-red-400" />
+                      <span>إلغاء (Cancel)</span>
+                    </button>
+                  </div>
                 </div>
-              )}
+              </div>
+
+              {/* CANCELLATION PROMPT BOX */}
+                {showCancelPrompt && (
+                  <div className="mt-4 p-4 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900/50 rounded-2xl text-right space-y-3 animate-fade-in dir-rtl">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-black uppercase text-red-600 dark:text-red-400 flex items-center gap-1.5">
+                        <AlertCircle className="w-4 h-4" />
+                        <span>تأكيد إلغاء الحصة (Cancel Lesson)</span>
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setShowCancelPrompt(false)}
+                        className="text-red-600/70 hover:text-red-600 dark:text-red-400/70 dark:hover:text-red-400 p-1 cursor-pointer"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+
+                    <p className="text-xs text-red-800 dark:text-red-300">
+                      هل أنت متأكد من إلغاء هذه الحصة؟ سيتم توثيق السبب وحفظ الحصة كـ <strong>ملغاة</strong>.
+                    </p>
+
+                    <textarea
+                      rows={2}
+                      value={cancelReasonNote}
+                      onChange={(e) => setCancelReasonNote(e.target.value)}
+                      placeholder="أدخل سبب إلغاء الحصة (اختياري)..."
+                      className="w-full p-2.5 bg-white dark:bg-slate-900 border border-red-200 dark:border-red-900/50 rounded-xl text-xs text-text-main placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-red-500/20"
+                    />
+
+                    <div className="flex items-center justify-end gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setShowCancelPrompt(false)}
+                        className="px-4 py-2 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold text-xs rounded-xl border border-slate-200 dark:border-slate-700 cursor-pointer"
+                      >
+                        تراجع
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          cancelLesson(selectedLesson.id, cancelReasonNote);
+                          setShowCancelPrompt(false);
+                        }}
+                        className="px-4 py-2 bg-red-600 hover:bg-red-700 active:scale-95 text-white font-black text-xs rounded-xl shadow-md cursor-pointer flex items-center gap-1.5 transition-all"
+                      >
+                        <XCircle className="w-4 h-4" />
+                        <span>نعم، إلغاء الحصة</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
 
               {/* AFTER ENDING LESSON: REPORT FORM */}
               {showReportForm && (
-                <form onSubmit={handleSaveReport} className="space-y-4 pt-2 border-t border-slate-200 dark:border-slate-800">
+                <form onSubmit={handleSaveReport} className="space-y-4 pt-2 border-t border-surface-border">
                   <div className="flex items-center justify-between">
-                    <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
-                      <FileText className="w-4 h-4 text-blue-600" />
-                      <span>Unterrichtsbericht (Lesson Report Form)</span>
+                    <h3 className="text-sm font-bold text-text-main flex items-center gap-1.5">
+                      <FileText className="w-4 h-4 text-primary" />
+                      <span>نموذج تقرير الحصة (Lesson Report Form)</span>
                     </h3>
 
                     <div className="flex items-center gap-2">
                       <button
                         type="button"
                         onClick={() => setShowReportForm(false)}
-                        className="text-xs text-indigo-600 dark:text-indigo-400 font-bold hover:underline cursor-pointer"
+                        className="text-xs text-primary dark:text-primary font-bold hover:underline cursor-pointer"
                       >
-                        Timer wieder anzeigen
+                        إخفاء التقرير
                       </button>
                       {selectedLesson.report && (
-                        <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">
-                          ✓ Bericht Gespeichert
+                        <span className="text-[10px] font-bold text-primary bg-primary-soft px-2 py-0.5 rounded-full">
+                          ✓ تم حفظ التقرير
                         </span>
                       )}
                     </div>
@@ -709,11 +723,11 @@ export const LessonControlModal: React.FC = () => {
                   {/* Attendance Section */}
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                      <label className="text-xs font-bold text-text-main">
                         1. Anwesenheit (Attendance):
                       </label>
                       {selectedLesson.groupId && groupStudents.length > 0 && (
-                        <span className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/70 px-2 py-0.5 rounded-md border border-emerald-200/50">
+                        <span className="text-[11px] font-bold text-primary dark:text-primary bg-primary-soft dark:bg-primary-soft px-2 py-0.5 rounded-md border border-primary-border">
                           {groupStudents.filter(s => (studentAttendance[s.id] || attendance) === 'present').length} / {groupStudents.length} Anwesend
                         </span>
                       )}
@@ -721,7 +735,7 @@ export const LessonControlModal: React.FC = () => {
 
                     {/* Bulk "Mark All as Present" checkbox banner for group lessons */}
                     {selectedLesson.groupId && groupStudents.length > 0 && (
-                      <div className="flex items-center justify-between bg-emerald-50/90 dark:bg-emerald-950/60 border-2 border-emerald-300 dark:border-emerald-700/80 p-2.5 rounded-lg shadow-xs">
+                      <div className="flex items-center justify-between bg-primary-soft dark:bg-primary-soft border-2 border-primary-border dark:border-primary-border/80 p-2.5 rounded-lg shadow-xs">
                         <label className="flex items-center gap-2.5 cursor-pointer select-none">
                           <input
                             type="checkbox"
@@ -739,10 +753,10 @@ export const LessonControlModal: React.FC = () => {
                                 confetti({ particleCount: 35, spread: 45 });
                               }
                             }}
-                            className="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 cursor-pointer accent-emerald-600"
+                            className="w-4 h-4 rounded text-primary focus:ring-primary cursor-pointer accent-primary"
                           />
-                          <span className="text-xs font-black text-emerald-900 dark:text-emerald-100 flex items-center gap-1.5">
-                            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                          <span className="text-xs font-black text-primary dark:text-primary flex items-center gap-1.5">
+                            <CheckCircle2 className="w-4 h-4 text-primary shrink-0" />
                             <span>Alle als anwesend markieren (Mark All Present)</span>
                           </span>
                         </label>
@@ -758,7 +772,7 @@ export const LessonControlModal: React.FC = () => {
                             setStudentAttendance(updatedAtt);
                             confetti({ particleCount: 40, spread: 50 });
                           }}
-                          className="px-3 py-1 text-[11px] font-black bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white rounded-xl transition-all shadow-xs cursor-pointer flex items-center gap-1.5 shrink-0"
+                          className="px-3 py-1 text-[11px] font-black bg-primary hover:bg-primary-hover active:scale-95 text-white rounded-xl transition-all shadow-xs cursor-pointer flex items-center gap-1.5 shrink-0"
                         >
                           <CheckCircle2 className="w-3.5 h-3.5" />
                           <span>Alle anwesend ✓</span>
@@ -782,8 +796,8 @@ export const LessonControlModal: React.FC = () => {
                         }}
                         className={`py-2 rounded-xl font-bold border transition-all cursor-pointer ${
                           attendance === 'present'
-                            ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs'
-                            : 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700'
+                            ? 'bg-primary text-white border-primary-border shadow-xs'
+                            : 'bg-surface-hover text-text-main border-surface-border dark:border-surface-border-soft'
                         }`}
                       >
                         ✓ Anwesend (Present)
@@ -793,8 +807,8 @@ export const LessonControlModal: React.FC = () => {
                         onClick={() => setAttendance('late')}
                         className={`py-2 rounded-xl font-bold border transition-all cursor-pointer ${
                           attendance === 'late'
-                            ? 'bg-amber-600 text-white border-amber-600 shadow-xs'
-                            : 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700'
+                            ? 'bg-primary text-white border-primary-border shadow-xs'
+                            : 'bg-surface-hover text-text-main border-surface-border dark:border-surface-border-soft'
                         }`}
                       >
                         ⚠️ Verspätet (Late)
@@ -805,7 +819,7 @@ export const LessonControlModal: React.FC = () => {
                         className={`py-2 rounded-xl font-bold border transition-all cursor-pointer ${
                           attendance === 'absent'
                             ? 'bg-red-600 text-white border-red-600 shadow-xs'
-                            : 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700'
+                            : 'bg-surface-hover text-text-main border-surface-border dark:border-surface-border-soft'
                         }`}
                       >
                         ✕ Abwesend (Absent)
@@ -814,9 +828,9 @@ export const LessonControlModal: React.FC = () => {
 
                     {/* Individual Student Attendance List for Group Lessons */}
                     {selectedLesson.groupId && groupStudents.length > 0 && (
-                      <div className="pt-2 border-t border-slate-200 dark:border-slate-700/80 space-y-1.5">
+                      <div className="pt-2 border-t border-surface-border dark:border-surface-border-soft/80 space-y-1.5">
                         <div className="flex items-center justify-between">
-                          <span className="block text-[11px] font-bold text-slate-700 dark:text-slate-300">
+                          <span className="block text-[11px] font-bold text-text-main">
                             👥 Einzelne Schüler-Anwesenheit (Individual Student Attendance):
                           </span>
                           <button
@@ -829,7 +843,7 @@ export const LessonControlModal: React.FC = () => {
                               setStudentAttendance(updatedAtt);
                               confetti({ particleCount: 30, spread: 40 });
                             }}
-                            className="text-[10px] text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 font-extrabold cursor-pointer flex items-center gap-1 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-lg border border-emerald-200/50 transition-all active:scale-95"
+                            className="text-[10px] text-primary dark:text-primary hover:text-primary font-extrabold cursor-pointer flex items-center gap-1 bg-primary-soft dark:bg-primary-soft px-2 py-0.5 rounded-lg border border-primary-border transition-all active:scale-95"
                           >
                             <CheckCircle2 className="w-3 h-3" />
                             <span>Mark All Present</span>
@@ -840,7 +854,7 @@ export const LessonControlModal: React.FC = () => {
                           {groupStudents.map(st => {
                             const stAtt = studentAttendance[st.id] || attendance;
                             return (
-                              <div key={st.id} className="flex items-center justify-between bg-white dark:bg-slate-900 p-2 rounded-xl border border-slate-200 dark:border-slate-800 text-xs">
+                              <div key={st.id} className="flex items-center justify-between bg-surface p-2 rounded-xl border border-surface-border text-xs">
                                 <span className="font-bold text-slate-800 dark:text-slate-200">{st.name}</span>
                                 <div className="flex items-center gap-1">
                                   {(['present', 'late', 'absent'] as AttendanceStatus[]).map(attType => (
@@ -855,10 +869,10 @@ export const LessonControlModal: React.FC = () => {
                                       }}
                                       className={`px-2 py-0.5 rounded-lg text-[10px] font-bold cursor-pointer border transition-all ${
                                         stAtt === attType
-                                          ? attType === 'present' ? 'bg-emerald-600 text-white border-emerald-700'
-                                            : attType === 'late' ? 'bg-amber-600 text-white border-amber-700'
+                                          ? attType === 'present' ? 'bg-primary text-white border-primary-border'
+                                            : attType === 'late' ? 'bg-primary text-white border-primary-border'
                                             : 'bg-red-600 text-white border-red-700'
-                                          : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700'
+                                          : 'bg-surface-hover text-text-muted border-surface-border dark:border-surface-border-soft'
                                       }`}
                                     >
                                       {attType === 'present' ? 'Present' : attType === 'late' ? 'Late' : 'Absent'}
@@ -875,7 +889,7 @@ export const LessonControlModal: React.FC = () => {
 
                   {/* Homework Status */}
                   <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                    <label className="text-xs font-bold text-text-main">
                       2. Hausaufgaben (Homework):
                     </label>
                     <div className="grid grid-cols-3 gap-2 text-xs mb-2">
@@ -884,8 +898,8 @@ export const LessonControlModal: React.FC = () => {
                         onClick={() => setHomeworkStatus('completed')}
                         className={`py-2 rounded-xl font-bold border transition-all ${
                           homeworkStatus === 'completed'
-                            ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs'
-                            : 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200'
+                            ? 'bg-primary text-white border-primary-border shadow-xs'
+                            : 'bg-surface-hover text-text-main border-surface-border'
                         }`}
                       >
                         Erledigt (Completed)
@@ -895,8 +909,8 @@ export const LessonControlModal: React.FC = () => {
                         onClick={() => setHomeworkStatus('assigned')}
                         className={`py-2 rounded-xl font-bold border transition-all ${
                           homeworkStatus === 'assigned'
-                            ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
-                            : 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200'
+                            ? 'bg-primary text-white border-primary shadow-xs'
+                            : 'bg-surface-hover text-text-main border-surface-border'
                         }`}
                       >
                         Aufgegeben (Assigned)
@@ -907,7 +921,7 @@ export const LessonControlModal: React.FC = () => {
                         className={`py-2 rounded-xl font-bold border transition-all ${
                           homeworkStatus === 'not_completed'
                             ? 'bg-red-600 text-white border-red-600 shadow-xs'
-                            : 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200'
+                            : 'bg-surface-hover text-text-main border-surface-border'
                         }`}
                       >
                         Nicht erledigt
@@ -919,20 +933,20 @@ export const LessonControlModal: React.FC = () => {
                       placeholder="Hausaufgaben Titel (z. B. Kapitel 3 Grammatik)"
                       value={homeworkTitle}
                       onChange={(e) => setHomeworkTitle(e.target.value)}
-                      className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs"
+                      className="w-full px-3 py-2 bg-surface-hover border border-surface-border dark:border-surface-border-soft rounded-xl text-xs"
                     />
                   </div>
 
                   {/* Teacher Notes */}
                   <div className="space-y-1">
-                    <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                    <label className="text-xs font-bold text-text-main">
                       5. Notizen der Lehrkraft (Teacher Notes):
                     </label>
                     <textarea
                       rows={3}
                       value={teacherNotes}
                       onChange={(e) => setTeacherNotes(e.target.value)}
-                      className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs focus:outline-none"
+                      className="w-full px-3 py-2 bg-surface-hover border border-surface-border dark:border-surface-border-soft rounded-xl text-xs focus:outline-none"
                       placeholder="Notizen zur Stunde hinterlassen..."
                     />
                   </div>
@@ -940,7 +954,7 @@ export const LessonControlModal: React.FC = () => {
                   {/* Save Report Button */}
                   <button
                     type="submit"
-                    className="w-full bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-black text-sm py-3 rounded-lg shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
+                    className="w-full bg-primary hover:bg-primary-hover active:scale-95 text-white font-black text-sm py-3 rounded-lg shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95 hover:shadow-lg hover:shadow-primary/30"
                   >
                     <CheckCircle2 className="w-5 h-5" />
                     <span>Bericht speichern & Eltern benachrichtigen</span>
@@ -951,8 +965,8 @@ export const LessonControlModal: React.FC = () => {
           )}
 
           {/* PARENT COMMUNICATION QUICK BUTTONS */}
-          <div className="pt-3 border-t border-slate-100 dark:border-slate-800 space-y-2">
-            <p className="text-xs font-bold text-slate-700 dark:text-slate-300">
+          <div className="pt-3 border-t border-slate-100 dark:border-surface-border space-y-2">
+            <p className="text-xs font-bold text-text-main">
               Eltern-Kommunikation / Parent Communication:
             </p>
 
@@ -960,7 +974,7 @@ export const LessonControlModal: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setShowArabicParentReportModal(true)}
-                className="bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-black text-xs py-2.5 px-3 rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer shadow-sm"
+                className="bg-primary hover:bg-primary-hover active:scale-95 text-white font-black text-xs py-2.5 px-3 rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer shadow-sm"
               >
                 <Send className="w-4 h-4" />
                 <span>تقرير ولي الأمر / Elternbericht</span>
@@ -974,18 +988,18 @@ export const LessonControlModal: React.FC = () => {
                     alert('لا يوجد رقم هاتف مسجل لولي الأمر. يرجى إضافة الرقم في بيانات الطالب.');
                   }
                 }}
-                className="bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-800 dark:text-slate-200 font-bold text-xs py-2.5 rounded-xl transition-all flex items-center justify-center gap-1.5 text-center cursor-pointer"
+                className="bg-surface-hover hover:bg-slate-200 text-slate-800 dark:text-slate-200 font-bold text-xs py-2.5 rounded-xl transition-all flex items-center justify-center gap-1.5 text-center cursor-pointer"
               >
-                <Phone className="w-3.5 h-3.5 text-blue-600" />
+                <Phone className="w-3.5 h-3.5 text-primary" />
                 <span>Anruf Eltern / Call Parent</span>
               </a>
 
               {targetStudent?.phone && (
                 <a
                   href={`tel:${targetStudent.phone}`}
-                  className="bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-800 dark:text-slate-200 font-bold text-xs py-2.5 rounded-xl transition-all flex items-center justify-center gap-1.5 text-center"
+                  className="bg-surface-hover hover:bg-slate-200 text-slate-800 dark:text-slate-200 font-bold text-xs py-2.5 rounded-xl transition-all flex items-center justify-center gap-1.5 text-center"
                 >
-                  <Phone className="w-3.5 h-3.5 text-emerald-600" />
+                  <Phone className="w-3.5 h-3.5 text-primary" />
                   <span>Anruf Schüler / Call Student</span>
                 </a>
               )}

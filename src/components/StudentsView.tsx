@@ -16,6 +16,12 @@ export const StudentsView: React.FC = () => {
     updateStudent, updateGroup, t
   } = useApp();
 
+  // Helper for inline translations
+  const _t = (ar: string, en: string, de?: string) => {
+    return language === 'ar' ? ar : language === 'de' ? (de || en) : en;
+  };
+
+
   const [activeSegment, setActiveSegment] = useState<'students' | 'groups' | 'archive'>('students');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedGrade, setSelectedGrade] = useState<string>('all');
@@ -94,18 +100,18 @@ export const StudentsView: React.FC = () => {
   });
 
   return (
-    <div className="space-y-4 pb-20">
+    <div className="space-y-4 ">
       {/* Top Controls */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <h2 className="text-lg font-black text-slate-900 dark:text-white flex items-center gap-2">
-          <Users className="w-5 h-5 text-blue-600 shrink-0" />
+        <h2 className="text-lg font-black text-text-main flex items-center gap-2">
+          <Users className="w-5 h-5 text-primary shrink-0" />
           <span>{t('students_and_groups_title')}</span>
         </h2>
 
         <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
           <button
             onClick={() => setIsAddStudentModalOpen(true)}
-            className="flex-1 sm:flex-initial bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-bold text-xs px-3 py-2.5 rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs whitespace-nowrap"
+            className="flex-1 sm:flex-initial bg-primary hover:bg-primary-hover active:scale-95 text-white font-bold text-xs px-3 py-2.5 rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs whitespace-nowrap hover:shadow-lg hover:shadow-primary/30"
           >
             <UserPlus className="w-3.5 h-3.5 shrink-0" />
             <span>{t('students_add_student')}</span>
@@ -114,7 +120,7 @@ export const StudentsView: React.FC = () => {
           <button
             type="button"
             onClick={() => setIsAddGroupModalOpen(true)}
-            className="flex-1 sm:flex-initial bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white font-bold text-xs px-3 py-2.5 rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs whitespace-nowrap"
+            className="flex-1 sm:flex-initial bg-primary hover:bg-primary-hover active:scale-95 text-white font-bold text-xs px-3 py-2.5 rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs whitespace-nowrap"
           >
             <Plus className="w-3.5 h-3.5 shrink-0" />
             <span>{t('students_add_group')}</span>
@@ -123,22 +129,22 @@ export const StudentsView: React.FC = () => {
           <button
             type="button"
             onClick={() => setIsAiImportModalOpen(true)}
-            className="flex-1 sm:flex-initial bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 active:scale-95 text-white font-bold text-xs px-3 py-2.5 rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs whitespace-nowrap"
+            className="flex-1 sm:flex-initial bg-gradient-to-r from-primary to-primary-hover hover:from-primary hover:to-primary-hover active:scale-95 text-white font-bold text-xs px-3 py-2.5 rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs whitespace-nowrap"
           >
-            <Bot className="w-3.5 h-3.5 shrink-0 text-purple-200" />
-            <span>{language === 'ar' ? 'استيراد مجموعة + طلاب' : 'Import Group + Students'}</span>
+            <Bot className="w-3.5 h-3.5 shrink-0 text-primary-soft" />
+            <span>{_t('استيراد مجموعة + طلاب', 'Import Group + Students')}</span>
           </button>
         </div>
       </div>
 
       {/* Segment Switcher Tabs */}
-      <div className="grid grid-cols-3 gap-1.5 bg-slate-100 dark:bg-slate-800 p-1 rounded-lg text-xs font-bold">
+      <div className="grid grid-cols-3 gap-1.5 bg-surface-hover p-1 rounded-lg text-xs font-bold">
         <button
           onClick={() => setActiveSegment('students')}
           className={`py-2 rounded-xl transition-all cursor-pointer ${
             activeSegment === 'students'
-              ? 'bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 shadow-xs'
-              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+              ? 'bg-surface text-primary dark:text-primary shadow-xs'
+              : 'text-text-muted hover:text-slate-900 dark:hover:text-primary'
           }`}
         >
           {t('daily_stats_students')} ({activeStudents.length})
@@ -148,8 +154,8 @@ export const StudentsView: React.FC = () => {
           onClick={() => setActiveSegment('groups')}
           className={`py-2 rounded-xl transition-all cursor-pointer ${
             activeSegment === 'groups'
-              ? 'bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 shadow-xs'
-              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+              ? 'bg-surface text-primary dark:text-primary shadow-xs'
+              : 'text-text-muted hover:text-slate-900 dark:hover:text-primary'
           }`}
         >
           {t('daily_stats_groups')} ({activeGroups.length})
@@ -159,8 +165,8 @@ export const StudentsView: React.FC = () => {
           onClick={() => setActiveSegment('archive')}
           className={`py-2 rounded-xl transition-all flex items-center justify-center gap-1 cursor-pointer ${
             activeSegment === 'archive'
-              ? 'bg-white dark:bg-slate-900 text-amber-600 dark:text-amber-400 shadow-xs'
-              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+              ? 'bg-surface text-primary dark:text-primary shadow-xs'
+              : 'text-text-muted hover:text-slate-900 dark:hover:text-primary'
           }`}
         >
           <Archive className="w-3.5 h-3.5" />
@@ -171,18 +177,18 @@ export const StudentsView: React.FC = () => {
       {/* Search & Grade Filter Bar */}
       <div className="flex items-center gap-2">
         <div className="relative flex-1">
-          <Search className="w-4 h-4 absolute left-3 top-3 text-slate-400" />
+          <Search className="w-4 h-4 absolute left-3 top-3 text-text-muted/70" />
           <input
             type="text"
             placeholder={activeSegment === 'students' ? t('students_search_placeholder') : t('students_search_group_placeholder')}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-9 pr-8 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full pl-9 pr-8 py-2 bg-surface border border-surface-border rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-primary"
           />
           {searchTerm && (
             <button
               onClick={() => setSearchTerm('')}
-              className="absolute right-2.5 top-2.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
+              className="absolute right-2.5 top-2.5 text-text-muted/70 hover:text-slate-600 dark:hover:text-primary cursor-pointer"
             >
               <X className="w-3.5 h-3.5" />
             </button>
@@ -192,7 +198,7 @@ export const StudentsView: React.FC = () => {
         <select
           value={selectedGrade}
           onChange={(e) => setSelectedGrade(e.target.value)}
-          className="px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+          className="px-3 py-2 bg-surface border border-surface-border rounded-xl text-xs font-bold text-text-main focus:outline-none focus:ring-2 focus:ring-primary cursor-pointer"
         >
           <option value="all">{t('students_all_grades')}</option>
           {Array.from({ length: 12 }, (_, i) => `Grade ${i + 1}`).map(g => (
@@ -207,7 +213,7 @@ export const StudentsView: React.FC = () => {
               setSelectedGrade('all');
               setSelectedGroupDay('all');
             }}
-            className="px-2.5 py-2 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-bold transition-all cursor-pointer shrink-0"
+            className="px-2.5 py-2 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-text-main rounded-xl text-xs font-bold transition-all cursor-pointer shrink-0"
             title={t('students_reset_filters')}
           >
             {t('students_reset_filters')}
@@ -223,8 +229,8 @@ export const StudentsView: React.FC = () => {
             onClick={() => setSelectedGroupDay('all')}
             className={`px-3 py-1.5 rounded-xl transition-all cursor-pointer shrink-0 ${
               selectedGroupDay === 'all'
-                ? 'bg-blue-600 text-white shadow-xs'
-                : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
+                ? 'bg-primary text-white shadow-xs'
+                : 'bg-surface-hover text-text-muted hover:bg-slate-200 dark:hover:bg-slate-700'
             }`}
           >
             {t('students_all_days')}
@@ -235,8 +241,8 @@ export const StudentsView: React.FC = () => {
             onClick={() => setSelectedGroupDay('today')}
             className={`px-3 py-1.5 rounded-xl transition-all cursor-pointer shrink-0 flex items-center gap-1 ${
               selectedGroupDay === 'today'
-                ? 'bg-amber-500 text-white shadow-xs'
-                : 'bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200/50 dark:border-amber-800/60 hover:bg-amber-100'
+                ? 'bg-primary text-white shadow-xs'
+                : 'bg-primary-soft dark:bg-primary-soft text-primary dark:text-primary border border-primary-border dark:border-primary-border hover:bg-primary-soft'
             }`}
           >
             <span>{t('students_today')}</span>
@@ -250,8 +256,8 @@ export const StudentsView: React.FC = () => {
               onClick={() => setSelectedGroupDay(w.short)}
               className={`px-3 py-1.5 rounded-xl transition-all cursor-pointer shrink-0 ${
                 selectedGroupDay === w.short || selectedGroupDay === w.full
-                  ? 'bg-blue-600 text-white shadow-xs'
-                  : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
+                  ? 'bg-primary text-white shadow-xs'
+                  : 'bg-surface-hover text-text-muted hover:bg-slate-200 dark:hover:bg-slate-700'
               }`}
             >
               {w.short}
@@ -264,17 +270,17 @@ export const StudentsView: React.FC = () => {
       {activeSegment === 'students' && (
         <div className="space-y-2.5">
           {filteredStudents.length === 0 ? (
-            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-8 text-center space-y-2">
-              <p className="text-sm font-bold text-slate-700 dark:text-slate-300">
-                {language === 'ar' ? 'لا يوجد طلاب حتى الآن' : language === 'de' ? 'Noch keine Schüler vorhanden' : 'No students yet.'}
+            <div className="bg-surface border border-surface-border rounded-lg p-5 text-center space-y-2">
+              <p className="text-sm font-bold text-text-main">
+                {_t('لا يوجد طلاب حتى الآن', 'No students yet.', 'Noch keine Schüler vorhanden')}
               </p>
               <p className="text-xs text-slate-500">
-                {language === 'ar' ? 'أضف طالبك الأول للبدء في تتبع الحضور، الدروس والمدفوعات.' : language === 'de' ? 'Füge deinen ersten Schüler hinzu, um Anwesenheit, Lektionen und Zahlungen zu verwalten.' : 'Add your first student to track attendance, lessons, and payments.'}
+                {_t('أضف طالبك الأول للبدء في تتبع الحضور، الدروس والمدفوعات.', 'Add your first student to track attendance, lessons, and payments.', 'Füge deinen ersten Schüler hinzu, um Anwesenheit, Lektionen und Zahlungen zu verwalten.')}
               </p>
               <button
                 type="button"
                 onClick={() => setIsAddStudentModalOpen(true)}
-                className="mt-3 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-xs transition-all inline-flex items-center gap-1.5 cursor-pointer"
+                className="mt-3 px-4 py-2 bg-primary hover:bg-primary-hover text-white font-bold text-xs rounded-xl shadow-xs transition-all inline-flex items-center gap-1.5 cursor-pointer active:scale-95 hover:shadow-lg hover:shadow-primary/30"
               >
                 <UserPlus className="w-4 h-4" />
                 <span>{t('students_add_student')}</span>
@@ -288,7 +294,7 @@ export const StudentsView: React.FC = () => {
               return (
                 <div
                   key={`${student.id}_${idx}`}
-                  className="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 rounded-xl p-4 shadow-2xs hover:shadow-xs transition-all flex items-center justify-between gap-3 cursor-pointer group relative"
+                  className="bg-surface border border-surface-border/60 dark:border-surface-border rounded-xl p-4 shadow-2xs hover:shadow-xs active:scale-[0.99] active:bg-surface-hover transition-all flex items-center justify-between gap-3 cursor-pointer group relative"
                   onClick={() => {
                     setSelectedStudent(student);
                     setSelectedStudentTab('overview');
@@ -298,25 +304,25 @@ export const StudentsView: React.FC = () => {
                     <img
                       src={student.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=150'}
                       alt={student.name}
-                      className="w-11 h-11 rounded-lg border border-slate-100 dark:border-slate-800 object-cover shrink-0"
+                      className="w-11 h-11 rounded-lg border border-slate-100 dark:border-surface-border object-cover shrink-0"
                     />
 
                     <div className="min-w-0 space-y-0.5">
                       {/* PROMINENT STUDENT NAME */}
                       <div className="flex items-center gap-2">
-                        <h3 className="text-sm font-black text-slate-900 dark:text-white group-hover:text-blue-600 transition-colors tracking-tight truncate">
+                        <h3 className="text-sm font-black text-text-main group-hover:text-primary transition-colors tracking-tight truncate">
                           {student.name}
                         </h3>
-                        <span className="text-[10px] font-black text-blue-600 dark:text-blue-400 bg-blue-50/50 dark:bg-blue-950/40 border border-blue-100/50 dark:border-blue-900/30 px-1.5 py-0.5 rounded-md shrink-0">
+                        <span className="text-[10px] font-black text-primary dark:text-primary bg-primary-soft dark:bg-primary-soft/40 border border-primary-border/50 dark:border-primary-border/30 px-1.5 py-0.5 rounded-md shrink-0">
                           {student.grade}
                         </span>
                       </div>
 
-                      <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-slate-500 dark:text-slate-400">
-                        <span className="font-extrabold text-slate-700 dark:text-slate-300 bg-slate-50 dark:bg-slate-800 border border-slate-200/50 dark:border-slate-700/50 px-1.5 py-0.5 rounded text-[10px]">
+                      <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-text-muted">
+                        <span className="font-extrabold text-text-main bg-surface-hover border border-surface-border-soft px-1.5 py-0.5 rounded text-[10px]">
                           {studentGroup?.name || 'Gruppe A1'}
                         </span>
-                        <span className="text-[11px] text-slate-400">
+                        <span className="text-[11px] text-text-muted/70">
                           • {t('students_parent_phone_label')}: <span className="font-semibold text-slate-600 dark:text-slate-300">{student.parentName}</span> ({student.parentPhone})
                         </span>
                       </div>
@@ -329,10 +335,10 @@ export const StudentsView: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => setActiveMenuId(activeMenuId === `student_${student.id}` ? null : `student_${student.id}`)}
-                        className={`p-2 rounded-lg text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 transition-all hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer ${
-                          activeMenuId === `student_${student.id}` ? 'bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-100' : ''
+                        className={`p-2 rounded-lg text-text-muted/70 hover:text-slate-800 dark:hover:text-primary transition-all hover:bg-background dark:hover:bg-slate-800 cursor-pointer ${
+                          activeMenuId === `student_${student.id}` ? 'bg-surface-hover text-text-main' : ''
                         }`}
-                        title={language === 'ar' ? 'خيارات الطالب' : language === 'de' ? 'Optionen' : 'Options'}
+                        title={_t('خيارات الطالب', 'Options', 'Optionen')}
                       >
                         <MoreVertical className="w-4 h-4" />
                       </button>
@@ -341,7 +347,7 @@ export const StudentsView: React.FC = () => {
                         <>
                           <div className="fixed inset-0 z-20" onClick={() => setActiveMenuId(null)} />
                           
-                          <div className="absolute right-0 mt-1 w-52 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 rounded-xl shadow-xl z-30 py-1.5 animate-scale-up text-left rtl:text-right">
+                          <div className="absolute right-0 mt-1 w-52 bg-surface border border-surface-border/80 dark:border-surface-border/80 rounded-xl shadow-xl z-30 py-1.5 animate-scale-up text-left rtl:text-right">
                             {/* View Profile link */}
                             <button
                               type="button"
@@ -350,10 +356,10 @@ export const StudentsView: React.FC = () => {
                                 setSelectedStudentTab('overview');
                                 setActiveMenuId(null);
                               }}
-                              className="w-full px-4 py-2 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center gap-2.5 cursor-pointer text-left rtl:text-right"
+                              className="w-full px-4 py-2 text-xs font-bold text-text-main hover:bg-background dark:hover:bg-slate-800 flex items-center gap-2.5 cursor-pointer text-left rtl:text-right"
                             >
-                              <User className="w-4 h-4 text-blue-500" />
-                              <span>{language === 'ar' ? 'الملف الشخصي' : language === 'de' ? 'Profil ansehen' : 'View Profile'}</span>
+                              <User className="w-4 h-4 text-primary" />
+                              <span>{_t('الملف الشخصي', 'View Profile', 'Profil ansehen')}</span>
                             </button>
 
                             {/* Attendance tracking */}
@@ -364,10 +370,10 @@ export const StudentsView: React.FC = () => {
                                 setSelectedStudentTab('attendance');
                                 setActiveMenuId(null);
                               }}
-                              className="w-full px-4 py-2 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center gap-2.5 cursor-pointer text-left rtl:text-right"
+                              className="w-full px-4 py-2 text-xs font-bold text-text-main hover:bg-background dark:hover:bg-slate-800 flex items-center gap-2.5 cursor-pointer text-left rtl:text-right"
                             >
-                              <FileText className="w-4 h-4 text-emerald-500" />
-                              <span>{language === 'ar' ? 'تتبع الحضور' : language === 'de' ? 'Anwesenheit prüfen' : 'Check Attendance'}</span>
+                              <FileText className="w-4 h-4 text-primary" />
+                              <span>{_t('تتبع الحضور', 'Check Attendance', 'Anwesenheit prüfen')}</span>
                             </button>
 
                             {/* Scores & grades */}
@@ -378,10 +384,10 @@ export const StudentsView: React.FC = () => {
                                 setSelectedStudentTab('scores');
                                 setActiveMenuId(null);
                               }}
-                              className="w-full px-4 py-2 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center gap-2.5 cursor-pointer text-left rtl:text-right"
+                              className="w-full px-4 py-2 text-xs font-bold text-text-main hover:bg-background dark:hover:bg-slate-800 flex items-center gap-2.5 cursor-pointer text-left rtl:text-right"
                             >
-                              <Award className="w-4 h-4 text-amber-500" />
-                              <span>{language === 'ar' ? 'الدرجات والواجبات' : language === 'de' ? 'Noten & Aufgaben' : 'Scores & Homework'}</span>
+                              <Award className="w-4 h-4 text-primary" />
+                              <span>{_t('الدرجات والواجبات', 'Scores & Homework', 'Noten & Aufgaben')}</span>
                             </button>
 
                             {/* Payments and finances */}
@@ -392,13 +398,13 @@ export const StudentsView: React.FC = () => {
                                 setSelectedStudentTab('payments');
                                 setActiveMenuId(null);
                               }}
-                              className="w-full px-4 py-2 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center gap-2.5 cursor-pointer text-left rtl:text-right"
+                              className="w-full px-4 py-2 text-xs font-bold text-text-main hover:bg-background dark:hover:bg-slate-800 flex items-center gap-2.5 cursor-pointer text-left rtl:text-right"
                             >
-                              <DollarSign className="w-4 h-4 text-indigo-500" />
-                              <span>{language === 'ar' ? 'السجلات المالية' : language === 'de' ? 'Zahlungsverlauf' : 'Payment History'}</span>
+                              <DollarSign className="w-4 h-4 text-primary" />
+                              <span>{_t('السجلات المالية', 'Payment History', 'Zahlungsverlauf')}</span>
                             </button>
 
-                            <div className="border-t border-slate-100 dark:border-slate-800/80 my-1.5" />
+                            <div className="border-t border-slate-100 dark:border-surface-border/80 my-1.5" />
 
                             {/* Send WhatsApp message */}
                             <a
@@ -406,23 +412,23 @@ export const StudentsView: React.FC = () => {
                               target="_blank"
                               rel="noreferrer"
                               onClick={() => setActiveMenuId(null)}
-                              className="w-full px-4 py-2 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center gap-2.5 cursor-pointer text-left rtl:text-right"
+                              className="w-full px-4 py-2 text-xs font-bold text-text-main hover:bg-background dark:hover:bg-slate-800 flex items-center gap-2.5 cursor-pointer text-left rtl:text-right"
                             >
-                              <Send className="w-4 h-4 text-emerald-500" />
-                              <span>{language === 'ar' ? 'إرسال واتساب' : language === 'de' ? 'WhatsApp senden' : 'Send WhatsApp'}</span>
+                              <Send className="w-4 h-4 text-primary" />
+                              <span>{_t('إرسال واتساب', 'Send WhatsApp', 'WhatsApp senden')}</span>
                             </a>
 
                             {/* Phone Call Parent */}
                             <a
                               href={`tel:${student.parentPhone}`}
                               onClick={() => setActiveMenuId(null)}
-                              className="w-full px-4 py-2 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center gap-2.5 cursor-pointer text-left rtl:text-right"
+                              className="w-full px-4 py-2 text-xs font-bold text-text-main hover:bg-background dark:hover:bg-slate-800 flex items-center gap-2.5 cursor-pointer text-left rtl:text-right"
                             >
-                              <Phone className="w-4 h-4 text-blue-500" />
-                              <span>{language === 'ar' ? 'اتصال هاتفياً' : language === 'de' ? 'Anrufen (Telefon)' : 'Call (Phone)'}</span>
+                              <Phone className="w-4 h-4 text-primary" />
+                              <span>{_t('اتصال هاتفياً', 'Call (Phone)', 'Anrufen (Telefon)')}</span>
                             </a>
 
-                            <div className="border-t border-slate-100 dark:border-slate-800/80 my-1.5" />
+                            <div className="border-t border-slate-100 dark:border-surface-border/80 my-1.5" />
 
                             {/* Delete Student */}
                             <button
@@ -435,17 +441,17 @@ export const StudentsView: React.FC = () => {
                                 });
                                 setActiveMenuId(null);
                               }}
-                              className="w-full px-4 py-2 text-xs font-bold text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/20 flex items-center gap-2.5 cursor-pointer text-left rtl:text-right"
+                              className="w-full px-4 py-2 text-xs font-bold text-primary hover:bg-primary-soft dark:hover:bg-primary-soft flex items-center gap-2.5 cursor-pointer text-left rtl:text-right"
                             >
-                              <Trash2 className="w-4 h-4 text-rose-500" />
-                              <span>{language === 'ar' ? 'حذف أو أرشفة' : language === 'de' ? 'Löschen / Archiv' : 'Delete / Archive'}</span>
+                              <Trash2 className="w-4 h-4 text-primary" />
+                              <span>{_t('حذف أو أرشفة', 'Delete / Archive', 'Löschen / Archiv')}</span>
                             </button>
                           </div>
                         </>
                       )}
                     </div>
 
-                    <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-blue-500 transition-colors ml-0.5" />
+                    <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-primary transition-colors ml-0.5" />
                   </div>
                 </div>
               );
@@ -458,17 +464,17 @@ export const StudentsView: React.FC = () => {
       {activeSegment === 'groups' && (
         <div className="space-y-2.5">
           {filteredGroups.length === 0 ? (
-            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-8 text-center space-y-2">
-              <p className="text-sm font-bold text-slate-700 dark:text-slate-300">
-                {language === 'ar' ? 'لا توجد مجموعات حتى الآن' : language === 'de' ? 'Keine Gruppen vorhanden' : 'No groups yet.'}
+            <div className="bg-surface border border-surface-border rounded-lg p-5 text-center space-y-2">
+              <p className="text-sm font-bold text-text-main">
+                {_t('لا توجد مجموعات حتى الآن', 'No groups yet.', 'Keine Gruppen vorhanden')}
               </p>
               <p className="text-xs text-slate-500">
-                {language === 'ar' ? 'أنشئ مجموعتك الأولى للبدء في تنظيم الطلاب والدروس.' : language === 'de' ? 'Erstelle deine erste Gruppe, um Schüler und Lektionen zu organisieren.' : 'Create your first group to start organizing students and lessons.'}
+                {_t('أنشئ مجموعتك الأولى للبدء في تنظيم الطلاب والدروس.', 'Create your first group to start organizing students and lessons.', 'Erstelle deine erste Gruppe, um Schüler und Lektionen zu organisieren.')}
               </p>
               <button
                 type="button"
                 onClick={() => setIsAddGroupModalOpen(true)}
-                className="mt-3 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl shadow-xs transition-all inline-flex items-center gap-1.5 cursor-pointer"
+                className="mt-3 px-4 py-2 bg-primary hover:bg-primary-hover text-white font-bold text-xs rounded-xl shadow-xs transition-all inline-flex items-center gap-1.5 cursor-pointer"
               >
                 <Plus className="w-4 h-4" />
                 <span>{t('students_add_group')}</span>
@@ -482,37 +488,37 @@ export const StudentsView: React.FC = () => {
               <div
                 key={`${group.id}_${idx}`}
                 onClick={() => setSelectedGroup(group)}
-                className="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 rounded-xl p-4 shadow-2xs hover:shadow-xs transition-all flex items-center justify-between gap-3 cursor-pointer group"
+                className="bg-surface border border-surface-border/60 dark:border-surface-border rounded-xl p-4 shadow-2xs hover:shadow-xs active:scale-[0.99] active:bg-surface-hover transition-all flex items-center justify-between gap-3 cursor-pointer group"
               >
                 <div className="flex items-center gap-3.5 min-w-0">
                   <div className={`w-11 h-11 rounded-lg flex items-center justify-center shrink-0 border transition-all ${
                     group.type === 'online' 
-                      ? 'bg-indigo-50/50 border-indigo-100 dark:bg-indigo-950/40 dark:border-indigo-900/40 text-indigo-600 dark:text-indigo-400' 
-                      : 'bg-amber-50/50 border-amber-100 dark:bg-amber-950/40 dark:border-amber-900/40 text-amber-600 dark:text-amber-400'
+                      ? 'bg-primary-soft border-primary-border dark:bg-primary-soft dark:border-primary-border text-primary dark:text-primary' 
+                      : 'bg-primary-soft border-primary-border dark:bg-primary-soft dark:border-primary-border text-primary dark:text-primary'
                   }`}>
                     {group.type === 'online' ? <Video className="w-5 h-5" /> : <MapPin className="w-5 h-5" />}
                   </div>
 
                   <div className="min-w-0 space-y-0.5">
                     <div className="flex items-center gap-2">
-                      <h3 className="text-sm font-black text-slate-900 dark:text-white group-hover:text-indigo-600 transition-colors truncate">
+                      <h3 className="text-sm font-black text-text-main group-hover:text-primary transition-colors truncate">
                         {group.name}
                       </h3>
-                      <span className="text-[10px] font-black text-indigo-600 dark:text-indigo-400 bg-indigo-50/50 dark:bg-indigo-950/40 border border-indigo-100/50 dark:border-indigo-900/30 px-1.5 py-0.5 rounded-md shrink-0">
+                      <span className="text-[10px] font-black text-primary dark:text-primary bg-primary-soft dark:bg-primary-soft border border-primary-border/50 dark:border-primary-border px-1.5 py-0.5 rounded-md shrink-0">
                         {group.grade}
                       </span>
                     </div>
 
-                    <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-slate-500 dark:text-slate-400">
-                      <span className="font-extrabold text-slate-700 dark:text-slate-200 bg-slate-50 dark:bg-slate-800 border border-slate-200/50 dark:border-slate-700/50 px-1.5 py-0.5 rounded text-[10px]">
+                    <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-text-muted">
+                      <span className="font-extrabold text-text-main bg-surface-hover border border-surface-border-soft px-1.5 py-0.5 rounded text-[10px]">
                         {count} {t('daily_stats_students')}
                       </span>
-                      <span className="font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50/40 dark:bg-emerald-950/20 border border-emerald-100/30 dark:border-emerald-900/30 px-1.5 py-0.5 rounded text-[10px] font-mono">
+                      <span className="font-bold text-primary dark:text-primary bg-primary-soft dark:bg-primary-soft border border-primary-border/30 dark:border-primary-border px-1.5 py-0.5 rounded text-[10px] font-mono">
                         {group.paymentModel === 'per_session'
                           ? `${group.pricePerSession || Math.round(group.monthlyPackagePrice / (group.sessionCount || 8))} ${profile.currency} / Sitzung`
                           : `${group.monthlyPackagePrice} ${profile.currency} / ${group.sessionCount} Sessions`}
                       </span>
-                      <span className="text-slate-400 text-[11px] truncate max-w-[150px] sm:max-w-[240px]" title={formatGroupScheduleDisplay(group, language)}>
+                      <span className="text-text-muted/70 text-[11px] truncate max-w-[150px] sm:max-w-[240px]" title={formatGroupScheduleDisplay(group, language)}>
                         • {formatGroupScheduleDisplay(group, language)}
                       </span>
                     </div>
@@ -525,10 +531,10 @@ export const StudentsView: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => setActiveMenuId(activeMenuId === `group_${group.id}` ? null : `group_${group.id}`)}
-                      className={`p-2 rounded-lg text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 transition-all hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer ${
-                        activeMenuId === `group_${group.id}` ? 'bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-100' : ''
+                      className={`p-2 rounded-lg text-text-muted/70 hover:text-slate-800 dark:hover:text-primary transition-all hover:bg-background dark:hover:bg-slate-800 cursor-pointer ${
+                        activeMenuId === `group_${group.id}` ? 'bg-surface-hover text-text-main' : ''
                       }`}
-                      title={language === 'ar' ? 'خيارات المجموعة' : language === 'de' ? 'Optionen' : 'Options'}
+                      title={_t('خيارات المجموعة', 'Options', 'Optionen')}
                     >
                       <MoreVertical className="w-4 h-4" />
                     </button>
@@ -537,20 +543,20 @@ export const StudentsView: React.FC = () => {
                       <>
                         <div className="fixed inset-0 z-20" onClick={() => setActiveMenuId(null)} />
                         
-                        <div className="absolute right-0 mt-1 w-48 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 rounded-xl shadow-xl z-30 py-1.5 animate-scale-up text-left rtl:text-right">
+                        <div className="absolute right-0 mt-1 w-48 bg-surface border border-surface-border/80 dark:border-surface-border/80 rounded-xl shadow-xl z-30 py-1.5 animate-scale-up text-left rtl:text-right">
                           <button
                             type="button"
                             onClick={() => {
                               setSelectedGroup(group);
                               setActiveMenuId(null);
                             }}
-                            className="w-full px-4 py-2 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center gap-2.5 cursor-pointer text-left rtl:text-right"
+                            className="w-full px-4 py-2 text-xs font-bold text-text-main hover:bg-background dark:hover:bg-slate-800 flex items-center gap-2.5 cursor-pointer text-left rtl:text-right"
                           >
-                            <User className="w-4 h-4 text-blue-500" />
-                            <span>{language === 'ar' ? 'عرض تفاصيل المجموعة' : language === 'de' ? 'Details anzeigen' : 'View Details'}</span>
+                            <User className="w-4 h-4 text-primary" />
+                            <span>{_t('عرض تفاصيل المجموعة', 'View Details', 'Details anzeigen')}</span>
                           </button>
 
-                          <div className="border-t border-slate-100 dark:border-slate-800/80 my-1.5" />
+                          <div className="border-t border-slate-100 dark:border-surface-border/80 my-1.5" />
 
                           <button
                             type="button"
@@ -562,17 +568,17 @@ export const StudentsView: React.FC = () => {
                               });
                               setActiveMenuId(null);
                             }}
-                            className="w-full px-4 py-2 text-xs font-bold text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/20 flex items-center gap-2.5 cursor-pointer text-left rtl:text-right"
+                            className="w-full px-4 py-2 text-xs font-bold text-primary hover:bg-primary-soft dark:hover:bg-primary-soft flex items-center gap-2.5 cursor-pointer text-left rtl:text-right"
                           >
-                            <Trash2 className="w-4 h-4 text-rose-500" />
-                            <span>{language === 'ar' ? 'حذف أو أرشفة' : language === 'de' ? 'Löschen / Archiv' : 'Delete / Archive'}</span>
+                            <Trash2 className="w-4 h-4 text-primary" />
+                            <span>{_t('حذف أو أرشفة', 'Delete / Archive', 'Löschen / Archiv')}</span>
                           </button>
                         </div>
                       </>
                     )}
                   </div>
 
-                  <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-indigo-500 transition-colors ml-0.5" />
+                  <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-primary transition-colors ml-0.5" />
                 </div>
               </div>
             );
@@ -583,8 +589,8 @@ export const StudentsView: React.FC = () => {
       {/* ARCHIVE SEGMENT */}
       {activeSegment === 'archive' && (
         <div className="space-y-4">
-          <div className="bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900/60 rounded-lg p-3.5 text-xs text-amber-800 dark:text-amber-300 flex items-center gap-2.5">
-            <Archive className="w-5 h-5 shrink-0 text-amber-600 dark:text-amber-400" />
+          <div className="bg-primary-soft dark:bg-primary-soft border border-primary-border dark:border-primary-border rounded-lg p-3.5 text-xs text-primary dark:text-primary flex items-center gap-2.5">
+            <Archive className="w-5 h-5 shrink-0 text-primary dark:text-primary" />
             <span>
               {t('students_archive_info')}
             </span>
@@ -592,19 +598,19 @@ export const StudentsView: React.FC = () => {
 
           {/* Archived Students Subsection */}
           <div className="space-y-2">
-            <h3 className="text-xs font-black uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center justify-between">
+            <h3 className="text-xs font-black uppercase tracking-wider text-text-muted flex items-center justify-between">
               <span>{t('students_archived_students_title')} ({archivedStudents.length})</span>
             </h3>
 
             {filteredArchivedStudents.length === 0 ? (
-              <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-4 text-center text-xs text-slate-400">
+              <div className="bg-surface border border-surface-border rounded-lg p-4 text-center text-xs text-text-muted/70">
                 {t('students_no_archived_students')}
               </div>
             ) : (
               filteredArchivedStudents.map((student) => (
                 <div
                   key={student.id}
-                  className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-lg p-3.5 flex items-center justify-between gap-3 opacity-80 hover:opacity-100 transition-all"
+                  className="bg-surface border border-surface-border/90 dark:border-surface-border rounded-lg p-3.5 flex items-center justify-between gap-3 opacity-80 hover:opacity-100 transition-all"
                 >
                   <div className="flex items-center gap-3">
                     <img
@@ -614,14 +620,14 @@ export const StudentsView: React.FC = () => {
                     />
                     <div>
                       <div className="flex items-center gap-2">
-                        <h4 className="text-xs font-bold text-slate-900 dark:text-white line-through">
+                        <h4 className="text-xs font-bold text-text-main line-through">
                           {student.name}
                         </h4>
-                        <span className="text-[9px] font-bold text-amber-700 bg-amber-100 dark:bg-amber-950 px-1.5 py-0.5 rounded">
+                        <span className="text-[9px] font-bold text-primary bg-primary-soft dark:bg-primary-soft px-1.5 py-0.5 rounded">
                           {t('students_archived')}
                         </span>
                       </div>
-                      <p className="text-[10px] text-slate-400">
+                      <p className="text-[10px] text-text-muted/70">
                         {t('students_parent_phone_label')}: {student.parentName}
                       </p>
                     </div>
@@ -631,7 +637,7 @@ export const StudentsView: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => updateStudent(student.id, { status: 'active' })}
-                      className="px-2.5 py-1.5 bg-emerald-50 dark:bg-emerald-950 hover:bg-emerald-100 text-emerald-700 dark:text-emerald-400 rounded-xl text-xs font-bold transition-all flex items-center gap-1 cursor-pointer"
+                      className="px-2.5 py-1.5 bg-primary-soft dark:bg-primary-soft hover:bg-primary-soft text-primary dark:text-primary rounded-xl text-xs font-bold transition-all flex items-center gap-1 cursor-pointer"
                       title={t('students_restore')}
                     >
                       <RotateCcw className="w-3.5 h-3.5" />
@@ -660,30 +666,30 @@ export const StudentsView: React.FC = () => {
 
           {/* Archived Groups Subsection */}
           <div className="space-y-2 pt-2">
-            <h3 className="text-xs font-black uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center justify-between">
+            <h3 className="text-xs font-black uppercase tracking-wider text-text-muted flex items-center justify-between">
               <span>{t('students_archived_groups_title')} ({archivedGroups.length})</span>
             </h3>
 
             {filteredArchivedGroups.length === 0 ? (
-              <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-4 text-center text-xs text-slate-400">
+              <div className="bg-surface border border-surface-border rounded-lg p-4 text-center text-xs text-text-muted/70">
                 {t('students_no_archived_groups')}
               </div>
             ) : (
               filteredArchivedGroups.map((group) => (
                 <div
                   key={group.id}
-                  className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-lg p-3.5 flex items-center justify-between gap-3 opacity-80 hover:opacity-100 transition-all"
+                  className="bg-surface border border-surface-border/90 dark:border-surface-border rounded-lg p-3.5 flex items-center justify-between gap-3 opacity-80 hover:opacity-100 transition-all"
                 >
                   <div>
                     <div className="flex items-center gap-2">
-                      <h4 className="text-xs font-bold text-slate-900 dark:text-white line-through">
+                      <h4 className="text-xs font-bold text-text-main line-through">
                         {group.name}
                       </h4>
-                      <span className="text-[9px] font-bold text-amber-700 bg-amber-100 dark:bg-amber-950 px-1.5 py-0.5 rounded">
+                      <span className="text-[9px] font-bold text-primary bg-primary-soft dark:bg-primary-soft px-1.5 py-0.5 rounded">
                         {t('students_archived')}
                       </span>
                     </div>
-                    <p className="text-[10px] text-slate-400">
+                    <p className="text-[10px] text-text-muted/70">
                       Grade: {group.grade}
                     </p>
                   </div>
@@ -692,7 +698,7 @@ export const StudentsView: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => updateGroup(group.id, { status: 'active' })}
-                      className="px-2.5 py-1.5 bg-emerald-50 dark:bg-emerald-950 hover:bg-emerald-100 text-emerald-700 dark:text-emerald-400 rounded-xl text-xs font-bold transition-all flex items-center gap-1 cursor-pointer"
+                      className="px-2.5 py-1.5 bg-primary-soft dark:bg-primary-soft hover:bg-primary-soft text-primary dark:text-primary rounded-xl text-xs font-bold transition-all flex items-center gap-1 cursor-pointer"
                       title={t('students_restore')}
                     >
                       <RotateCcw className="w-3.5 h-3.5" />

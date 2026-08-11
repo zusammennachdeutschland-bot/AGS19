@@ -8,9 +8,11 @@ import {
   BookOpen, FileText, Bell, CheckSquare, XCircle, Award, Sparkles, Star, Plus, Pencil, RotateCcw, Heart
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
+import { NotificationSettingsSection } from './NotificationSettingsSection';
 
 type SettingsCategory = 
   | 'language'
+  | 'notifications'
   | 'profile'
   | 'payment'
   | 'messages'
@@ -36,7 +38,8 @@ export const SettingsView: React.FC = () => {
     inspirationSettings, inspirationMessages, updateInspirationSettings,
     addInspirationMessage, updateInspirationMessage, deleteInspirationMessage,
     toggleFavoriteInspirationMessage, restoreDefaultInspirationMessages,
-    checkAndTriggerInspirationReminder, accentColor, setAccentColor
+    checkAndTriggerInspirationReminder, accentColor, setAccentColor,
+    notificationSettings
   } = useApp();
 
   const [activeCategory, setActiveCategory] = useState<SettingsCategory | null>(null);
@@ -88,6 +91,12 @@ export const SettingsView: React.FC = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const isRtl = language === 'ar';
+
+  // Helper for inline translations
+  const _t = (ar: string, en: string, de?: string) => {
+    return language === 'ar' ? ar : language === 'de' ? (de || en) : en;
+  };
+
   const BackIcon = isRtl ? ArrowRight : ArrowLeft;
   const ForwardIcon = isRtl ? ArrowLeft : ChevronRight;
 
@@ -229,94 +238,104 @@ export const SettingsView: React.FC = () => {
   const categoryCards = [
     {
       id: 'language' as SettingsCategory,
-      title: language === 'ar' ? 'اللغة والمظهر' : language === 'de' ? 'Sprache & Erscheinungsbild' : 'Language & Appearance',
-      description: language === 'ar' ? 'لغة الواجهة ووضع المظهر الداكن/الفاتح' : language === 'de' ? 'Oberflächensprache & Dunkelmodus' : 'Interface language & light/dark theme',
+      title: _t('اللغة والمظهر', 'Language & Appearance', 'Sprache & Erscheinungsbild'),
+      description: _t('لغة الواجهة ووضع المظهر الداكن/الفاتح', 'Interface language & light/dark theme', 'Oberflächensprache & Dunkelmodus'),
       icon: Globe,
-      color: 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-200/50 dark:border-blue-800/50',
+      color: 'bg-primary/10 text-primary dark:text-primary border-primary-border/50 dark:border-primary-border/50',
       badge: languagesList.find(l => l.id === language)?.label
     },
     {
+      id: 'notifications' as SettingsCategory,
+      title: _t('الإشعارات والتنبيهات', 'Notifications & Alerts', 'Benachrichtigungen & Alarme'),
+      description: _t('التحكم الشامل بإشعارات الحصص، المواعيد، المستحقات والملخص اليومي', 'Full control over lesson reminders, start alerts, payments & daily summary', 'Umfassende Steuerung für Lektionserinnerungen, Zahlungen & Berichte'),
+      icon: Bell,
+      color: 'bg-primary/10 text-primary dark:text-primary border-primary-border dark:border-primary-border',
+      badge: notificationSettings?.masterEnabled 
+        ? (_t('مفعلة', 'Active')) 
+        : (_t('معطلة', 'Disabled'))
+    },
+    {
       id: 'profile' as SettingsCategory,
-      title: language === 'ar' ? 'الملف الشخصي للمعلم' : language === 'de' ? 'Lehrerprofil' : 'Teacher Profile',
-      description: language === 'ar' ? 'الاسم، البريد، ساعات العمل والعملة' : language === 'de' ? 'Name, E-Mail, Arbeitszeiten & Währung' : 'Name, email, working hours & currency',
+      title: _t('الملف الشخصي للمعلم', 'Teacher Profile', 'Lehrerprofil'),
+      description: _t('الاسم، البريد، ساعات العمل والعملة', 'Name, email, working hours & currency', 'Name, E-Mail, Arbeitszeiten & Währung'),
       icon: User,
-      color: 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-200/50 dark:border-indigo-800/50',
+      color: 'bg-primary/10 text-primary dark:text-primary border-primary-border dark:border-primary-border',
       badge: profile.displayName
     },
     {
       id: 'payment' as SettingsCategory,
-      title: language === 'ar' ? 'بيانات التحويل والدفع' : language === 'de' ? 'Zahlungsinformationen' : 'Payment Information',
-      description: language === 'ar' ? 'رقم الهاتف، انستا باي، فودافون كاش والروابط' : language === 'de' ? 'Telefon, InstaPay, Vodafone Cash & Bank' : 'Phone, InstaPay, Vodafone Cash & links',
+      title: _t('بيانات التحويل والدفع', 'Payment Information', 'Zahlungsinformationen'),
+      description: _t('رقم الهاتف، انستا باي، فودافون كاش والروابط', 'Phone, InstaPay, Vodafone Cash & links', 'Telefon, InstaPay, Vodafone Cash & Bank'),
       icon: DollarSign,
-      color: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-200/50 dark:border-emerald-800/50',
+      color: 'bg-primary/10 text-primary dark:text-primary border-primary-border dark:border-primary-border',
       badge: phone || 'InstaPay'
     },
     {
       id: 'messages' as SettingsCategory,
-      title: language === 'ar' ? 'قوالب رسائل أولياء الأمور' : language === 'de' ? 'Elternnachrichten Vorlagen' : 'Parent Messages',
-      description: language === 'ar' ? 'إدارة قوالب الواجبات، الحضور، الغياب والتقارير' : language === 'de' ? 'Vorlagen für Hausaufgaben, Anwesenheit & Berichte' : 'Manage templates for homework, attendance & reports',
+      title: _t('قوالب رسائل أولياء الأمور', 'Parent Messages', 'Elternnachrichten Vorlagen'),
+      description: _t('إدارة قوالب الواجبات، الحضور، الغياب والتقارير', 'Manage templates for homework, attendance & reports', 'Vorlagen für Hausaufgaben, Anwesenheit & Berichte'),
       icon: MessageSquare,
-      color: 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-200/50 dark:border-purple-800/50',
-      badge: language === 'ar' ? '6 قوالب' : '6 Templates'
+      color: 'bg-primary/10 text-primary dark:text-primary border-primary-border dark:border-primary-border',
+      badge: _t('6 قوالب', '6 Templates')
     },
     {
       id: 'calendar' as SettingsCategory,
-      title: language === 'ar' ? 'التقويم ومدة الحصص' : language === 'de' ? 'Kalender & Lektionsdauer' : 'Calendar & Lessons',
-      description: language === 'ar' ? 'تحديد مدة حصص كل مجموعة، أيام وساعات العمل والتنبيهات' : language === 'de' ? 'Dauer pro Gruppe, Arbeitstage & Erinnerungen' : 'Group lesson durations, working days & reminders',
+      title: _t('التقويم ومدة الحصص', 'Calendar & Lessons', 'Kalender & Lektionsdauer'),
+      description: _t('تحديد مدة حصص كل مجموعة، أيام وساعات العمل والتنبيهات', 'Group lesson durations, working days & reminders', 'Dauer pro Gruppe, Arbeitstage & Erinnerungen'),
       icon: Calendar,
-      color: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-200/50 dark:border-amber-800/50',
-      badge: `${groups.length} ${language === 'ar' ? 'مجموعات' : 'Groups'}`
+      color: 'bg-primary/10 text-primary dark:text-primary border-primary-border dark:border-primary-border',
+      badge: `${groups.length} ${_t('مجموعات', 'Groups')}`
     },
     {
       id: 'inspiration' as SettingsCategory,
-      title: language === 'ar' ? 'الإلهام والامتنان' : language === 'de' ? 'Inspiration & Dankbarkeit' : 'Inspiration & Gratitude',
-      description: language === 'ar' ? 'تذكيرات وأدعية للمعلم عن العلم والرزق والتعليم' : language === 'de' ? 'Tägliche Motivation & Dankbarkeits-Erinnerungen' : 'Daily motivational & gratitude reminders',
+      title: _t('الإلهام والامتنان', 'Inspiration & Gratitude', 'Inspiration & Dankbarkeit'),
+      description: _t('تذكيرات وأدعية للمعلم عن العلم والرزق والتعليم', 'Daily motivational & gratitude reminders', 'Tägliche Motivation & Dankbarkeits-Erinnerungen'),
       icon: Sparkles,
       color: 'bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-200/50 dark:border-orange-800/50',
       badge: inspirationSettings.frequency === 'disabled' 
-        ? (language === 'ar' ? 'معطل' : 'Disabled') 
+        ? (_t('معطل', 'Disabled')) 
         : inspirationSettings.frequency === 'daily'
-        ? (language === 'ar' ? 'تذكير يومي' : 'Daily')
+        ? (_t('تذكير يومي', 'Daily'))
         : inspirationSettings.frequency === 'before_first_lesson'
-        ? (language === 'ar' ? 'قبل أول حصة' : 'Before Lesson')
-        : (language === 'ar' ? 'عشوائي يومي' : 'Random')
+        ? (_t('قبل أول حصة', 'Before Lesson'))
+        : (_t('عشوائي يومي', 'Random'))
     },
     {
       id: 'backup' as SettingsCategory,
-      title: language === 'ar' ? 'النسخ الاحتياطي والبيانات' : language === 'de' ? 'Sicherung & Daten' : 'Backup & Restore',
-      description: language === 'ar' ? 'تنزيل واستعادة النسخة الاحتياطية وإعادة ضبط البيانات' : language === 'de' ? 'Sicherung herunterladen, wiederherstellen & zurücksetzen' : 'Download, restore backups & reset data',
+      title: _t('النسخ الاحتياطي والبيانات', 'Backup & Restore', 'Sicherung & Daten'),
+      description: _t('تنزيل واستعادة النسخة الاحتياطية وإعادة ضبط البيانات', 'Download, restore backups & reset data', 'Sicherung herunterladen, wiederherstellen & zurücksetzen'),
       icon: HardDrive,
       color: 'bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border-cyan-200/50 dark:border-cyan-800/50',
       badge: 'Backup & Reset'
     },
     {
       id: 'about' as SettingsCategory,
-      title: language === 'ar' ? 'حول التطبيق' : language === 'de' ? 'Über die App' : 'About',
-      description: language === 'ar' ? 'تفاصيل التطبيق، الميزات، المطور والتواصل' : language === 'de' ? 'App-Info, Entwickler & Version' : 'App details, features, developer & version',
+      title: _t('حول التطبيق', 'About', 'Über die App'),
+      description: _t('تفاصيل التطبيق، الميزات، المطور والتواصل', 'App details, features, developer & version', 'App-Info, Entwickler & Version'),
       icon: Info,
-      color: 'bg-teal-500/10 text-teal-600 dark:text-teal-400 border-teal-200/50 dark:border-teal-800/50',
+      color: 'bg-primary/10 text-primary dark:text-primary border-primary-border dark:border-primary-border',
       badge: 'v2.5.0'
     }
   ];
 
   // Helper Header Component for Subpages
   const renderSubPageHeader = (title: string, subtitle?: string) => (
-    <div className="flex items-center justify-between pb-3 mb-4 border-b border-slate-200/80 dark:border-slate-800">
+    <div className="flex items-center justify-between pb-3 mb-4 border-b border-surface-border/80 dark:border-surface-border">
       <div className="flex items-center gap-3">
         <button
           type="button"
           onClick={() => setActiveCategory(null)}
-          className="p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-all cursor-pointer flex items-center justify-center shrink-0 shadow-2xs"
-          title={language === 'ar' ? 'العودة للإعدادات' : 'Back to Settings'}
+          className="p-2.5 rounded-xl bg-surface-hover hover:bg-slate-200 dark:hover:bg-slate-700 text-text-main transition-all cursor-pointer flex items-center justify-center shrink-0 shadow-2xs"
+          title={_t('العودة للإعدادات', 'Back to Settings')}
         >
           <BackIcon className="w-5 h-5" />
         </button>
         <div>
-          <h2 className="text-base sm:text-lg font-black text-slate-900 dark:text-white">
+          <h2 className="text-base sm:text-lg font-black text-text-main">
             {title}
           </h2>
           {subtitle && (
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+            <p className="text-xs text-text-muted mt-0.5">
               {subtitle}
             </p>
           )}
@@ -334,12 +353,12 @@ export const SettingsView: React.FC = () => {
         <div className="space-y-4 animate-scale-up">
           {/* Main Title Header */}
           <div>
-            <h2 className="text-lg font-black text-slate-900 dark:text-white flex items-center gap-2">
-              <Settings className="w-5 h-5 text-blue-600" />
+            <h2 className="text-lg font-black text-text-main flex items-center gap-2">
+              <Settings className="w-5 h-5 text-primary" />
               <span>{t('settings_title')}</span>
             </h2>
             <p className="text-xs text-slate-500">
-              {language === 'ar' ? 'اختر قسماً لإدارة إعدادات التطبيق' : language === 'de' ? 'Wählen Sie einen Bereich zur Verwaltung aus' : 'Select a section to manage application settings'}
+              {_t('اختر قسماً لإدارة إعدادات التطبيق', 'Select a section to manage application settings', 'Wählen Sie einen Bereich zur Verwaltung aus')}
             </p>
           </div>
 
@@ -352,7 +371,7 @@ export const SettingsView: React.FC = () => {
                   key={cat.id}
                   type="button"
                   onClick={() => setActiveCategory(cat.id)}
-                  className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 hover:border-blue-400 dark:hover:border-blue-600 rounded-lg p-4 shadow-2xs hover:shadow-md transition-all cursor-pointer flex items-center justify-between text-start group"
+                  className="bg-surface border border-surface-border/90 dark:border-surface-border hover:border-primary dark:hover:border-primary rounded-lg p-4 shadow-2xs hover:shadow-md transition-all cursor-pointer flex items-center justify-between text-start group"
                 >
                   <div className="flex items-center gap-3.5 flex-1 min-w-0 pr-2">
                     <div className={`p-3 rounded-lg border shrink-0 ${cat.color}`}>
@@ -360,7 +379,7 @@ export const SettingsView: React.FC = () => {
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
-                        <h3 className="text-xs sm:text-sm font-extrabold text-slate-900 dark:text-white truncate group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                        <h3 className="text-xs sm:text-sm font-extrabold text-text-main truncate group-hover:text-primary dark:group-hover:text-primary transition-colors">
                           {cat.title}
                         </h3>
                       </div>
@@ -368,7 +387,7 @@ export const SettingsView: React.FC = () => {
                     </div>
                   </div>
 
-                  <div className="p-2 text-slate-400 group-hover:text-blue-600 dark:group-hover:text-blue-400 group-hover:translate-x-1 transition-all shrink-0">
+                  <div className="p-2 text-text-muted/70 group-hover:text-primary dark:group-hover:text-primary group-hover:translate-x-1 transition-all shrink-0">
                     <ForwardIcon className="w-5 h-5" />
                   </div>
                 </button>
@@ -379,25 +398,32 @@ export const SettingsView: React.FC = () => {
       )}
 
       {/* ==========================================
+          SUBPAGE 0: NOTIFICATION SETTINGS
+      ========================================== */}
+      {activeCategory === 'notifications' && (
+        <NotificationSettingsSection onBack={() => setActiveCategory(null)} />
+      )}
+
+      {/* ==========================================
           SUBPAGE 1: LANGUAGE & APPEARANCE
       ========================================== */}
       {activeCategory === 'language' && (
         <div className="space-y-4 animate-scale-up">
           {renderSubPageHeader(
-            language === 'ar' ? 'اللغة والمظهر' : language === 'de' ? 'Sprache & Erscheinungsbild' : 'Language & Appearance',
-            language === 'ar' ? 'اختر لغة التطبيق ومظهر الشاشة' : 'Choose application language and theme mode'
+            _t('اللغة والمظهر', 'Language & Appearance', 'Sprache & Erscheinungsbild'),
+            _t('اختر لغة التطبيق ومظهر الشاشة', 'Choose application language and theme mode')
           )}
 
           {/* Interface Language Card */}
-          <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-xl p-5 shadow-2xs space-y-3">
+          <div className="bg-surface border border-surface-border/90 dark:border-surface-border rounded-xl p-5 shadow-2xs space-y-3">
             <div className="flex items-center justify-between">
               <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
-                <Globe className="w-4 h-4 text-blue-600" />
+                <Globe className="w-4 h-4 text-primary" />
                 <span>{t('settings_language')}</span>
               </h3>
             </div>
 
-            <p className="text-xs text-slate-600 dark:text-slate-400">
+            <p className="text-xs text-text-muted">
               {t('settings_lang_desc')}
             </p>
 
@@ -416,8 +442,8 @@ export const SettingsView: React.FC = () => {
                     }}
                     className={`p-3.5 rounded-lg font-bold flex items-center justify-center gap-2 transition-all cursor-pointer border ${
                       isSelected
-                        ? 'bg-blue-600 text-white border-blue-700 shadow-sm'
-                        : 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700'
+                        ? 'bg-primary text-white border-primary-border shadow-sm'
+                        : 'bg-surface-hover text-text-main border-surface-border dark:border-surface-border-soft hover:bg-slate-100 dark:hover:bg-slate-700'
                     }`}
                   >
                     <span className="text-base">{langItem.flag}</span>
@@ -429,21 +455,19 @@ export const SettingsView: React.FC = () => {
             </div>
 
             {/* Language Note Banner */}
-            <div className="p-3 bg-amber-50 dark:bg-amber-950/40 border border-amber-200/80 dark:border-amber-800/60 rounded-lg flex items-start gap-2.5 text-amber-800 dark:text-amber-200 text-xs">
-              <MessageSquare className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+            <div className="p-3 bg-primary-soft dark:bg-primary-soft border border-primary-border dark:border-primary-border rounded-lg flex items-start gap-2.5 text-primary dark:text-primary text-xs">
+              <MessageSquare className="w-4 h-4 text-primary dark:text-primary shrink-0 mt-0.5" />
               <span>
-                {language === 'ar' 
-                  ? 'ملاحظة: اللسان واللغة المختارة تنطبق على واجهة التطبيق بالكامل. رسائل أولياء الأمور والتقارير الموجهة للأهالي تظل دائماً باللغة العربية.'
-                  : 'Note: The selected language applies to the entire application interface. Parent messages and reports always remain in Arabic.'}
+                {_t('ملاحظة: اللسان واللغة المختارة تنطبق على واجهة التطبيق بالكامل. رسائل أولياء الأمور والتقارير الموجهة للأهالي تظل دائماً باللغة العربية.', 'Note: The selected language applies to the entire application interface. Parent messages and reports always remain in Arabic.')}
               </span>
             </div>
           </div>
 
           {/* Theme Section */}
-          <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-xl p-5 shadow-2xs space-y-3">
+          <div className="bg-surface border border-surface-border/90 dark:border-surface-border rounded-xl p-5 shadow-2xs space-y-3">
             <div className="flex items-center justify-between">
               <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
-                {theme === 'dark' ? <Moon className="w-4 h-4 text-amber-400" /> : <Sun className="w-4 h-4 text-amber-500" />}
+                {theme === 'dark' ? <Moon className="w-4 h-4 text-primary" /> : <Sun className="w-4 h-4 text-primary" />}
                 <span>{t('settings_theme')}</span>
               </h3>
             </div>
@@ -454,8 +478,8 @@ export const SettingsView: React.FC = () => {
                 onClick={() => theme !== 'light' && toggleTheme()}
                 className={`p-4 rounded-lg font-bold flex items-center justify-center gap-2 transition-all cursor-pointer border ${
                   theme === 'light'
-                    ? 'bg-amber-500 text-white border-amber-600 shadow-sm'
-                    : 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700'
+                    ? 'bg-primary text-white border-primary-border shadow-sm'
+                    : 'bg-surface-hover text-text-main border-surface-border dark:border-surface-border-soft hover:bg-slate-100 dark:hover:bg-slate-700'
                 }`}
               >
                 <Sun className="w-4 h-4" />
@@ -467,8 +491,8 @@ export const SettingsView: React.FC = () => {
                 onClick={() => theme !== 'dark' && toggleTheme()}
                 className={`p-4 rounded-lg font-bold flex items-center justify-center gap-2 transition-all cursor-pointer border ${
                   theme === 'dark'
-                    ? 'bg-blue-600 text-white border-blue-700 shadow-sm'
-                    : 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700'
+                    ? 'bg-primary text-white border-primary-border shadow-sm'
+                    : 'bg-surface-hover text-text-main border-surface-border dark:border-surface-border-soft hover:bg-slate-100 dark:hover:bg-slate-700'
                 }`}
               >
                 <Moon className="w-4 h-4" />
@@ -478,33 +502,36 @@ export const SettingsView: React.FC = () => {
           </div>
 
           {/* Accent Color Section */}
-          <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-xl p-5 shadow-2xs space-y-4">
+          <div className="bg-surface border border-surface-border/90 dark:border-surface-border rounded-xl p-5 shadow-2xs space-y-4">
             <div className="flex items-center justify-between">
               <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
-                <Sparkles className="w-4 h-4 text-blue-600" />
+                <Sparkles className="w-4 h-4 text-primary" />
                 <span>
-                  {language === 'ar' ? 'لون الواجهة (Accent Color)' : language === 'de' ? 'Akzentfarbe' : 'Accent Color'}
+                  {_t('لون الواجهة (Accent Color)', 'Accent Color', 'Akzentfarbe')}
                 </span>
               </h3>
             </div>
 
-            <p className="text-xs text-slate-600 dark:text-slate-400">
-              {language === 'ar' 
-                ? 'اختر لون التمييز المفضل لجميع الأزرار والأيقونات والتبويبات النشطة وعناصر الواجهة التفاعلية.' 
-                : language === 'de'
-                ? 'Wählen Sie die bevorzugte Akzentfarbe für alle Schaltflächen, Symbole, Tabs und Steuerelemente.'
-                : 'Select your preferred accent color for all buttons, icons, active tabs, and interactive controls.'}
+            <p className="text-xs text-text-muted">
+              {_t('اختر لون التمييز المفضل لجميع الأزرار والأيقونات والتبويبات النشطة وعناصر الواجهة التفاعلية.', 'Select your preferred accent color for all buttons, icons, active tabs, and interactive controls.', 'Wählen Sie die bevorzugte Akzentfarbe für alle Schaltflächen, Symbole, Tabs und Steuerelemente.')}
             </p>
 
-            <div className="grid grid-cols-4 sm:grid-cols-7 gap-3 pt-1">
+            <div className="grid grid-cols-4 sm:grid-cols-7 gap-3 pt-2 pb-2">
               {[
-                { id: 'blue' as const, bg: 'bg-blue-600', ring: 'ring-blue-500/50', border: 'border-blue-700' },
-                { id: 'green' as const, bg: 'bg-green-600', ring: 'ring-green-500/50', border: 'border-green-700' },
-                { id: 'purple' as const, bg: 'bg-purple-600', ring: 'ring-purple-500/50', border: 'border-purple-700' },
-                { id: 'orange' as const, bg: 'bg-orange-600', ring: 'ring-orange-500/50', border: 'border-orange-700' },
-                { id: 'red' as const, bg: 'bg-red-600', ring: 'ring-red-500/50', border: 'border-red-700' },
-                { id: 'teal' as const, bg: 'bg-teal-600', ring: 'ring-teal-500/50', border: 'border-teal-700' },
-                { id: 'indigo' as const, bg: 'bg-indigo-600', ring: 'ring-indigo-500/50', border: 'border-indigo-700' },
+                { id: 'blue' as const, hex: '#3b82f6', color: 'blue' },
+                { id: 'indigo' as const, hex: '#6366f1', color: 'indigo' },
+                { id: 'violet' as const, hex: '#8b5cf6', color: 'violet' },
+                { id: 'purple' as const, hex: '#a855f7', color: 'purple' },
+                { id: 'fuchsia' as const, hex: '#d946ef', color: 'fuchsia' },
+                { id: 'rose' as const, hex: '#f43f5e', color: 'rose' },
+                { id: 'red' as const, hex: '#ef4444', color: 'red' },
+                { id: 'orange' as const, hex: '#f97316', color: 'orange' },
+                { id: 'amber' as const, hex: '#f59e0b', color: 'amber' },
+                { id: 'green' as const, hex: '#22c55e', color: 'green' },
+                { id: 'emerald' as const, hex: '#10b981', color: 'emerald' },
+                { id: 'teal' as const, hex: '#14b8a6', color: 'teal' },
+                { id: 'cyan' as const, hex: '#06b6d4', color: 'cyan' },
+                { id: 'slate' as const, hex: '#64748b', color: 'slate' },
               ].map((item) => {
                 const isSelected = accentColor === item.id;
                 return (
@@ -521,11 +548,13 @@ export const SettingsView: React.FC = () => {
                     style={{ WebkitTapHighlightColor: 'transparent' }}
                   >
                     <div 
-                      className={`w-10 h-10 rounded-full ${item.bg} flex items-center justify-center border ${item.border} shadow-xs relative transition-all duration-300 transform group-hover:scale-110 active:scale-95 ${
+                      
+                      className={`w-10 h-10 rounded-full flex items-center justify-center shadow-lg relative transition-all duration-300 transform group-hover:scale-110 active:scale-95 ${
                         isSelected 
-                          ? 'ring-4 ' + item.ring + ' scale-105' 
-                          : 'opacity-80 hover:opacity-100'
+                          ? 'ring-4 ring-offset-2 ring-offset-surface scale-110' 
+                          : 'opacity-80 hover:opacity-100 border border-white/20'
                       }`}
+                      style={{ backgroundColor: item.hex, ...(isSelected ? { "--tw-ring-color": item.hex } : {}) } as React.CSSProperties}
                     >
                       {isSelected && (
                         <Check className="w-5 h-5 text-white stroke-[3.5px] drop-shadow-sm animate-scale-up" />
@@ -534,6 +563,34 @@ export const SettingsView: React.FC = () => {
                   </button>
                 );
               })}
+            </div>
+
+            {/* Live Accent Preview */}
+            <div className="mt-4 p-4 rounded-2xl border border-primary-border/60 bg-primary-soft/30 space-y-3 relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-2xl pointer-events-none" />
+              <h4 className="text-[10px] uppercase font-bold text-text-muted relative z-10">Live Preview</h4>
+              <div className="flex gap-3 relative z-10">
+                <button className="flex-1 bg-primary text-white py-2 rounded-xl text-xs font-bold shadow-lg shadow-primary/30 transition-all hover:bg-primary-hover active:scale-95">
+                  Primary Button
+                </button>
+                <button className="flex-1 bg-primary-soft text-primary py-2 rounded-xl text-xs font-bold transition-all hover:bg-primary/20 active:scale-95">
+                  Secondary
+                </button>
+              </div>
+              <div className="flex items-center gap-3 p-3 bg-surface rounded-xl border border-surface-border relative z-10 shadow-sm">
+                <div className="p-2 bg-primary-soft rounded-lg text-primary shrink-0">
+                  <Sparkles className="w-4 h-4" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-xs font-bold text-text-main truncate">Premium Widget</p>
+                  <p className="text-[10px] text-text-muted truncate">Adapts to your accent color</p>
+                </div>
+                <div className="ml-auto shrink-0">
+                   <div className="w-8 h-4 rounded-full bg-primary relative cursor-pointer">
+                     <div className="absolute right-0.5 top-0.5 w-3 h-3 bg-white rounded-full shadow-sm"></div>
+                   </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -545,21 +602,21 @@ export const SettingsView: React.FC = () => {
       {activeCategory === 'profile' && (
         <div className="space-y-4 animate-scale-up">
           {renderSubPageHeader(
-            language === 'ar' ? 'الملف الشخصي للمعلم' : 'Teacher Profile',
-            language === 'ar' ? 'إدارة البيانات الشخصية وساعات العمل والعملة' : 'Manage personal details, working hours & currency'
+            _t('الملف الشخصي للمعلم', 'Teacher Profile'),
+            _t('إدارة البيانات الشخصية وساعات العمل والعملة', 'Manage personal details, working hours & currency')
           )}
 
-          <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-xl p-5 shadow-2xs space-y-4">
+          <div className="bg-surface border border-surface-border/90 dark:border-surface-border rounded-xl p-5 shadow-2xs space-y-4">
             {/* Avatar Header */}
-            <div className="flex items-center gap-4 pb-4 border-b border-slate-100 dark:border-slate-800">
+            <div className="flex items-center gap-4 pb-4 border-b border-slate-100 dark:border-surface-border">
               <div className="relative shrink-0 group">
                 <img
                   src={profile.avatarUrl}
                   alt={profile.displayName}
-                  className="w-16 h-16 rounded-lg object-cover ring-2 ring-blue-500/30 shadow-md"
+                  className="w-16 h-16 rounded-lg object-cover ring-2 ring-primary/30 shadow-md"
                 />
                 <label 
-                  className="absolute -bottom-1 -right-1 p-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-md cursor-pointer transition-transform hover:scale-110 flex items-center justify-center"
+                  className="absolute -bottom-1 -right-1 p-1.5 bg-primary hover:bg-primary-hover text-white rounded-xl shadow-md cursor-pointer transition-transform hover:scale-110 flex items-center justify-center active:scale-95 hover:shadow-lg hover:shadow-primary/30 transition-all"
                 >
                   <Camera className="w-3.5 h-3.5" />
                   <input type="file" accept="image/*" onChange={handleTeacherAvatarUpload} className="hidden" />
@@ -567,13 +624,13 @@ export const SettingsView: React.FC = () => {
               </div>
 
               <div className="space-y-1 flex-1">
-                <p className="text-sm font-extrabold text-slate-900 dark:text-white">{displayName || t('settings_name')}</p>
+                <p className="text-sm font-extrabold text-text-main">{displayName || t('settings_name')}</p>
                 <p className="text-xs text-slate-500 font-mono">{email || '-'}</p>
                 <div className="flex items-center gap-2 pt-0.5">
-                  <span className="text-[11px] font-bold text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-2.5 py-0.5 rounded-md">
+                  <span className="text-[11px] font-bold text-text-muted bg-surface-hover px-2.5 py-0.5 rounded-md">
                     {t('settings_currency')}: {currency}
                   </span>
-                  <span className="text-[11px] font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950 px-2.5 py-0.5 rounded-md">
+                  <span className="text-[11px] font-bold text-primary dark:text-primary bg-primary-soft dark:bg-primary-soft px-2.5 py-0.5 rounded-md">
                     {startTime} - {endTime}
                   </span>
                 </div>
@@ -585,9 +642,9 @@ export const SettingsView: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setIsEditingProfile(!isEditingProfile)}
-                className="text-xs font-bold px-4 py-2 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-400 dark:hover:bg-blue-900/50 transition-colors"
+                className="text-xs font-bold px-4 py-2 bg-primary-soft text-primary rounded-xl hover:bg-primary-soft dark:bg-primary-soft/30 dark:text-primary dark:hover:bg-primary-soft transition-colors active:scale-95 transition-all"
               >
-                {isEditingProfile ? (language === 'ar' ? 'إلغاء' : 'Cancel') : (language === 'ar' ? 'تعديل البيانات' : 'Edit Profile')}
+                {isEditingProfile ? (_t('إلغاء', 'Cancel')) : (_t('تعديل البيانات', 'Edit Profile'))}
               </button>
             </div>
             
@@ -596,34 +653,34 @@ export const SettingsView: React.FC = () => {
               <fieldset disabled={!isEditingProfile} className={!isEditingProfile ? 'opacity-70 pointer-events-none' : ''}>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300">{t('settings_name')} *</label>
+                  <label className="text-xs font-bold text-text-main">{t('settings_name')} *</label>
                   <input
                     type="text"
                     value={displayName}
                     onChange={(e) => setDisplayName(e.target.value)}
-                    className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-semibold focus:ring-2 focus:ring-blue-500 outline-none"
+                    className="w-full px-3.5 py-2.5 bg-surface-hover border border-surface-border dark:border-surface-border-soft rounded-xl text-xs font-semibold focus:ring-2 focus:ring-primary outline-none"
                     required
                   />
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300">{t('settings_email')}</label>
+                  <label className="text-xs font-bold text-text-main">{t('settings_email')}</label>
                   <input
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-semibold focus:ring-2 focus:ring-blue-500 outline-none"
+                    className="w-full px-3.5 py-2.5 bg-surface-hover border border-surface-border dark:border-surface-border-soft rounded-xl text-xs font-semibold focus:ring-2 focus:ring-primary outline-none"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300">{t('settings_currency')}</label>
+                  <label className="text-xs font-bold text-text-main">{t('settings_currency')}</label>
                   <select
                     value={currency}
                     onChange={(e) => setCurrency(e.target.value)}
-                    className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold focus:ring-2 focus:ring-blue-500 outline-none"
+                    className="w-full px-3.5 py-2.5 bg-surface-hover border border-surface-border dark:border-surface-border-soft rounded-xl text-xs font-bold focus:ring-2 focus:ring-primary outline-none"
                   >
                     <option value="EGP">EGP (ج.م)</option>
                     <option value="€">EUR (€)</option>
@@ -634,28 +691,28 @@ export const SettingsView: React.FC = () => {
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300">{t('settings_start_time')}</label>
+                  <label className="text-xs font-bold text-text-main">{t('settings_start_time')}</label>
                   <input
                     type="time"
                     value={startTime}
                     onChange={(e) => setStartTime(e.target.value)}
-                    className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold focus:ring-2 focus:ring-blue-500 outline-none"
+                    className="w-full px-3.5 py-2.5 bg-surface-hover border border-surface-border dark:border-surface-border-soft rounded-xl text-xs font-bold focus:ring-2 focus:ring-primary outline-none"
                   />
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300">{t('settings_end_time')}</label>
+                  <label className="text-xs font-bold text-text-main">{t('settings_end_time')}</label>
                   <input
                     type="time"
                     value={endTime}
                     onChange={(e) => setEndTime(e.target.value)}
-                    className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold focus:ring-2 focus:ring-blue-500 outline-none"
+                    className="w-full px-3.5 py-2.5 bg-surface-hover border border-surface-border dark:border-surface-border-soft rounded-xl text-xs font-bold focus:ring-2 focus:ring-primary outline-none"
                   />
                 </div>
               </div>
 
               {savedSuccessToast && (
-                <div className="bg-emerald-600 text-white text-xs font-bold p-3 rounded-xl flex items-center justify-center gap-2 animate-scale-up">
+                <div className="bg-primary text-white text-xs font-bold p-3 rounded-xl flex items-center justify-center gap-2 animate-scale-up">
                   <CheckCircle2 className="w-4 h-4" />
                   <span>{t('settings_save_success')}</span>
                 </div>
@@ -663,7 +720,7 @@ export const SettingsView: React.FC = () => {
 
               <button
                 type="submit"
-                className="w-full bg-blue-600 hover:bg-blue-700 active:scale-[0.99] text-white font-black text-xs py-3 rounded-xl shadow-md transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                className="w-full bg-primary hover:bg-primary-hover active:scale-[0.99] text-white font-black text-xs py-3 rounded-xl shadow-md transition-all cursor-pointer flex items-center justify-center gap-1.5 active:scale-95 hover:shadow-lg hover:shadow-primary/30"
               >
                 <Save className="w-4 h-4" />
                 <span>{t('save')}</span>
@@ -681,98 +738,98 @@ export const SettingsView: React.FC = () => {
       {activeCategory === 'payment' && (
         <div className="space-y-4 animate-scale-up">
           {renderSubPageHeader(
-            language === 'ar' ? 'بيانات التحويل والدفع' : 'Payment Information',
-            language === 'ar' ? 'البيانات المستخدمة عند إرسال مطالبات الرسوم لأولياء الأمور' : 'Information used when sending payment requests to parents'
+            _t('بيانات التحويل والدفع', 'Payment Information'),
+            _t('البيانات المستخدمة عند إرسال مطالبات الرسوم لأولياء الأمور', 'Information used when sending payment requests to parents')
           )}
 
-          <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-xl p-5 shadow-2xs space-y-4">
-            <div className="p-3 bg-emerald-50/70 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-900/60 rounded-lg flex items-center justify-between">
-              <div className="flex items-center gap-2 text-xs font-bold text-emerald-900 dark:text-emerald-200">
-                <DollarSign className="w-4 h-4 text-emerald-600" />
-                <span>{language === 'ar' ? 'بيانات الدفع الإلكتروني المباشر' : 'Direct Electronic Payment Profile'}</span>
+          <div className="bg-surface border border-surface-border/90 dark:border-surface-border rounded-xl p-5 shadow-2xs space-y-4">
+            <div className="p-3 bg-primary-soft dark:bg-primary-soft border border-primary-border dark:border-primary-border rounded-lg flex items-center justify-between">
+              <div className="flex items-center gap-2 text-xs font-bold text-primary dark:text-primary">
+                <DollarSign className="w-4 h-4 text-primary" />
+                <span>{_t('بيانات الدفع الإلكتروني المباشر', 'Direct Electronic Payment Profile')}</span>
               </div>
 
               <button
                 type="button"
                 onClick={handleSharePaymentInfo}
-                className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] px-3 py-1.5 rounded-xl transition-all shadow-2xs flex items-center gap-1.5 cursor-pointer"
+                className="bg-primary hover:bg-primary-hover text-white font-bold text-[11px] px-3 py-1.5 rounded-xl transition-all shadow-2xs flex items-center gap-1.5 cursor-pointer"
               >
                 {copiedPaymentDetails ? <Check className="w-3.5 h-3.5 text-white" /> : <Copy className="w-3.5 h-3.5" />}
-                <span>{copiedPaymentDetails ? t('copied') : (language === 'ar' ? 'نسخ بيانات التحويل' : 'Copy Payment Info')}</span>
+                <span>{copiedPaymentDetails ? t('copied') : (_t('نسخ بيانات التحويل', 'Copy Payment Info'))}</span>
               </button>
             </div>
 
             <form onSubmit={handleSavePaymentInfo} className="space-y-3.5">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                 <div className="space-y-1">
-                  <label className="font-bold text-slate-700 dark:text-slate-300">{t('settings_phone')}</label>
+                  <label className="font-bold text-text-main">{t('settings_phone')}</label>
                   <input
                     type="text"
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
                     placeholder="01012345678"
-                    className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-mono font-bold"
+                    className="w-full px-3.5 py-2.5 bg-surface-hover border border-surface-border dark:border-surface-border-soft rounded-xl text-xs font-mono font-bold"
                   />
                 </div>
 
                 <div className="space-y-1">
-                  <label className="font-bold text-slate-700 dark:text-slate-300">{t('settings_instapay')}</label>
+                  <label className="font-bold text-text-main">{t('settings_instapay')}</label>
                   <input
                     type="text"
                     value={instaPayId}
                     onChange={(e) => setInstaPayId(e.target.value)}
                     placeholder="name@instapay"
-                    className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-mono font-bold"
+                    className="w-full px-3.5 py-2.5 bg-surface-hover border border-surface-border dark:border-surface-border-soft rounded-xl text-xs font-mono font-bold"
                   />
                 </div>
 
                 <div className="space-y-1">
-                  <label className="font-bold text-slate-700 dark:text-slate-300">{t('settings_vodafone')}</label>
+                  <label className="font-bold text-text-main">{t('settings_vodafone')}</label>
                   <input
                     type="text"
                     value={vodafoneCashNumber}
                     onChange={(e) => setVodafoneCashNumber(e.target.value)}
                     placeholder="01012345678"
-                    className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-mono font-bold"
+                    className="w-full px-3.5 py-2.5 bg-surface-hover border border-surface-border dark:border-surface-border-soft rounded-xl text-xs font-mono font-bold"
                   />
                 </div>
 
                 <div className="space-y-1">
-                  <label className="font-bold text-slate-700 dark:text-slate-300">{t('settings_bank')}</label>
+                  <label className="font-bold text-text-main">{t('settings_bank')}</label>
                   <input
                     type="text"
                     value={bankAccount}
                     onChange={(e) => setBankAccount(e.target.value)}
                     placeholder="EG1234567890..."
-                    className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-mono"
+                    className="w-full px-3.5 py-2.5 bg-surface-hover border border-surface-border dark:border-surface-border-soft rounded-xl text-xs font-mono"
                   />
                 </div>
 
                 <div className="space-y-1">
-                  <label className="font-bold text-slate-700 dark:text-slate-300">{t('settings_payment_link')}</label>
+                  <label className="font-bold text-text-main">{t('settings_payment_link')}</label>
                   <input
                     type="text"
                     value={paymentLink}
                     onChange={(e) => setPaymentLink(e.target.value)}
                     placeholder="https://pay.link/..."
-                    className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-mono"
+                    className="w-full px-3.5 py-2.5 bg-surface-hover border border-surface-border dark:border-surface-border-soft rounded-xl text-xs font-mono"
                   />
                 </div>
 
                 <div className="space-y-1">
-                  <label className="font-bold text-slate-700 dark:text-slate-300">WhatsApp</label>
+                  <label className="font-bold text-text-main">WhatsApp</label>
                   <input
                     type="text"
                     value={whatsappNumber}
                     onChange={(e) => setWhatsappNumber(e.target.value)}
                     placeholder="+201012345678"
-                    className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-mono"
+                    className="w-full px-3.5 py-2.5 bg-surface-hover border border-surface-border dark:border-surface-border-soft rounded-xl text-xs font-mono"
                   />
                 </div>
               </div>
 
               {savedSuccessToast && (
-                <div className="bg-emerald-600 text-white text-xs font-bold p-3 rounded-xl flex items-center justify-center gap-2 animate-scale-up">
+                <div className="bg-primary text-white text-xs font-bold p-3 rounded-xl flex items-center justify-center gap-2 animate-scale-up">
                   <CheckCircle2 className="w-4 h-4" />
                   <span>{t('settings_save_success')}</span>
                 </div>
@@ -785,12 +842,12 @@ export const SettingsView: React.FC = () => {
                   className="flex-1 bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs py-3 rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer"
                 >
                   <Copy className="w-4 h-4" />
-                  <span>{language === 'ar' ? 'نسخ بيانات التحويل' : 'Copy Payment Info'}</span>
+                  <span>{_t('نسخ بيانات التحويل', 'Copy Payment Info')}</span>
                 </button>
 
                 <button
                   type="submit"
-                  className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs py-3 rounded-xl shadow-md transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                  className="flex-1 bg-primary hover:bg-primary-hover text-white font-bold text-xs py-3 rounded-xl shadow-md transition-all flex items-center justify-center gap-1.5 cursor-pointer"
                 >
                   <Save className="w-4 h-4" />
                   <span>{t('save')}</span>
@@ -807,20 +864,20 @@ export const SettingsView: React.FC = () => {
       {activeCategory === 'messages' && (
         <div className="space-y-4 animate-scale-up">
           {renderSubPageHeader(
-            language === 'ar' ? 'قوالب رسائل أولياء الأمور' : 'Parent Message Templates',
-            language === 'ar' ? 'تخصيص الرسائل التلقائية للواجبات، الحضور، الغياب والتقارير' : 'Manage templates for homework, attendance, absence, payment & reports'
+            _t('قوالب رسائل أولياء الأمور', 'Parent Message Templates'),
+            _t('تخصيص الرسائل التلقائية للواجبات، الحضور، الغياب والتقارير', 'Manage templates for homework, attendance, absence, payment & reports')
           )}
 
-          <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-xl p-5 shadow-2xs space-y-4">
+          <div className="bg-surface border border-surface-border/90 dark:border-surface-border rounded-xl p-5 shadow-2xs space-y-4">
             {/* Template Categories Tabs */}
             <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs">
               {[
-                { id: 'homework', label: language === 'ar' ? 'الواجبات' : 'Homework', icon: BookOpen },
-                { id: 'attendance', label: language === 'ar' ? 'الحضور' : 'Attendance', icon: CheckSquare },
-                { id: 'absence', label: language === 'ar' ? 'الغياب' : 'Absence', icon: XCircle },
-                { id: 'payment', label: language === 'ar' ? 'المدفوعات' : 'Payments', icon: DollarSign },
-                { id: 'exam', label: language === 'ar' ? 'الاختبارات' : 'Exam Reports', icon: Award },
-                { id: 'summary', label: language === 'ar' ? 'ملخص الدرس' : 'Lesson Summary', icon: FileText },
+                { id: 'homework', label: _t('الواجبات', 'Homework'), icon: BookOpen },
+                { id: 'attendance', label: _t('الحضور', 'Attendance'), icon: CheckSquare },
+                { id: 'absence', label: _t('الغياب', 'Absence'), icon: XCircle },
+                { id: 'payment', label: _t('المدفوعات', 'Payments'), icon: DollarSign },
+                { id: 'exam', label: _t('الاختبارات', 'Exam Reports'), icon: Award },
+                { id: 'summary', label: _t('ملخص الدرس', 'Lesson Summary'), icon: FileText },
               ].map(tab => {
                 const TabIcon = tab.icon;
                 const isSelected = activeMessageTab === tab.id;
@@ -831,8 +888,8 @@ export const SettingsView: React.FC = () => {
                     onClick={() => setActiveMessageTab(tab.id as any)}
                     className={`px-3 py-2 rounded-xl font-bold whitespace-nowrap transition-all flex items-center gap-1.5 cursor-pointer ${
                       isSelected
-                        ? 'bg-purple-600 text-white shadow-2xs'
-                        : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
+                        ? 'bg-primary text-white shadow-2xs'
+                        : 'bg-surface-hover text-text-main hover:bg-slate-200 dark:hover:bg-slate-700'
                     }`}
                   >
                     <TabIcon className="w-3.5 h-3.5" />
@@ -843,12 +900,12 @@ export const SettingsView: React.FC = () => {
             </div>
 
             {/* Selected Template Editor */}
-            <div className="space-y-3 pt-2 border-t border-slate-100 dark:border-slate-800">
+            <div className="space-y-3 pt-2 border-t border-slate-100 dark:border-surface-border">
               <div className="flex items-center justify-between">
-                <label className="text-xs font-bold text-purple-900 dark:text-purple-300 flex items-center gap-1.5">
-                  <MessageSquare className="w-4 h-4 text-purple-600" />
+                <label className="text-xs font-bold text-primary dark:text-primary flex items-center gap-1.5">
+                  <MessageSquare className="w-4 h-4 text-primary" />
                   <span>
-                    {language === 'ar' ? 'نص قالب الرسالة (بالعربية)' : 'Message Template Text (Arabic)'}
+                    {_t('نص قالب الرسالة (بالعربية)', 'Message Template Text (Arabic)')}
                   </span>
                 </label>
 
@@ -859,10 +916,10 @@ export const SettingsView: React.FC = () => {
                     setCopiedTemplateText(true);
                     setTimeout(() => setCopiedTemplateText(false), 2000);
                   }}
-                  className="px-2.5 py-1 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 text-[11px] font-bold rounded-lg transition-all flex items-center gap-1 cursor-pointer"
+                  className="px-2.5 py-1 bg-surface-hover hover:bg-slate-200 text-text-main text-[11px] font-bold rounded-lg transition-all flex items-center gap-1 cursor-pointer"
                 >
-                  {copiedTemplateText ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3" />}
-                  <span>{copiedTemplateText ? t('copied') : (language === 'ar' ? 'نسخ النص' : 'Copy Text')}</span>
+                  {copiedTemplateText ? <Check className="w-3 h-3 text-primary" /> : <Copy className="w-3 h-3" />}
+                  <span>{copiedTemplateText ? t('copied') : (_t('نسخ النص', 'Copy Text'))}</span>
                 </button>
               </div>
 
@@ -870,24 +927,24 @@ export const SettingsView: React.FC = () => {
                 rows={6}
                 value={messageTemplates[activeMessageTab] || ''}
                 onChange={(e) => setMessageTemplates(prev => ({ ...prev, [activeMessageTab]: e.target.value }))}
-                className="w-full p-3.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-semibold leading-relaxed focus:ring-2 focus:ring-purple-500 outline-none font-sans"
+                className="w-full p-3.5 bg-surface-hover border border-surface-border dark:border-surface-border-soft rounded-lg text-xs font-semibold leading-relaxed focus:ring-2 focus:ring-primary outline-none font-sans"
                 dir="rtl"
               />
 
               {/* Dynamic Variables Legend */}
-              <div className="p-3 bg-purple-50/70 dark:bg-purple-950/40 border border-purple-200/80 dark:border-purple-900/50 rounded-lg text-[11px] text-purple-900 dark:text-purple-200 space-y-1">
-                <p className="font-bold">{language === 'ar' ? 'المتغيرات المتاحة للاستخدام تلقائياً:' : 'Available Dynamic Placeholders:'}</p>
+              <div className="p-3 bg-primary-soft dark:bg-primary-soft border border-primary-border dark:border-primary-border rounded-lg text-[11px] text-primary dark:text-primary space-y-1">
+                <p className="font-bold">{_t('المتغيرات المتاحة للاستخدام تلقائياً:', 'Available Dynamic Placeholders:')}</p>
                 <div className="flex flex-wrap gap-1.5 font-mono text-[10px] pt-1">
-                  <span className="bg-white dark:bg-slate-900 px-2 py-0.5 rounded border border-purple-200 dark:border-purple-800 font-bold">{'{student_name}'}</span>
-                  <span className="bg-white dark:bg-slate-900 px-2 py-0.5 rounded border border-purple-200 dark:border-purple-800 font-bold">{'{group_name}'}</span>
-                  <span className="bg-white dark:bg-slate-900 px-2 py-0.5 rounded border border-purple-200 dark:border-purple-800 font-bold">{'{date}'}</span>
-                  <span className="bg-white dark:bg-slate-900 px-2 py-0.5 rounded border border-purple-200 dark:border-purple-800 font-bold">{'{amount}'}</span>
-                  <span className="bg-white dark:bg-slate-900 px-2 py-0.5 rounded border border-purple-200 dark:border-purple-800 font-bold">{'{teacher_name}'}</span>
+                  <span className="bg-surface px-2 py-0.5 rounded border border-primary-border dark:border-primary-border font-bold">{'{student_name}'}</span>
+                  <span className="bg-surface px-2 py-0.5 rounded border border-primary-border dark:border-primary-border font-bold">{'{group_name}'}</span>
+                  <span className="bg-surface px-2 py-0.5 rounded border border-primary-border dark:border-primary-border font-bold">{'{date}'}</span>
+                  <span className="bg-surface px-2 py-0.5 rounded border border-primary-border dark:border-primary-border font-bold">{'{amount}'}</span>
+                  <span className="bg-surface px-2 py-0.5 rounded border border-primary-border dark:border-primary-border font-bold">{'{teacher_name}'}</span>
                 </div>
               </div>
 
               {savedSuccessToast && (
-                <div className="bg-emerald-600 text-white text-xs font-bold p-2.5 rounded-xl flex items-center justify-center gap-2 animate-scale-up">
+                <div className="bg-primary text-white text-xs font-bold p-2.5 rounded-xl flex items-center justify-center gap-2 animate-scale-up">
                   <CheckCircle2 className="w-4 h-4" />
                   <span>{t('settings_save_success')}</span>
                 </div>
@@ -897,18 +954,18 @@ export const SettingsView: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setMessageTemplates(prev => ({ ...prev, [activeMessageTab]: DEFAULT_PARENT_TEMPLATES[activeMessageTab] }))}
-                  className="px-4 py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 font-bold text-xs rounded-xl transition-all cursor-pointer"
+                  className="px-4 py-2.5 bg-surface-hover hover:bg-slate-200 text-text-main font-bold text-xs rounded-xl transition-all cursor-pointer"
                 >
-                  {language === 'ar' ? 'استعادة الافتراضي' : 'Reset to Default'}
+                  {_t('استعادة الافتراضي', 'Reset to Default')}
                 </button>
 
                 <button
                   type="button"
                   onClick={handleSaveMessageTemplates}
-                  className="flex-1 bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs py-2.5 rounded-xl shadow-md transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                  className="flex-1 bg-primary hover:bg-primary-hover text-white font-bold text-xs py-2.5 rounded-xl shadow-md transition-all flex items-center justify-center gap-1.5 cursor-pointer"
                 >
                   <Save className="w-4 h-4" />
-                  <span>{language === 'ar' ? 'حفظ القوالب' : 'Save Templates'}</span>
+                  <span>{_t('حفظ القوالب', 'Save Templates')}</span>
                 </button>
               </div>
             </div>
@@ -922,44 +979,44 @@ export const SettingsView: React.FC = () => {
       {activeCategory === 'calendar' && (
         <div className="space-y-4 animate-scale-up">
           {renderSubPageHeader(
-            language === 'ar' ? 'التقويم ومدة الحصص' : 'Calendar & Lessons',
-            language === 'ar' ? 'تحديد مدة حصص كل مجموعة، أيام وساعات العمل وتنبيهات التقويم' : 'Group lesson durations, working days & schedule alerts'
+            _t('التقويم ومدة الحصص', 'Calendar & Lessons'),
+            _t('تحديد مدة حصص كل مجموعة، أيام وساعات العمل وتنبيهات التقويم', 'Group lesson durations, working days & schedule alerts')
           )}
 
           {/* Group Lesson Durations Card */}
-          <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-xl p-5 shadow-2xs space-y-4">
+          <div className="bg-surface border border-surface-border/90 dark:border-surface-border rounded-xl p-5 shadow-2xs space-y-4">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-xs font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400 flex items-center gap-1.5">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-primary dark:text-primary flex items-center gap-1.5">
                   <Clock className="w-4 h-4" />
-                  <span>{language === 'ar' ? 'مدة الحصص حسب المجموعات' : 'Lesson Duration per Group'}</span>
+                  <span>{_t('مدة الحصص حسب المجموعات', 'Lesson Duration per Group')}</span>
                 </h3>
                 <p className="text-xs text-slate-500 mt-0.5">
-                  {language === 'ar' ? 'مدة الحصة الافتراضية 60 دقيقة. يمكنك تخصيص مدة أطول لكل مجموعة لتعكس في التقويم' : 'Default duration is 60 mins. Customize specific group durations below (e.g. 60, 90, 120 mins)'}
+                  {_t('مدة الحصة الافتراضية 60 دقيقة. يمكنك تخصيص مدة أطول لكل مجموعة لتعكس في التقويم', 'Default duration is 60 mins. Customize specific group durations below (e.g. 60, 90, 120 mins)')}
                 </p>
               </div>
             </div>
 
             {/* Groups Durations Table / List */}
             {groups.length === 0 ? (
-              <div className="p-4 bg-slate-50 dark:bg-slate-800 rounded-lg text-xs text-slate-500 text-center font-semibold">
-                {language === 'ar' ? 'لا توجد مجموعات حالياً. أضف مجموعة أولاً.' : 'No groups available yet. Create a group first.'}
+              <div className="p-4 bg-surface-hover rounded-lg text-xs text-slate-500 text-center font-semibold">
+                {_t('لا توجد مجموعات حالياً. أضف مجموعة أولاً.', 'No groups available yet. Create a group first.')}
               </div>
             ) : (
               <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
                 {groups.map(grp => (
-                  <div key={grp.id} className="p-3 bg-slate-50 dark:bg-slate-800/80 rounded-lg flex items-center justify-between gap-3 border border-slate-200/60 dark:border-slate-700">
+                  <div key={grp.id} className="p-3 bg-surface-hover/80 rounded-lg flex items-center justify-between gap-3 border border-surface-border/60 dark:border-surface-border-soft">
                     <div className="min-w-0">
-                      <p className="text-xs font-extrabold text-slate-900 dark:text-white truncate">{grp.name}</p>
+                      <p className="text-xs font-extrabold text-text-main truncate">{grp.name}</p>
                       <p className="text-[11px] text-slate-500">{grp.grade} • {grp.type === 'online' ? 'Online' : 'Offline'}</p>
                     </div>
 
                     <div className="flex items-center gap-1.5 shrink-0">
-                      <span className="text-[11px] font-bold text-slate-500">{language === 'ar' ? 'المدة:' : 'Duration:'}</span>
+                      <span className="text-[11px] font-bold text-slate-500">{_t('المدة:', 'Duration:')}</span>
                       <select
                         value={grp.lessonDurationMinutes || 60}
                         onChange={(e) => updateGroup(grp.id, { lessonDurationMinutes: Number(e.target.value) })}
-                        className="px-3 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold text-amber-600 dark:text-amber-400 focus:ring-2 focus:ring-amber-500 outline-none cursor-pointer"
+                        className="px-3 py-1.5 bg-surface border border-surface-border dark:border-surface-border-soft rounded-xl text-xs font-bold text-primary dark:text-primary focus:ring-2 focus:ring-primary outline-none cursor-pointer"
                       >
                         <option value={60}>60 Min (1 Std / 1 Hour)</option>
                         <option value={75}>75 Min (1h 15m)</option>
@@ -977,27 +1034,27 @@ export const SettingsView: React.FC = () => {
           </div>
 
           {/* Working Days & Working Hours Form */}
-          <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-xl p-5 shadow-2xs space-y-4">
+          <div className="bg-surface border border-surface-border/90 dark:border-surface-border rounded-xl p-5 shadow-2xs space-y-4">
             <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
-              <Calendar className="w-4 h-4 text-blue-600" />
+              <Calendar className="w-4 h-4 text-primary" />
               <span>{t('settings_working_hours')}</span>
             </h3>
 
             <form onSubmit={handleSaveCalendarSettings} className="space-y-4">
               {/* Working Days Checkboxes */}
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
-                  {language === 'ar' ? 'أيام العمل الأسبوعية:' : 'Working Days:'}
+                <label className="text-xs font-bold text-text-main">
+                  {_t('أيام العمل الأسبوعية:', 'Working Days:')}
                 </label>
                 <div className="flex flex-wrap gap-1.5">
                   {[
-                    { num: 6, label: language === 'ar' ? 'السبت' : 'Sa' },
-                    { num: 7, label: language === 'ar' ? 'الأحد' : 'So' },
-                    { num: 1, label: language === 'ar' ? 'الإثنين' : 'Mo' },
-                    { num: 2, label: language === 'ar' ? 'الثلاثاء' : 'Di' },
-                    { num: 3, label: language === 'ar' ? 'الأربعاء' : 'Mi' },
-                    { num: 4, label: language === 'ar' ? 'الخميس' : 'Do' },
-                    { num: 5, label: language === 'ar' ? 'الجمعة' : 'Fr' },
+                    { num: 6, label: _t('السبت', 'Sa') },
+                    { num: 7, label: _t('الأحد', 'So') },
+                    { num: 1, label: _t('الإثنين', 'Mo') },
+                    { num: 2, label: _t('الثلاثاء', 'Di') },
+                    { num: 3, label: _t('الأربعاء', 'Mi') },
+                    { num: 4, label: _t('الخميس', 'Do') },
+                    { num: 5, label: _t('الجمعة', 'Fr') },
                   ].map(day => {
                     const isSelected = workingDays.includes(day.num);
                     return (
@@ -1007,8 +1064,8 @@ export const SettingsView: React.FC = () => {
                         onClick={() => toggleWorkingDay(day.num)}
                         className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                           isSelected
-                            ? 'bg-blue-600 text-white shadow-2xs'
-                            : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700'
+                            ? 'bg-primary text-white shadow-2xs'
+                            : 'bg-surface-hover text-text-muted border border-surface-border dark:border-surface-border-soft'
                         }`}
                       >
                         {day.label}
@@ -1021,56 +1078,56 @@ export const SettingsView: React.FC = () => {
               {/* Working Hours Times */}
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300">{t('settings_start_time')}</label>
+                  <label className="text-xs font-bold text-text-main">{t('settings_start_time')}</label>
                   <input
                     type="time"
                     value={startTime}
                     onChange={(e) => setStartTime(e.target.value)}
-                    className="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-mono font-bold"
+                    className="w-full px-3.5 py-2 bg-surface-hover border border-surface-border dark:border-surface-border-soft rounded-xl text-xs font-mono font-bold"
                   />
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300">{t('settings_end_time')}</label>
+                  <label className="text-xs font-bold text-text-main">{t('settings_end_time')}</label>
                   <input
                     type="time"
                     value={endTime}
                     onChange={(e) => setEndTime(e.target.value)}
-                    className="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-mono font-bold"
+                    className="w-full px-3.5 py-2 bg-surface-hover border border-surface-border dark:border-surface-border-soft rounded-xl text-xs font-mono font-bold"
                   />
                 </div>
               </div>
 
               {/* Reminder Settings */}
-              <div className="p-3.5 bg-blue-50/60 dark:bg-blue-950/40 border border-blue-200/60 dark:border-blue-900/60 rounded-lg space-y-2">
-                <h4 className="text-xs font-bold text-blue-900 dark:text-blue-200 flex items-center gap-1.5">
-                  <Bell className="w-4 h-4 text-blue-600" />
-                  <span>{language === 'ar' ? 'إعدادات التنبيهات والتذكير' : 'Reminder Settings'}</span>
+              <div className="p-3.5 bg-primary-soft dark:bg-primary-soft/40 border border-primary-border/60 dark:border-primary-border/60 rounded-lg space-y-2">
+                <h4 className="text-xs font-bold text-primary-hover dark:text-primary/70 flex items-center gap-1.5">
+                  <Bell className="w-4 h-4 text-primary" />
+                  <span>{_t('إعدادات التنبيهات والتذكير', 'Reminder Settings')}</span>
                 </h4>
 
-                <label className="flex items-center justify-between p-2 bg-white dark:bg-slate-900 rounded-xl cursor-pointer text-xs font-semibold">
-                  <span>{language === 'ar' ? 'تنبيهات الحصص المباشرة (قبل 30 دقيقة)' : 'In-App Lesson Alerts (Within 30 mins)'}</span>
+                <label className="flex items-center justify-between p-2 bg-surface rounded-xl cursor-pointer text-xs font-semibold">
+                  <span>{_t('تنبيهات الحصص المباشرة (قبل 30 دقيقة)', 'In-App Lesson Alerts (Within 30 mins)')}</span>
                   <input 
                     type="checkbox" 
                     checked={enableLessonAlerts} 
                     onChange={(e) => setEnableLessonAlerts(e.target.checked)} 
-                    className="w-4 h-4 rounded text-blue-600"
+                    className="w-4 h-4 rounded text-primary"
                   />
                 </label>
 
-                <label className="flex items-center justify-between p-2 bg-white dark:bg-slate-900 rounded-xl cursor-pointer text-xs font-semibold">
-                  <span>{language === 'ar' ? 'إشعارات المتصفح والسطح' : 'Browser Push Notifications'}</span>
+                <label className="flex items-center justify-between p-2 bg-surface rounded-xl cursor-pointer text-xs font-semibold">
+                  <span>{_t('إشعارات المتصفح والسطح', 'Browser Push Notifications')}</span>
                   <input 
                     type="checkbox" 
                     checked={enableBrowserPush} 
                     onChange={(e) => setEnableBrowserPush(e.target.checked)} 
-                    className="w-4 h-4 rounded text-blue-600"
+                    className="w-4 h-4 rounded text-primary"
                   />
                 </label>
               </div>
 
               {savedSuccessToast && (
-                <div className="bg-emerald-600 text-white text-xs font-bold p-3 rounded-xl flex items-center justify-center gap-2 animate-scale-up">
+                <div className="bg-primary text-white text-xs font-bold p-3 rounded-xl flex items-center justify-center gap-2 animate-scale-up">
                   <CheckCircle2 className="w-4 h-4" />
                   <span>{t('settings_save_success')}</span>
                 </div>
@@ -1078,7 +1135,7 @@ export const SettingsView: React.FC = () => {
 
               <button
                 type="submit"
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs py-3 rounded-xl shadow-md transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                className="w-full bg-primary hover:bg-primary-hover text-white font-bold text-xs py-3 rounded-xl shadow-md transition-all cursor-pointer flex items-center justify-center gap-1.5 active:scale-95 hover:shadow-lg hover:shadow-primary/30"
               >
                 <Save className="w-4 h-4" />
                 <span>{t('save')}</span>
@@ -1092,67 +1149,67 @@ export const SettingsView: React.FC = () => {
           SUBPAGE 7: INSPIRATION & GRATITUDE
       ========================================== */}
       {activeCategory === 'inspiration' && (
-        <div className="space-y-4 animate-scale-up pb-24">
+        <div className="space-y-4 animate-scale-up ">
           {renderSubPageHeader(
-            language === 'ar' ? 'الإلهام والامتنان' : language === 'de' ? 'Inspiration & Dankbarkeit' : 'Inspiration & Gratitude',
-            language === 'ar' ? 'تذكيرات وأدعية للمعلم' : language === 'de' ? 'Motivation & Dankbarkeits-Erinnerungen' : 'Teacher reminders & motivation'
+            _t('الإلهام والامتنان', 'Inspiration & Gratitude', 'Inspiration & Dankbarkeit'),
+            _t('تذكيرات وأدعية للمعلم', 'Teacher reminders & motivation', 'Motivation & Dankbarkeits-Erinnerungen')
           )}
 
           {!isManagingMessages ? (
             <div className="space-y-4">
-              <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-xl p-5 shadow-2xs space-y-5">
+              <div className="bg-surface border border-surface-border/90 dark:border-surface-border rounded-xl p-5 shadow-2xs space-y-3">
                 <div className="flex items-center justify-between">
                   <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
                     <Sparkles className="w-4 h-4 text-orange-500" />
-                    <span>{language === 'ar' ? 'إعدادات الظهور' : 'Display Settings'}</span>
+                    <span>{_t('إعدادات الظهور', 'Display Settings')}</span>
                   </h3>
                 </div>
 
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
-                      {language === 'ar' ? 'تكرار التذكير' : 'Frequency'}
+                    <label className="block text-xs font-bold text-text-main mb-1.5">
+                      {_t('تكرار التذكير', 'Frequency')}
                     </label>
                     <select
                       value={inspirationSettings.frequency}
                       onChange={(e) => updateInspirationSettings({ frequency: e.target.value as any })}
-                      className="w-full p-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-orange-500 font-medium text-sm transition-all"
+                      className="w-full p-2.5 bg-surface-hover border border-surface-border dark:border-surface-border-soft rounded-xl focus:ring-2 focus:ring-orange-500 font-medium text-sm transition-all"
                     >
-                      <option value="disabled">{language === 'ar' ? 'معطل (عدم الإظهار)' : 'Disabled'}</option>
-                      <option value="daily">{language === 'ar' ? 'مرة واحدة يومياً' : 'Once Daily'}</option>
-                      <option value="before_first_lesson">{language === 'ar' ? 'قبل الحصة الأولى في اليوم' : 'Before First Lesson'}</option>
-                      <option value="random_daily">{language === 'ar' ? 'عشوائي خلال اليوم' : 'Randomly During Day'}</option>
+                      <option value="disabled">{_t('معطل (عدم الإظهار)', 'Disabled')}</option>
+                      <option value="daily">{_t('مرة واحدة يومياً', 'Once Daily')}</option>
+                      <option value="before_first_lesson">{_t('قبل الحصة الأولى في اليوم', 'Before First Lesson')}</option>
+                      <option value="random_daily">{_t('عشوائي خلال اليوم', 'Randomly During Day')}</option>
                     </select>
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
-                      {language === 'ar' ? 'طريقة العرض' : 'Display Method'}
+                    <label className="block text-xs font-bold text-text-main mb-1.5">
+                      {_t('طريقة العرض', 'Display Method')}
                     </label>
                     <select
                       value={inspirationSettings.displayMethod}
                       onChange={(e) => updateInspirationSettings({ displayMethod: e.target.value as any })}
-                      className="w-full p-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-orange-500 font-medium text-sm transition-all"
+                      className="w-full p-2.5 bg-surface-hover border border-surface-border dark:border-surface-border-soft rounded-xl focus:ring-2 focus:ring-orange-500 font-medium text-sm transition-all"
                       disabled={inspirationSettings.frequency === 'disabled'}
                     >
-                      <option value="in_app">{language === 'ar' ? 'داخل التطبيق فقط (بطاقة)' : 'In-App Only (Card)'}</option>
-                      <option value="notification">{language === 'ar' ? 'إشعار نظام فقط' : 'System Notification Only'}</option>
-                      <option value="both">{language === 'ar' ? 'داخل التطبيق + إشعار' : 'In-App & Notification'}</option>
+                      <option value="in_app">{_t('داخل التطبيق فقط (بطاقة)', 'In-App Only (Card)')}</option>
+                      <option value="notification">{_t('إشعار نظام فقط', 'System Notification Only')}</option>
+                      <option value="both">{_t('داخل التطبيق + إشعار', 'In-App & Notification')}</option>
                     </select>
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
-                      {language === 'ar' ? 'مصدر الرسائل' : 'Message Source'}
+                    <label className="block text-xs font-bold text-text-main mb-1.5">
+                      {_t('مصدر الرسائل', 'Message Source')}
                     </label>
                     <select
                       value={inspirationSettings.source}
                       onChange={(e) => updateInspirationSettings({ source: e.target.value as any })}
-                      className="w-full p-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-orange-500 font-medium text-sm transition-all"
+                      className="w-full p-2.5 bg-surface-hover border border-surface-border dark:border-surface-border-soft rounded-xl focus:ring-2 focus:ring-orange-500 font-medium text-sm transition-all"
                       disabled={inspirationSettings.frequency === 'disabled'}
                     >
-                      <option value="all">{language === 'ar' ? 'جميع الرسائل' : 'All Messages'}</option>
-                      <option value="favorites_only">{language === 'ar' ? 'المفضلة فقط' : 'Favorites Only'}</option>
+                      <option value="all">{_t('جميع الرسائل', 'All Messages')}</option>
+                      <option value="favorites_only">{_t('المفضلة فقط', 'Favorites Only')}</option>
                     </select>
                   </div>
                 </div>
@@ -1160,41 +1217,39 @@ export const SettingsView: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => checkAndTriggerInspirationReminder('manual')}
-                  className="w-full p-3 bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400 font-bold rounded-xl flex items-center justify-center gap-2 hover:bg-orange-200 dark:hover:bg-orange-900/50 transition-colors cursor-pointer"
+                  className="w-full p-3 bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400 font-bold rounded-xl flex items-center justify-center gap-2 hover:bg-orange-200 dark:hover:bg-primary-soft transition-colors cursor-pointer"
                 >
                   <Sparkles className="w-4 h-4" />
-                  <span>{language === 'ar' ? 'تجربة التذكير الآن' : 'Test Reminder Now'}</span>
+                  <span>{_t('تجربة التذكير الآن', 'Test Reminder Now')}</span>
                 </button>
               </div>
 
-              <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-xl p-5 shadow-2xs">
+              <div className="bg-surface border border-surface-border/90 dark:border-surface-border rounded-xl p-5 shadow-2xs">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
-                    <MessageSquare className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
-                    <span>{language === 'ar' ? 'الرسائل والأدعية' : 'Messages'}</span>
+                    <MessageSquare className="w-4 h-4 text-primary dark:text-primary" />
+                    <span>{_t('الرسائل والأدعية', 'Messages')}</span>
                   </h3>
-                  <div className="text-xs font-bold bg-indigo-50 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400 px-2 py-1 rounded-lg">
-                    {inspirationMessages.length} {language === 'ar' ? 'رسالة' : 'Messages'}
+                  <div className="text-xs font-bold bg-primary-soft text-primary dark:bg-primary-soft dark:text-primary px-2 py-1 rounded-lg">
+                    {inspirationMessages.length} {_t('رسالة', 'Messages')}
                   </div>
                 </div>
 
-                <p className="text-xs text-slate-500 dark:text-slate-400 mb-4 leading-relaxed">
-                  {language === 'ar' 
-                    ? 'إدارة العبارات التحفيزية والأدعية التي تظهر لك. يمكنك إضافة رسائلك الخاصة أو تفضيل الرسائل التي تحبها.'
-                    : 'Manage the motivational quotes and prayers. Add your own custom messages or favorite the ones you like.'}
+                <p className="text-xs text-text-muted mb-4 leading-relaxed">
+                  {_t('إدارة العبارات التحفيزية والأدعية التي تظهر لك. يمكنك إضافة رسائلك الخاصة أو تفضيل الرسائل التي تحبها.', 'Manage the motivational quotes and prayers. Add your own custom messages or favorite the ones you like.')}
                 </p>
 
                 <button
                   onClick={() => setIsManagingMessages(true)}
-                  className="w-full p-3 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold rounded-xl flex items-center justify-center gap-2 transition-colors cursor-pointer"
+                  className="w-full p-3 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-text-main font-bold rounded-xl flex items-center justify-center gap-2 transition-colors cursor-pointer"
                 >
                   <Pencil className="w-4 h-4" />
-                  <span>{language === 'ar' ? 'إدارة الرسائل' : 'Manage Messages'}</span>
+                  <span>{_t('إدارة الرسائل', 'Manage Messages')}</span>
                 </button>
               </div>
             </div>
           ) : (
-            <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-xl p-5 shadow-2xs space-y-4">
+            <div className="bg-surface border border-surface-border/90 dark:border-surface-border rounded-xl p-5 shadow-2xs space-y-4">
               <div className="flex items-center justify-between mb-2">
                 <button
                   onClick={() => {
@@ -1202,24 +1257,24 @@ export const SettingsView: React.FC = () => {
                     setEditingMsg(null);
                     setDeletingMsgId(null);
                   }}
-                  className="flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-slate-800 dark:hover:text-slate-300 transition-colors"
+                  className="flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-slate-800 dark:hover:text-primary transition-colors"
                 >
                   <ArrowLeft className="w-4 h-4" />
-                  <span>{language === 'ar' ? 'عودة' : 'Back'}</span>
+                  <span>{_t('عودة', 'Back')}</span>
                 </button>
-                <div className="flex gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-lg">
+                <div className="flex gap-1 bg-surface-hover p-1 rounded-lg">
                   <button
                     onClick={() => setMsgFilterSource('all')}
-                    className={`px-3 py-1.5 text-[10px] sm:text-xs font-bold rounded-md transition-colors ${msgFilterSource === 'all' ? 'bg-white dark:bg-slate-700 shadow-sm text-indigo-600 dark:text-indigo-400' : 'text-slate-500'}`}
+                    className={`px-3 py-1.5 text-[10px] sm:text-xs font-bold rounded-md transition-colors ${msgFilterSource === 'all' ? 'bg-surface dark:bg-slate-700 shadow-sm text-primary dark:text-primary' : 'text-slate-500'}`}
                   >
-                    {language === 'ar' ? 'الكل' : 'All'}
+                    {_t('الكل', 'All')}
                   </button>
                   <button
                     onClick={() => setMsgFilterSource('favorites')}
-                    className={`px-3 py-1.5 text-[10px] sm:text-xs font-bold rounded-md transition-colors flex items-center gap-1 ${msgFilterSource === 'favorites' ? 'bg-white dark:bg-slate-700 shadow-sm text-amber-600 dark:text-amber-400' : 'text-slate-500'}`}
+                    className={`px-3 py-1.5 text-[10px] sm:text-xs font-bold rounded-md transition-colors flex items-center gap-1 ${msgFilterSource === 'favorites' ? 'bg-surface dark:bg-slate-700 shadow-sm text-primary dark:text-primary' : 'text-slate-500'}`}
                   >
                     <Star className={`w-3 h-3 ${msgFilterSource === 'favorites' ? 'fill-current' : ''}`} />
-                    {language === 'ar' ? 'المفضلة' : 'Favorites'}
+                    {_t('المفضلة', 'Favorites')}
                   </button>
                 </div>
               </div>
@@ -1231,16 +1286,16 @@ export const SettingsView: React.FC = () => {
                     setNewMsgText('');
                     setIsAddMsgModalOpen(true);
                   }}
-                  className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs py-2.5 rounded-xl shadow-md transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                  className="flex-1 bg-primary hover:bg-primary-hover text-white font-bold text-xs py-2.5 rounded-xl shadow-md transition-all cursor-pointer flex items-center justify-center gap-1.5"
                 >
                   <Plus className="w-4 h-4" />
-                  <span>{language === 'ar' ? 'إضافة رسالة' : 'Add Message'}</span>
+                  <span>{_t('إضافة رسالة', 'Add Message')}</span>
                 </button>
                 
                 <button
                   onClick={() => setShowRestoreDefaultsConfirm(true)}
-                  className="px-3 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold text-xs rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5"
-                  title={language === 'ar' ? 'استعادة الرسائل الافتراضية' : 'Restore Default Messages'}
+                  className="px-3 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-text-main font-bold text-xs rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                  title={_t('استعادة الرسائل الافتراضية', 'Restore Default Messages')}
                 >
                   <RotateCcw className="w-4 h-4" />
                 </button>
@@ -1251,22 +1306,22 @@ export const SettingsView: React.FC = () => {
                 {inspirationMessages
                   .filter(m => msgFilterSource === 'all' || m.isFavorite)
                   .map(msg => (
-                  <div key={msg.id} className="p-3.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200/60 dark:border-slate-700 rounded-lg flex flex-col gap-3">
+                  <div key={msg.id} className="p-3.5 bg-surface-hover/50 border border-surface-border/60 dark:border-surface-border-soft rounded-lg flex flex-col gap-3">
                     <p className="text-sm font-semibold text-slate-800 dark:text-slate-200 dir-rtl text-right">
                       {msg.text}
                     </p>
-                    <div className="flex items-center justify-between pt-2 border-t border-slate-200 dark:border-slate-700">
+                    <div className="flex items-center justify-between pt-2 border-t border-surface-border dark:border-surface-border-soft">
                       <div className="flex items-center gap-2">
                         {msg.isCustom && (
-                          <span className="text-[9px] uppercase tracking-wider font-black px-1.5 py-0.5 rounded bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300">
-                            {language === 'ar' ? 'مخصص' : 'Custom'}
+                          <span className="text-[9px] uppercase tracking-wider font-black px-1.5 py-0.5 rounded bg-primary-soft text-primary dark:bg-primary-soft dark:text-primary">
+                            {_t('مخصص', 'Custom')}
                           </span>
                         )}
                       </div>
                       <div className="flex items-center gap-1">
                         <button
                           onClick={() => toggleFavoriteInspirationMessage(msg.id)}
-                          className={`p-1.5 rounded-lg transition-colors cursor-pointer ${msg.isFavorite ? 'text-amber-500 bg-amber-50 dark:bg-amber-900/20' : 'text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'}`}
+                          className={`p-1.5 rounded-lg transition-colors cursor-pointer ${msg.isFavorite ? 'text-primary bg-primary-soft dark:bg-primary-soft' : 'text-text-muted/70 hover:bg-slate-200 dark:hover:bg-slate-700'}`}
                         >
                           <Star className={`w-4 h-4 ${msg.isFavorite ? 'fill-current' : ''}`} />
                         </button>
@@ -1275,13 +1330,13 @@ export const SettingsView: React.FC = () => {
                             setEditingMsg({ id: msg.id, text: msg.text });
                             setIsAddMsgModalOpen(true);
                           }}
-                          className="p-1.5 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors cursor-pointer"
+                          className="p-1.5 rounded-lg text-text-muted/70 hover:text-primary hover:bg-primary-soft dark:hover:bg-primary-soft transition-colors cursor-pointer"
                         >
                           <Pencil className="w-4 h-4" />
                         </button>
                         <button
                           onClick={() => setDeletingMsgId(msg.id)}
-                          className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-colors cursor-pointer"
+                          className="p-1.5 rounded-lg text-text-muted/70 hover:text-primary hover:bg-primary-soft dark:hover:bg-primary-soft transition-colors cursor-pointer"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -1290,23 +1345,23 @@ export const SettingsView: React.FC = () => {
                     
                     {/* Delete Confirmation Inline */}
                     {deletingMsgId === msg.id && (
-                      <div className="mt-2 p-3 bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800 rounded-xl flex items-center justify-between animate-in slide-in-from-top-2">
-                        <span className="text-xs font-bold text-rose-700 dark:text-rose-400">
-                          {language === 'ar' ? 'هل أنت متأكد من الحذف؟' : 'Are you sure?'}
+                      <div className="mt-2 p-3 bg-primary-soft dark:bg-primary-soft border border-primary-border dark:border-primary-border rounded-xl flex items-center justify-between animate-in slide-in-from-top-2">
+                        <span className="text-xs font-bold text-primary dark:text-primary">
+                          {_t('هل أنت متأكد من الحذف؟', 'Are you sure?')}
                         </span>
                         <div className="flex gap-2">
                           <button
                             onClick={() => setDeletingMsgId(null)}
-                            className="px-3 py-1.5 text-xs font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg transition-colors"
+                            className="px-3 py-1.5 text-xs font-bold text-text-muted hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg transition-colors"
                           >
-                            {language === 'ar' ? 'إلغاء' : 'Cancel'}
+                            {_t('إلغاء', 'Cancel')}
                           </button>
                           <button
                             onClick={() => {
                               deleteInspirationMessage(msg.id);
                               setDeletingMsgId(null);
                             }}
-                            className="px-3 py-1.5 text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 rounded-lg transition-colors"
+                            className="px-3 py-1.5 text-xs font-bold text-white bg-primary hover:bg-primary-hover rounded-lg transition-colors"
                           >
                             {t('delete')}
                           </button>
@@ -1317,9 +1372,9 @@ export const SettingsView: React.FC = () => {
                 ))}
                 
                 {inspirationMessages.filter(m => msgFilterSource === 'all' || m.isFavorite).length === 0 && (
-                  <div className="text-center py-8 text-slate-400">
+                  <div className="text-center py-5 text-text-muted/70">
                     <Heart className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                    <p className="text-sm">{language === 'ar' ? 'لا توجد رسائل' : 'No messages found'}</p>
+                    <p className="text-sm">{_t('لا توجد رسائل', 'No messages found')}</p>
                   </div>
                 )}
               </div>
@@ -1330,18 +1385,19 @@ export const SettingsView: React.FC = () => {
 
       {/* Message Edit/Add Modal */}
       {isAddMsgModalOpen && (
-        <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in">
-          <div className="bg-white dark:bg-slate-900 rounded-xl w-full max-w-sm shadow-xl p-5 space-y-4 animate-in zoom-in-95">
-            <h3 className="text-sm font-black text-slate-900 dark:text-white">
+        <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-end sm:items-center justify-center animate-in fade-in p-0 sm:p-4 pb-0">
+          <div className="bg-surface rounded-t-[28px] sm:rounded-xl pb-safe-bottom sm:pb-0 mb-0 w-full max-w-sm shadow-xl p-5 space-y-4 animate-in zoom-in-95">
+        <div className="w-12 h-1.5 bg-slate-200 dark:bg-slate-800 rounded-full mx-auto mt-3 mb-1 sm:hidden shrink-0" />
+            <h3 className="text-sm font-black text-text-main">
               {editingMsg 
-                ? (language === 'ar' ? 'تعديل الرسالة' : 'Edit Message')
-                : (language === 'ar' ? 'إضافة رسالة جديدة' : 'Add New Message')}
+                ? (_t('تعديل الرسالة', 'Edit Message'))
+                : (_t('إضافة رسالة جديدة', 'Add New Message'))}
             </h3>
             <textarea
               value={editingMsg ? editingMsg.text : newMsgText}
               onChange={(e) => editingMsg ? setEditingMsg({ ...editingMsg, text: e.target.value }) : setNewMsgText(e.target.value)}
-              placeholder={language === 'ar' ? 'اكتب رسالتك أو دعاءك هنا...' : 'Write your message...'}
-              className="w-full p-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-indigo-500 font-medium text-sm min-h-[100px] resize-none dir-rtl"
+              placeholder={_t('اكتب رسالتك أو دعاءك هنا...', 'Write your message...')}
+              className="w-full p-3 bg-surface-hover border border-surface-border dark:border-surface-border-soft rounded-xl focus:ring-2 focus:ring-primary font-medium text-sm min-h-[100px] resize-none dir-rtl"
               dir="auto"
             />
             <div className="flex gap-2">
@@ -1353,7 +1409,7 @@ export const SettingsView: React.FC = () => {
                 }}
                 className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-300 rounded-xl font-bold text-xs transition-colors"
               >
-                {language === 'ar' ? 'إلغاء' : 'Cancel'}
+                {_t('إلغاء', 'Cancel')}
               </button>
               <button
                 onClick={() => {
@@ -1367,7 +1423,7 @@ export const SettingsView: React.FC = () => {
                   setNewMsgText('');
                 }}
                 disabled={editingMsg ? !editingMsg.text.trim() : !newMsgText.trim()}
-                className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-xs transition-colors disabled:opacity-50"
+                className="flex-1 py-2.5 bg-primary hover:bg-primary-hover text-white rounded-xl font-bold text-xs transition-colors disabled:opacity-50"
               >
                 {t('save')}
               </button>
@@ -1378,19 +1434,18 @@ export const SettingsView: React.FC = () => {
 
       {/* Restore Defaults Confirm Modal */}
       {showRestoreDefaultsConfirm && (
-        <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in">
-          <div className="bg-white dark:bg-slate-900 rounded-xl w-full max-w-sm shadow-xl p-5 space-y-4 animate-in zoom-in-95">
-            <div className="w-12 h-12 bg-amber-100 dark:bg-amber-900/30 text-amber-600 rounded-lg flex items-center justify-center mb-2 mx-auto">
+        <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-end sm:items-center justify-center animate-in fade-in p-0 sm:p-4 pb-0">
+          <div className="bg-surface rounded-t-[28px] sm:rounded-xl pb-safe-bottom sm:pb-0 mb-0 w-full max-w-sm shadow-xl p-5 space-y-4 animate-in zoom-in-95">
+        <div className="w-12 h-1.5 bg-slate-200 dark:bg-slate-800 rounded-full mx-auto mt-3 mb-1 sm:hidden shrink-0" />
+            <div className="w-12 h-12 bg-primary-soft dark:bg-primary-soft text-primary rounded-lg flex items-center justify-center mb-2 mx-auto">
               <RotateCcw className="w-6 h-6" />
             </div>
             <div className="text-center">
-              <h3 className="text-sm font-black text-slate-900 dark:text-white mb-2">
-                {language === 'ar' ? 'استعادة الرسائل الافتراضية' : 'Restore Defaults'}
+              <h3 className="text-sm font-black text-text-main mb-2">
+                {_t('استعادة الرسائل الافتراضية', 'Restore Defaults')}
               </h3>
-              <p className="text-xs text-slate-600 dark:text-slate-400">
-                {language === 'ar' 
-                  ? 'سيتم استعادة الرسائل والأدعية الافتراضية. رسائلك المخصصة لن يتم حذفها.'
-                  : 'Default messages will be restored. Your custom messages will not be deleted.'}
+              <p className="text-xs text-text-muted">
+                {_t('سيتم استعادة الرسائل والأدعية الافتراضية. رسائلك المخصصة لن يتم حذفها.', 'Default messages will be restored. Your custom messages will not be deleted.')}
               </p>
             </div>
             <div className="flex gap-2 pt-2">
@@ -1398,16 +1453,16 @@ export const SettingsView: React.FC = () => {
                 onClick={() => setShowRestoreDefaultsConfirm(false)}
                 className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-300 rounded-xl font-bold text-xs transition-colors"
               >
-                {language === 'ar' ? 'إلغاء' : 'Cancel'}
+                {_t('إلغاء', 'Cancel')}
               </button>
               <button
                 onClick={() => {
                   restoreDefaultInspirationMessages();
                   setShowRestoreDefaultsConfirm(false);
                 }}
-                className="flex-1 py-2.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl font-bold text-xs transition-colors"
+                className="flex-1 py-2.5 bg-primary hover:bg-primary-hover text-white rounded-xl font-bold text-xs transition-colors"
               >
-                {language === 'ar' ? 'استعادة' : 'Restore'}
+                {_t('استعادة', 'Restore')}
               </button>
             </div>
           </div>
@@ -1423,33 +1478,31 @@ export const SettingsView: React.FC = () => {
       {(activeCategory === 'backup' || activeCategory === 'danger') && (
         <div className="space-y-4 animate-scale-up">
           {renderSubPageHeader(
-            language === 'ar' ? 'النسخ الاحتياطي وإدارة البيانات' : 'Backup & Data Management',
-            language === 'ar' ? 'تنزيل واستعادة نسخة احتياطية من البيانات أو مسح البيانات' : 'Download, restore backup or reset application data'
+            _t('النسخ الاحتياطي وإدارة البيانات', 'Backup & Data Management'),
+            _t('تنزيل واستعادة نسخة احتياطية من البيانات أو مسح البيانات', 'Download, restore backup or reset application data')
           )}
 
           {/* Backup & Restore Section */}
-          <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-xl p-5 shadow-2xs space-y-4">
+          <div className="bg-surface border border-surface-border/90 dark:border-surface-border rounded-xl p-5 shadow-2xs space-y-4">
             <div className="flex items-center justify-between">
               <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
-                <HardDrive className="w-4 h-4 text-emerald-600" />
-                <span>{language === 'ar' ? 'النسخ الاحتياطي والاستعادة' : 'Backup & Restore'}</span>
+                <HardDrive className="w-4 h-4 text-primary" />
+                <span>{_t('النسخ الاحتياطي والاستعادة', 'Backup & Restore')}</span>
               </h3>
             </div>
 
-            <p className="text-xs text-slate-600 dark:text-slate-400">
-              {language === 'ar' 
-                ? 'احتفظ بنسخة من جميع الطلاب والمجموعات والحصص والمدفوعات آمنة محلياً (ملف JSON) أو استعدها في أي وقت.'
-                : 'Keep a secure local JSON backup of all students, groups, lessons, and payment records, or restore at any time.'}
+            <p className="text-xs text-text-muted">
+              {_t('احتفظ بنسخة من جميع الطلاب والمجموعات والحصص والمدفوعات آمنة محلياً (ملف JSON) أو استعدها في أي وقت.', 'Keep a secure local JSON backup of all students, groups, lessons, and payment records, or restore at any time.')}
             </p>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
               <button
                 type="button"
                 onClick={exportBackupFile}
-                className="bg-emerald-600 hover:bg-emerald-700 active:scale-[0.99] text-white font-bold py-3.5 px-4 rounded-xl shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer"
+                className="bg-primary hover:bg-primary-hover active:scale-[0.99] text-white font-bold py-3.5 px-4 rounded-xl shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer"
               >
                 <Download className="w-4 h-4" />
-                <span>{language === 'ar' ? 'تنزيل / تصدير النسخة الاحتياطية (JSON)' : 'Download / Export Backup (JSON)'}</span>
+                <span>{_t('تنزيل / تصدير النسخة الاحتياطية (JSON)', 'Download / Export Backup (JSON)')}</span>
               </button>
 
               <div>
@@ -1465,34 +1518,32 @@ export const SettingsView: React.FC = () => {
                   onClick={() => fileInputRef.current?.click()}
                   className="w-full bg-slate-800 hover:bg-slate-900 dark:bg-slate-800 dark:hover:bg-slate-700 active:scale-[0.99] text-white font-bold py-3.5 px-4 rounded-xl shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer"
                 >
-                  <Upload className="w-4 h-4 text-purple-400" />
-                  <span>{language === 'ar' ? 'استعادة / استيراد من ملف (JSON)' : 'Restore / Import Backup (JSON)'}</span>
+                  <Upload className="w-4 h-4 text-primary" />
+                  <span>{_t('استعادة / استيراد من ملف (JSON)', 'Restore / Import Backup (JSON)')}</span>
                 </button>
               </div>
             </div>
 
             {restoreStatusMsg && (
-              <div className="bg-emerald-50 dark:bg-emerald-950/80 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 text-xs font-bold p-3 rounded-xl flex items-center gap-2 animate-scale-up">
-                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+              <div className="bg-primary-soft dark:bg-primary-soft border border-primary-border dark:border-primary-border text-primary dark:text-primary text-xs font-bold p-3 rounded-xl flex items-center gap-2 animate-scale-up">
+                <CheckCircle2 className="w-4 h-4 text-primary shrink-0" />
                 <span>{restoreStatusMsg}</span>
               </div>
             )}
           </div>
 
           {/* Danger Zone Section inside Backup */}
-          <div className="bg-rose-50/70 dark:bg-rose-950/30 border-2 border-rose-200 dark:border-rose-900/80 rounded-xl p-5 space-y-3.5 shadow-sm">
+          <div className="bg-primary-soft dark:bg-primary-soft border-2 border-primary-border dark:border-primary-border rounded-xl p-5 space-y-3.5 shadow-sm">
             <div className="flex items-center gap-3">
-              <div className="p-2.5 bg-rose-600 text-white rounded-lg shrink-0 shadow-xs">
+              <div className="p-2.5 bg-primary text-white rounded-lg shrink-0 shadow-xs">
                 <AlertTriangle className="w-5 h-5" />
               </div>
               <div>
-                <h3 className="text-xs font-black uppercase tracking-wider text-rose-900 dark:text-rose-200">
-                  {language === 'ar' ? 'منطقة الخطر (إعادة ضبط البيانات)' : 'Danger Zone (Data Reset)'}
+                <h3 className="text-xs font-black uppercase tracking-wider text-primary dark:text-primary">
+                  {_t('منطقة الخطر (إعادة ضبط البيانات)', 'Danger Zone (Data Reset)')}
                 </h3>
-                <p className="text-xs text-rose-700 dark:text-rose-300 mt-0.5 leading-relaxed">
-                  {language === 'ar'
-                    ? 'إجراءات حساسة: سيؤدي هذا إلى حذف كافة الطلاب والمجموعات والحصص والمدفوعات نهائياً من هذا الجهاز.'
-                    : 'Sensitive actions: Resetting data will permanently delete all students, groups, lessons, and payment records.'}
+                <p className="text-xs text-primary dark:text-primary mt-0.5 leading-relaxed">
+                  {_t('إجراءات حساسة: سيؤدي هذا إلى حذف كافة الطلاب والمجموعات والحصص والمدفوعات نهائياً من هذا الجهاز.', 'Sensitive actions: Resetting data will permanently delete all students, groups, lessons, and payment records.')}
                 </p>
               </div>
             </div>
@@ -1500,7 +1551,7 @@ export const SettingsView: React.FC = () => {
             <button
               type="button"
               onClick={() => setShowClearConfirm(true)}
-              className="w-full bg-rose-600 hover:bg-rose-700 active:scale-[0.99] text-white font-black text-xs py-3 px-4 rounded-xl shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer"
+              className="w-full bg-primary hover:bg-primary-hover active:scale-[0.99] text-white font-black text-xs py-3 px-4 rounded-xl shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer"
             >
               <Trash2 className="w-4 h-4" />
               <span>{t('settings_clear_data')}</span>
@@ -1515,42 +1566,42 @@ export const SettingsView: React.FC = () => {
       {activeCategory === 'about' && (
         <div className="space-y-4 animate-scale-up">
           {renderSubPageHeader(
-            language === 'ar' ? 'حول التطبيق' : 'About',
-            language === 'ar' ? 'معلومات التطبيق والميزات وتفاصيل التواصل مع المطور' : 'Application details, features & developer contacts'
+            _t('حول التطبيق', 'About'),
+            _t('معلومات التطبيق والميزات وتفاصيل التواصل مع المطور', 'Application details, features & developer contacts')
           )}
 
-          <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-xl p-6 shadow-2xs space-y-6 text-center sm:text-start">
+          <div className="bg-surface border border-surface-border/90 dark:border-surface-border rounded-xl p-4 shadow-2xs space-y-4 text-center sm:text-start">
             {/* App Hero Branding Header */}
-            <div className="flex flex-col sm:flex-row items-center gap-4 pb-6 border-b border-slate-100 dark:border-slate-800">
+            <div className="flex flex-col sm:flex-row items-center gap-4 pb-4 border-b border-slate-100 dark:border-surface-border">
               <img
                 src="/logo.svg"
                 alt="AGS19 Logo"
-                className="w-16 h-16 rounded-lg object-contain bg-white p-1 shadow-md border border-slate-200/80 dark:border-slate-800 shrink-0"
+                className="w-16 h-16 rounded-lg object-contain bg-surface p-1 shadow-md border border-surface-border/80 dark:border-surface-border shrink-0"
               />
               <div>
-                <h1 className="text-xl font-black text-slate-900 dark:text-white">
+                <h1 className="text-xl font-black text-text-main">
                   AGS19
                 </h1>
-                <p className="text-xs text-blue-600 dark:text-blue-400 font-extrabold mt-0.5">
-                  {language === 'ar' ? 'نظام إداري متكامل لمعلمي اللغة الألمانية والدروس الخاصة' : 'German Teacher Management System'}
+                <p className="text-xs text-primary dark:text-primary font-extrabold mt-0.5">
+                  {_t('نظام إداري متكامل لمعلمي اللغة الألمانية والدروس الخاصة', 'German Teacher Management System')}
                 </p>
               </div>
             </div>
 
             {/* App Description */}
             <div className="space-y-1.5">
-              <h3 className="text-xs font-extrabold uppercase tracking-wider text-slate-400">
-                {language === 'ar' ? 'الوصف' : 'Description'}
+              <h3 className="text-xs font-extrabold uppercase tracking-wider text-text-muted/70">
+                {_t('الوصف', 'Description')}
               </h3>
-              <p className="text-xs sm:text-sm text-slate-700 dark:text-slate-300 font-medium leading-relaxed bg-slate-50 dark:bg-slate-800/60 p-4 rounded-lg border border-slate-200/60 dark:border-slate-700">
+              <p className="text-xs sm:text-sm text-text-main font-medium leading-relaxed bg-surface-hover/60 p-4 rounded-lg border border-surface-border/60 dark:border-surface-border-soft">
                 AGS19 helps private teachers manage students, groups, lessons, attendance, payments, reports, parent communication, and scheduling from one place.
               </p>
             </div>
 
             {/* Features List */}
             <div className="space-y-2.5">
-              <h3 className="text-xs font-extrabold uppercase tracking-wider text-slate-400">
-                {language === 'ar' ? 'الميزات الرئيسية (Features)' : 'Features'}
+              <h3 className="text-xs font-extrabold uppercase tracking-wider text-text-muted/70">
+                {_t('الميزات الرئيسية (Features)', 'Features')}
               </h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-slate-800 dark:text-slate-200">
                 {[
@@ -1563,8 +1614,8 @@ export const SettingsView: React.FC = () => {
                   'Reports & Statistics',
                   'Calendar & Scheduling'
                 ].map((feat, idx) => (
-                  <div key={idx} className="p-3 bg-white dark:bg-slate-800/80 rounded-xl border border-slate-200/80 dark:border-slate-700/80 flex items-center gap-2.5 font-bold shadow-2xs">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
+                  <div key={idx} className="p-3 bg-surface dark:bg-slate-800/80 rounded-xl border border-surface-border/80 dark:border-surface-border-soft/80 flex items-center gap-2.5 font-bold shadow-2xs">
+                    <CheckCircle2 className="w-4 h-4 text-primary shrink-0" />
                     <span>{feat}</span>
                   </div>
                 ))}
@@ -1572,22 +1623,22 @@ export const SettingsView: React.FC = () => {
             </div>
 
             {/* Developer Contact Section */}
-            <div className="p-5 bg-gradient-to-r from-slate-900 to-indigo-950 text-white rounded-xl space-y-3 shadow-md">
+            <div className="p-5 bg-gradient-to-r from-slate-900 to-primary-hover text-white rounded-xl space-y-3 shadow-md">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-indigo-300">
-                    {language === 'ar' ? 'تطوير وتصميم' : 'Developer'}
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-primary">
+                    {_t('تطوير وتصميم', 'Developer')}
                   </p>
                   <p className="text-base font-black">Abdul-rahman Ghareeb</p>
                 </div>
-                <div className="p-2 bg-white/10 rounded-xl shrink-0">
-                  <User className="w-5 h-5 text-indigo-300" />
+                <div className="p-2 bg-surface/10 rounded-xl shrink-0">
+                  <User className="w-5 h-5 text-primary" />
                 </div>
               </div>
 
               <div className="flex items-center justify-between pt-2 border-t border-white/10 text-xs">
                 <div className="flex items-center gap-2 font-mono font-bold">
-                  <Phone className="w-4 h-4 text-emerald-400 shrink-0" />
+                  <Phone className="w-4 h-4 text-primary shrink-0" />
                   <span>WhatsApp: 01156435802</span>
                 </div>
 
@@ -1595,7 +1646,7 @@ export const SettingsView: React.FC = () => {
                   href="https://wa.me/201156435802"
                   target="_blank"
                   rel="noreferrer"
-                  className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl transition-all shadow-xs flex items-center gap-1 shrink-0"
+                  className="px-3 py-1.5 bg-primary hover:bg-primary text-white font-bold text-xs rounded-xl transition-all shadow-xs flex items-center gap-1 shrink-0"
                 >
                   <span>WhatsApp</span>
                   <ExternalLink className="w-3.5 h-3.5" />
@@ -1604,7 +1655,7 @@ export const SettingsView: React.FC = () => {
             </div>
 
             {/* Application Version */}
-            <div className="text-center pt-2 text-xs font-mono font-bold text-slate-400">
+            <div className="text-center pt-2 text-xs font-mono font-bold text-text-muted/70">
               AGS19 • Version 2.5.0
             </div>
           </div>
@@ -1615,15 +1666,16 @@ export const SettingsView: React.FC = () => {
           CONFIRMATION MODAL FOR DATA CLEAR
       ========================================== */}
       {showClearConfirm && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-900 rounded-xl max-w-sm w-full p-6 border border-slate-200 dark:border-slate-800 shadow-2xl space-y-4 animate-scale-up text-center font-sans">
-            <div className="w-12 h-12 rounded-lg bg-rose-100 dark:bg-rose-950 text-rose-600 flex items-center justify-center mx-auto shadow-xs">
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4 pb-0">
+          <div className="bg-surface rounded-t-[28px] sm:rounded-xl pb-safe-bottom sm:pb-0 mb-0 max-w-sm w-full p-4 border border-surface-border shadow-2xl space-y-4 animate-scale-up text-center font-sans">
+        <div className="w-12 h-1.5 bg-slate-200 dark:bg-slate-800 rounded-full mx-auto mt-3 mb-1 sm:hidden shrink-0" />
+            <div className="w-12 h-12 rounded-lg bg-primary-soft dark:bg-primary-soft text-primary flex items-center justify-center mx-auto shadow-xs">
               <AlertTriangle className="w-6 h-6" />
             </div>
 
             <div>
-              <h3 className="text-base font-black text-slate-900 dark:text-white">{t('settings_clear_data')}</h3>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+              <h3 className="text-base font-black text-text-main">{t('settings_clear_data')}</h3>
+              <p className="text-xs text-text-muted mt-1">
                 {t('confirm')}
               </p>
             </div>
@@ -1632,7 +1684,7 @@ export const SettingsView: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setShowClearConfirm(false)}
-                className="flex-1 py-2.5 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl font-bold text-xs cursor-pointer"
+                className="flex-1 py-2.5 bg-surface-hover text-text-main rounded-xl font-bold text-xs cursor-pointer"
               >
                 {t('cancel')}
               </button>
@@ -1643,7 +1695,7 @@ export const SettingsView: React.FC = () => {
                   setShowClearConfirm(false);
                   setActiveCategory(null);
                 }}
-                className="flex-1 py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl font-bold text-xs cursor-pointer shadow-sm"
+                className="flex-1 py-2.5 bg-primary hover:bg-primary-hover text-white rounded-xl font-bold text-xs cursor-pointer shadow-sm"
               >
                 {t('confirm')}
               </button>

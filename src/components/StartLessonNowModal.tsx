@@ -183,30 +183,31 @@ export const StartLessonNowModal: React.FC<StartLessonNowModalProps> = ({ onClos
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 pt-[max(24px,env(safe-area-inset-top,24px))] overflow-y-auto">
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl w-full max-w-xl shadow-2xl overflow-hidden my-auto animate-scale-up space-y-0">
+    <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-end sm:items-center justify-center sm: pt-[max(24px,env(safe-area-inset-top,24px))] overflow-y-auto p-0 sm:p-4 pb-0">
+      <div className="bg-surface border border-surface-border rounded-t-[28px] sm:rounded-xl pb-safe-bottom sm:pb-0 mb-0 w-full max-w-xl shadow-2xl overflow-hidden animate-scale-up space-y-0">
+        <div className="w-12 h-1.5 bg-slate-200 dark:bg-slate-800 rounded-full mx-auto mt-3 mb-1 sm:hidden shrink-0" />
         
         {/* Header */}
-        <div className="bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800 p-5 flex items-center justify-between text-slate-800 dark:text-slate-100 shrink-0">
+        <div className="bg-surface border-b border-slate-100 dark:border-surface-border p-5 flex items-center justify-between text-text-main shrink-0">
           <div className="flex items-center gap-2.5">
             <div className="p-2 bg-violet-50 dark:bg-violet-950/40 text-violet-600 dark:text-violet-400 rounded-lg border border-violet-100 dark:border-violet-900/50">
               <Zap className="w-5 h-5 text-violet-600 dark:text-violet-400" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h2 className="text-sm sm:text-base font-black text-slate-900 dark:text-white">{t('sofort_title')}</h2>
+                <h2 className="text-sm sm:text-base font-black text-text-main">{t('sofort_title')}</h2>
                 <span className="text-[9px] font-black uppercase tracking-wider text-violet-600 dark:text-violet-400 bg-violet-50/50 dark:bg-violet-950/30 border border-violet-100/50 dark:border-violet-900/30 px-2 py-0.5 rounded-md">
                   {t('sofort_badge')}
                 </span>
               </div>
-              <p className="text-xs text-slate-500 dark:text-slate-400">{t('sofort_desc')}</p>
+              <p className="text-xs text-text-muted">{t('sofort_desc')}</p>
             </div>
           </div>
 
           <button
             type="button"
             onClick={onClose}
-            className="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg transition-all cursor-pointer"
+            className="p-1.5 text-text-muted/70 hover:text-slate-600 dark:hover:text-primary hover:bg-background dark:hover:bg-slate-800 rounded-lg transition-all cursor-pointer"
           >
             <X className="w-4 h-4" />
           </button>
@@ -214,7 +215,7 @@ export const StartLessonNowModal: React.FC<StartLessonNowModalProps> = ({ onClos
 
         <form onSubmit={handleStartLesson} className="p-5 space-y-4">
           {/* Target Selector: Group vs Student */}
-          <div className="grid grid-cols-2 gap-1 bg-slate-100 dark:bg-slate-800/80 p-1 rounded-xl text-xs font-bold">
+          <div className="grid grid-cols-2 gap-1 bg-surface-hover/80 p-1 rounded-xl text-xs font-bold">
             <button
               type="button"
               onClick={() => {
@@ -224,8 +225,8 @@ export const StartLessonNowModal: React.FC<StartLessonNowModalProps> = ({ onClos
               }}
               className={`py-2 rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer border ${
                 targetType === 'group' 
-                  ? 'bg-white border-slate-200/40 dark:bg-slate-900 dark:border-slate-800 text-violet-600 dark:text-violet-400 shadow-2xs' 
-                  : 'border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
+                  ? 'bg-surface border-surface-border/40 dark:bg-surface dark:border-surface-border text-violet-600 dark:text-violet-400 shadow-2xs' 
+                  : 'border-transparent text-text-muted hover:text-slate-900 dark:hover:text-primary'
               }`}
             >
               <Users className="w-4 h-4" />
@@ -240,8 +241,8 @@ export const StartLessonNowModal: React.FC<StartLessonNowModalProps> = ({ onClos
               }}
               className={`py-2 rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer border ${
                 targetType === 'student' 
-                  ? 'bg-white border-slate-200/40 dark:bg-slate-900 dark:border-slate-800 text-violet-600 dark:text-violet-400 shadow-2xs' 
-                  : 'border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
+                  ? 'bg-surface border-surface-border/40 dark:bg-surface dark:border-surface-border text-violet-600 dark:text-violet-400 shadow-2xs' 
+                  : 'border-transparent text-text-muted hover:text-slate-900 dark:hover:text-primary'
               }`}
             >
               <User className="w-4 h-4" />
@@ -253,7 +254,7 @@ export const StartLessonNowModal: React.FC<StartLessonNowModalProps> = ({ onClos
           {targetType === 'group' ? (
             <div className="space-y-2">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
-                <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                <label className="text-xs font-bold text-text-main">
                   Wählen Sie die Gruppe:
                 </label>
                 <span className="text-[10px] text-violet-600 dark:text-violet-400 font-extrabold">
@@ -269,7 +270,7 @@ export const StartLessonNowModal: React.FC<StartLessonNowModalProps> = ({ onClos
                   className={`px-2.5 py-1 rounded-md text-[11px] transition-all cursor-pointer shrink-0 border ${
                     selectedDayFilter === 'all'
                       ? 'bg-slate-900 border-slate-900 text-white dark:bg-slate-100 dark:border-slate-100 dark:text-slate-900 shadow-2xs'
-                      : 'bg-slate-50 dark:bg-slate-800 border-slate-200/60 dark:border-slate-700/60 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-750'
+                      : 'bg-surface-hover border-surface-border/60 dark:border-surface-border-soft/60 text-text-muted hover:bg-slate-100 dark:hover:bg-slate-750'
                   }`}
                 >
                   Alle Tage
@@ -280,7 +281,7 @@ export const StartLessonNowModal: React.FC<StartLessonNowModalProps> = ({ onClos
                   className={`px-2.5 py-1 rounded-md text-[11px] transition-all cursor-pointer shrink-0 flex items-center gap-1 border ${
                     selectedDayFilter === 'today'
                       ? 'bg-slate-900 border-slate-900 text-white dark:bg-slate-100 dark:border-slate-100 dark:text-slate-900 shadow-2xs'
-                      : 'bg-amber-50/50 border-amber-100/50 text-amber-700 dark:bg-amber-950/20 dark:border-amber-900/30 dark:text-amber-300 hover:bg-amber-100/60'
+                      : 'bg-primary-soft border-primary-border text-primary dark:bg-primary-soft dark:border-primary-border dark:text-primary hover:bg-primary-soft'
                   }`}
                 >
                   <span>Heute</span>
@@ -294,7 +295,7 @@ export const StartLessonNowModal: React.FC<StartLessonNowModalProps> = ({ onClos
                     className={`px-2.5 py-1 rounded-md text-[11px] transition-all cursor-pointer shrink-0 border ${
                       selectedDayFilter === w.short || selectedDayFilter === w.full
                         ? 'bg-slate-900 border-slate-900 text-white dark:bg-slate-100 dark:border-slate-100 dark:text-slate-900 shadow-2xs'
-                        : 'bg-slate-50 dark:bg-slate-800 border-slate-200/60 dark:border-slate-700/60 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-750'
+                        : 'bg-surface-hover border-surface-border/60 dark:border-surface-border-soft/60 text-text-muted hover:bg-slate-100 dark:hover:bg-slate-750'
                     }`}
                   >
                     {w.short}
@@ -304,7 +305,7 @@ export const StartLessonNowModal: React.FC<StartLessonNowModalProps> = ({ onClos
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-44 overflow-y-auto pr-1">
                 {filteredGroups.length === 0 ? (
-                  <div className="col-span-2 p-4 text-center text-xs text-slate-400 bg-slate-50 dark:bg-slate-800/50 rounded-lg border border-slate-100 dark:border-slate-800">
+                  <div className="col-span-2 p-4 text-center text-xs text-text-muted/70 bg-surface-hover/50 rounded-lg border border-slate-100 dark:border-surface-border">
                     Keine Gruppen für den ausgewählten Tag gefunden.
                   </div>
                 ) : (
@@ -320,14 +321,14 @@ export const StartLessonNowModal: React.FC<StartLessonNowModalProps> = ({ onClos
                         className={`p-3 rounded-lg border text-left transition-all cursor-pointer flex items-center justify-between ${
                           isSelected 
                             ? 'bg-violet-50/50 dark:bg-violet-950/40 border-violet-500 shadow-2xs' 
-                            : 'bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-750 hover:border-violet-300'
+                            : 'bg-surface-hover/60 border-surface-border dark:border-slate-750 hover:border-violet-300'
                         }`}
                       >
                         <div>
-                          <span className="text-xs font-black text-slate-900 dark:text-white block">
+                          <span className="text-xs font-black text-text-main block">
                             {g.name}
                           </span>
-                          <span className="text-[10px] text-slate-500 dark:text-slate-400 font-bold block">
+                          <span className="text-[10px] text-text-muted font-bold block">
                             {g.grade} • {groupStsCount} Schüler
                           </span>
                         </div>
@@ -343,7 +344,7 @@ export const StartLessonNowModal: React.FC<StartLessonNowModalProps> = ({ onClos
             </div>
           ) : (
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
+              <label className="text-xs font-bold text-text-main">
                 Wählen Sie den Schüler für Einzelunterricht:
               </label>
 
@@ -358,14 +359,14 @@ export const StartLessonNowModal: React.FC<StartLessonNowModalProps> = ({ onClos
                       className={`p-3 rounded-lg border text-left transition-all cursor-pointer flex items-center justify-between ${
                         isSelected 
                           ? 'bg-violet-50/50 dark:bg-violet-950/40 border-violet-500 shadow-2xs' 
-                          : 'bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-750 hover:border-violet-300'
+                          : 'bg-surface-hover/60 border-surface-border dark:border-slate-750 hover:border-violet-300'
                       }`}
                     >
                       <div>
-                        <span className="text-xs font-black text-slate-900 dark:text-white block">
+                        <span className="text-xs font-black text-text-main block">
                           {s.name}
                         </span>
-                        <span className="text-[10px] text-slate-500 dark:text-slate-400 font-bold block">
+                        <span className="text-[10px] text-text-muted font-bold block">
                           {s.grade}
                         </span>
                       </div>
@@ -381,7 +382,7 @@ export const StartLessonNowModal: React.FC<StartLessonNowModalProps> = ({ onClos
           )}
 
           {/* Time & Configuration Card */}
-          <div className="bg-slate-50 dark:bg-slate-800/40 p-3.5 rounded-lg border border-slate-200/85 dark:border-slate-800 space-y-3">
+          <div className="bg-surface-hover/40 p-3.5 rounded-lg border border-surface-border/85 dark:border-surface-border space-y-3">
             <h4 className="text-xs font-black text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
               <Clock className="w-3.5 h-3.5 text-violet-600 dark:text-violet-400" />
               <span>Lektions-Einstellungen</span>
@@ -394,7 +395,7 @@ export const StartLessonNowModal: React.FC<StartLessonNowModalProps> = ({ onClos
                   type="date"
                   value={lessonDate}
                   onChange={(e) => setLessonDate(e.target.value)}
-                  className="w-full p-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg font-bold"
+                  className="w-full p-2 bg-surface border border-surface-border dark:border-surface-border-soft rounded-lg font-bold"
                 />
               </div>
 
@@ -404,7 +405,7 @@ export const StartLessonNowModal: React.FC<StartLessonNowModalProps> = ({ onClos
                   type="time"
                   value={startTime}
                   onChange={(e) => setStartTime(e.target.value)}
-                  className="w-full p-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg font-bold"
+                  className="w-full p-2 bg-surface border border-surface-border dark:border-surface-border-soft rounded-lg font-bold"
                 />
               </div>
 
@@ -413,7 +414,7 @@ export const StartLessonNowModal: React.FC<StartLessonNowModalProps> = ({ onClos
                 <select
                   value={durationMinutes}
                   onChange={(e) => setDurationMinutes(Number(e.target.value))}
-                  className="w-full p-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg font-bold"
+                  className="w-full p-2 bg-surface border border-surface-border dark:border-surface-border-soft rounded-lg font-bold"
                 >
                   <option value={30}>30 Min</option>
                   <option value={45}>45 Min</option>
@@ -428,7 +429,7 @@ export const StartLessonNowModal: React.FC<StartLessonNowModalProps> = ({ onClos
                 <select
                   value={lessonType}
                   onChange={(e) => setLessonType(e.target.value as LessonType)}
-                  className="w-full p-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg font-bold"
+                  className="w-full p-2 bg-surface border border-surface-border dark:border-surface-border-soft rounded-lg font-bold"
                 >
                   <option value="online">Online (Zoom/Meet)</option>
                   <option value="offline">Präsenz (Offline)</option>
@@ -439,7 +440,7 @@ export const StartLessonNowModal: React.FC<StartLessonNowModalProps> = ({ onClos
 
           {/* Mode Selector: Live Timer vs Record Directly */}
           <div className="space-y-2">
-            <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
+            <label className="text-xs font-bold text-text-main">
               Aktion ausführen:
             </label>
 
@@ -450,14 +451,14 @@ export const StartLessonNowModal: React.FC<StartLessonNowModalProps> = ({ onClos
                 className={`p-3 rounded-lg border text-left transition-all cursor-pointer ${
                   mode === 'start_live'
                     ? 'bg-violet-50/50 dark:bg-violet-950/40 border-violet-500 text-violet-900 dark:text-violet-200 shadow-2xs'
-                    : 'bg-slate-50 dark:bg-slate-800/40 border-slate-200 dark:border-slate-750 text-slate-600 dark:text-slate-400'
+                    : 'bg-surface-hover/40 border-surface-border dark:border-slate-750 text-text-muted'
                 }`}
               >
                 <div className="flex items-center gap-1.5 text-xs font-black">
                   <Play className="w-3.5 h-3.5 text-violet-600 dark:text-violet-400 fill-current" />
                   <span>Jetzt Live starten</span>
                 </div>
-                <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-1 leading-normal">
+                <p className="text-[10px] text-text-muted mt-1 leading-normal">
                   Öffnet die Live-Stoppuhr und das Lektions-Steuerungscenter.
                 </p>
               </button>
@@ -467,15 +468,15 @@ export const StartLessonNowModal: React.FC<StartLessonNowModalProps> = ({ onClos
                 onClick={() => setMode('record_completed')}
                 className={`p-3 rounded-lg border text-left transition-all cursor-pointer ${
                   mode === 'record_completed'
-                    ? 'bg-indigo-50/50 dark:bg-indigo-950/40 border-indigo-500 text-indigo-900 dark:text-indigo-200 shadow-2xs'
-                    : 'bg-slate-50 dark:bg-slate-800/40 border-slate-200 dark:border-slate-750 text-slate-600 dark:text-slate-400'
+                    ? 'bg-primary-soft dark:bg-primary-soft border-primary-border text-primary dark:text-primary shadow-2xs'
+                    : 'bg-surface-hover/40 border-surface-border dark:border-slate-750 text-text-muted'
                 }`}
               >
                 <div className="flex items-center gap-1.5 text-xs font-black">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
+                  <CheckCircle2 className="w-3.5 h-3.5 text-primary dark:text-primary" />
                   <span>Direkt Eintragen</span>
                 </div>
-                <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-1 leading-normal">
+                <p className="text-[10px] text-text-muted mt-1 leading-normal">
                   Erfasst die Anwesenheit & Noten direkt in der Historie & Finanzen.
                 </p>
               </button>
@@ -494,7 +495,7 @@ export const StartLessonNowModal: React.FC<StartLessonNowModalProps> = ({ onClos
                   const currentAtt = studentAttendance[st.id] || 'present';
 
                   return (
-                    <div key={st.id} className="flex items-center justify-between text-xs bg-white dark:bg-slate-900 p-2 rounded-lg border border-slate-100 dark:border-slate-800">
+                    <div key={st.id} className="flex items-center justify-between text-xs bg-surface p-2 rounded-lg border border-slate-100 dark:border-surface-border">
                       <span className="font-bold text-slate-800 dark:text-slate-200">{st.name}</span>
 
                       <div className="flex items-center gap-1">
@@ -503,8 +504,8 @@ export const StartLessonNowModal: React.FC<StartLessonNowModalProps> = ({ onClos
                           onClick={() => setStudentAttendance(prev => ({ ...prev, [st.id]: 'present' }))}
                           className={`px-2 py-0.5 rounded text-[10px] font-bold border transition-colors ${
                             currentAtt === 'present' 
-                              ? 'bg-emerald-600 border-emerald-600 text-white shadow-2xs' 
-                              : 'bg-slate-50 dark:bg-slate-800 border-slate-200/50 dark:border-slate-700 text-slate-500'
+                              ? 'bg-primary border-primary-border text-white shadow-2xs' 
+                              : 'bg-surface-hover border-surface-border/50 dark:border-surface-border-soft text-slate-500'
                           }`}
                         >
                           Anwesend
@@ -515,8 +516,8 @@ export const StartLessonNowModal: React.FC<StartLessonNowModalProps> = ({ onClos
                           onClick={() => setStudentAttendance(prev => ({ ...prev, [st.id]: 'absent' }))}
                           className={`px-2 py-0.5 rounded text-[10px] font-bold border transition-colors ${
                             currentAtt === 'absent' 
-                              ? 'bg-rose-600 border-rose-600 text-white shadow-2xs' 
-                              : 'bg-slate-50 dark:bg-slate-800 border-slate-200/50 dark:border-slate-700 text-slate-500'
+                              ? 'bg-primary border-primary-border text-white shadow-2xs' 
+                              : 'bg-surface-hover border-surface-border/50 dark:border-surface-border-soft text-slate-500'
                           }`}
                         >
                           Abwesend

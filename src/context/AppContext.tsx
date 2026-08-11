@@ -2,17 +2,25 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { 
   TeacherProfile, Group, Student, Lesson, PaymentRecord, NotificationItem, 
   LessonReport, StudentDocument, PaymentStatus, LessonStatus, AttendanceStatus, HomeworkStatus, SyncStatus, BackupData, BackupIntegrityReport, StudentPaymentDetail, AppLanguage, AccentColor, RecentlyDeletedData, ActiveLessonSession,
-  InspirationSettings, InspirationMessage, InspirationFrequency, InspirationDisplayMethod, InspirationSource
+  InspirationSettings, InspirationMessage, InspirationFrequency, InspirationDisplayMethod, InspirationSource,
+  NotificationSettings, ScheduledNotificationItem
 } from '../types';
-import { clearActiveLessonNotification } from '../services/notificationService';
+import { 
+  clearActiveLessonNotification, getPendingScheduledNotifications, 
+  cancelScheduledNotification, cancelAllScheduledNotifications, rebuildAllNotificationSchedules 
+} from '../services/notificationService';
+import { App as CapacitorApp } from '@capacitor/app';
 import { storage } from '../services/storageService';
 import { getStudentCyclePricing } from '../utils/paymentUtils';
 import { getGroupScheduleSlots, getDayNumber } from '../utils/scheduleUtils';
 import { translations, TranslationKey } from '../i18n/translations';
+import { syncTodayLessonsToWidget } from '../services/widgetService';
+
 import { 
   INITIAL_TEACHER_PROFILE, INITIAL_GROUPS, INITIAL_STUDENTS, 
   INITIAL_LESSONS, INITIAL_PAYMENT_RECORDS, INITIAL_NOTIFICATIONS,
-  INITIAL_INSPIRATION_SETTINGS, INITIAL_INSPIRATION_MESSAGES
+  INITIAL_INSPIRATION_SETTINGS, INITIAL_INSPIRATION_MESSAGES,
+  DEFAULT_NOTIFICATION_SETTINGS
 } from '../data/initialData';
 import confetti from 'canvas-confetti';
 import { Capacitor } from '@capacitor/core';
@@ -141,6 +149,15 @@ interface AppContextType {
   markAllNotificationsRead: () => void;
   clearAllNotifications: () => void;
 
+  // Notification Settings & System Scheduling Engine
+  notificationSettings: NotificationSettings;
+  updateNotificationSettings: (updates: Partial<NotificationSettings>) => Promise<void>;
+  pendingScheduledNotifications: ScheduledNotificationItem[];
+  refreshPendingScheduledNotifications: () => Promise<void>;
+  cancelSingleScheduledNotification: (id: number) => Promise<void>;
+  cancelAllPendingScheduledNotifications: () => Promise<void>;
+  rebuildNotificationSchedules: () => Promise<{ count: number; nextScheduledTime: string | null }>;
+
   // Active Lesson Control Modal & Central Timer Engine
   selectedLesson: Lesson | null;
   setSelectedLesson: (lesson: Lesson | null) => void;
@@ -210,9 +227,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode, initialData: any
   };
 
   useEffect(() => {
-    const classes = ['accent-blue', 'accent-green', 'accent-purple', 'accent-orange', 'accent-red', 'accent-teal', 'accent-indigo'];
+    const classes = ['accent-blue', 'accent-green', 'accent-purple', 'accent-orange', 'accent-red', 'accent-teal', 'accent-indigo', 'accent-rose', 'accent-amber', 'accent-emerald', 'accent-fuchsia', 'accent-cyan', 'accent-violet', 'accent-slate'];
     classes.forEach(c => document.documentElement.classList.remove(c));
     document.documentElement.classList.add(`accent-${accentColor}`);
+    
   }, [accentColor]);
 
   const [todos, setTodos] = useState<any[]>(() => {
@@ -330,6 +348,59 @@ export const AppProvider: React.FC<{ children: React.ReactNode, initialData: any
       return item;
     });
   });
+
+  // System Notification Settings & Scheduled Notifications Engine
+  const [notificationSettings, setNotificationSettingsState] = useState<NotificationSettings>(() => {
+    const saved = initialData['dl_notification_settings'];
+    if (saved) {
+      return { ...DEFAULT_NOTIFICATION_SETTINGS, ...saved };
+    }
+    return DEFAULT_NOTIFICATION_SETTINGS;
+  });
+
+  const [pendingScheduledNotifications, setPendingScheduledNotifications] = useState<ScheduledNotificationItem[]>([]);
+
+  const refreshPendingScheduledNotifications = async () => {
+    const items = await getPendingScheduledNotifications();
+    setPendingScheduledNotifications(items);
+  };
+
+  const updateNotificationSettings = async (updates: Partial<NotificationSettings>) => {
+    const newSettings = { ...notificationSettings, ...updates };
+    setNotificationSettingsState(newSettings);
+    storage.setItem('dl_notification_settings', newSettings);
+
+    // Rebuild schedule with updated settings
+    await rebuildAllNotificationSchedules(newSettings, lessons, groups, students, payments);
+    await refreshPendingScheduledNotifications();
+  };
+
+  const cancelSingleScheduledNotification = async (id: number) => {
+    await cancelScheduledNotification(id);
+    await refreshPendingScheduledNotifications();
+  };
+
+  const cancelAllPendingScheduledNotifications = async () => {
+    await cancelAllScheduledNotifications();
+    await refreshPendingScheduledNotifications();
+  };
+
+  const rebuildNotificationSchedules = async () => {
+    const res = await rebuildAllNotificationSchedules(notificationSettings, lessons, groups, students, payments);
+    await refreshPendingScheduledNotifications();
+    return res;
+  };
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      rebuildAllNotificationSchedules(notificationSettings, lessons, groups, students, payments)
+        .then(() => getPendingScheduledNotifications().then(setPendingScheduledNotifications))
+        .catch(err => console.warn('Auto notification schedule rebuild error:', err));
+        
+      syncTodayLessonsToWidget(lessons).catch(err => console.warn('Widget sync error:', err));
+    }, 1500);
+    return () => clearTimeout(timer);
+  }, [lessons, students.length, groups.length]);
 
   // Inspiration & Gratitude Reminders State
   const [inspirationSettings, setInspirationSettings] = useState<InspirationSettings>(() => {
@@ -2034,6 +2105,23 @@ export const AppProvider: React.FC<{ children: React.ReactNode, initialData: any
     clearActiveLessonNotification();
   };
 
+  
+  useEffect(() => {
+    CapacitorApp.addListener('appUrlOpen', (data) => {
+      console.log('App opened with URL:', data.url);
+      if (data.url.includes('ags19://lesson/')) {
+        const lessonId = data.url.split('ags19://lesson/')[1];
+        if (lessonId && lessonId !== 'null') {
+           const lesson = lessons.find(l => l.id === lessonId);
+           if (lesson) openLessonControl(lesson);
+        }
+      }
+    });
+    return () => {
+      CapacitorApp.removeAllListeners();
+    };
+  }, [lessons]);
+
   return (
     <AppContext.Provider
       value={{
@@ -2104,6 +2192,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode, initialData: any
         markNotificationRead,
         markAllNotificationsRead,
         clearAllNotifications,
+        notificationSettings,
+        updateNotificationSettings,
+        pendingScheduledNotifications,
+        refreshPendingScheduledNotifications,
+        cancelSingleScheduledNotification,
+        cancelAllPendingScheduledNotifications,
+        rebuildNotificationSchedules,
         clearAllData,
         selectedLesson,
         setSelectedLesson,

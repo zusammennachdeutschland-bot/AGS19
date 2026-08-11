@@ -1,9 +1,12 @@
+import { App as CapacitorApp } from '@capacitor/app';
 import React, { useState } from 'react';
 import { AppProvider, useApp } from './context/AppContext';
 import { Header } from './components/Header';
 import { TodaysProgressTimeline } from './components/TodaysProgressTimeline';
 import { DailyStats } from './components/DailyStats';
 import { PaymentAlertsCard } from './components/PaymentAlertsCard';
+import { TomorrowsLessonsWidget } from './components/TomorrowsLessonsWidget';
+import { SmartDailySummaryWidget } from './components/SmartDailySummaryWidget';
 import { QuickTodoWidget } from './components/QuickTodoWidget';
 import { InspirationCardWidget } from './components/InspirationCardWidget';
 import { ScheduleView } from './components/ScheduleView';
@@ -91,13 +94,13 @@ function MainApp() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-100 dark:bg-black text-slate-900 dark:text-slate-100 font-sans antialiased overflow-hidden">
-      <div className="max-w-lg mx-auto bg-white dark:bg-black h-screen shadow-2xl relative flex flex-col border-x border-slate-200/80 dark:border-slate-900">
+    <div className="min-h-[100dvh] bg-background text-text-main font-sans antialiased overflow-hidden">
+      <div className="max-w-lg mx-auto bg-background h-[100dvh] shadow-2xl relative flex flex-col border-x border-surface-border/80 dark:border-surface-border">
         <Header />
 
         {/* Tab View Content Area */}
         <main 
-          className="flex-1 p-4 overflow-y-auto pb-24 overflow-x-hidden relative"
+          className="flex-1 p-4 overflow-y-auto pb-[calc(6rem+env(safe-area-inset-bottom,0px))] overflow-x-hidden relative"
           onTouchStart={handleTouchStart}
           onTouchMove={handleTouchMove}
           onTouchEnd={handleTouchEnd}
@@ -109,7 +112,7 @@ function MainApp() {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -8, scale: 0.98 }}
               transition={{ type: 'spring', stiffness: 400, damping: 26 }}
-              className="space-y-5"
+              className="space-y-3"
             >
               {activeTab === 'home' && (
 
@@ -123,11 +126,17 @@ function MainApp() {
               {/* Compact Collapsible To-Do Widget */}
               <QuickTodoWidget />
 
-              {/* Daily Statistics Cards */}
+              {/* Tomorrow's Lessons Compact Widget */}
+              <TomorrowsLessonsWidget />
+
+              {/* Weekly & Monthly Statistics */}
               <DailyStats />
 
               {/* Payment Alerts */}
               <PaymentAlertsCard />
+
+              {/* Smart Daily Summary Widget at bottom of Dashboard */}
+              <SmartDailySummaryWidget />
             </>
           )}
 
@@ -198,7 +207,7 @@ export default function App() {
   }, []);
 
   if (!initialData) {
-    return <div className="h-screen w-screen flex items-center justify-center bg-slate-100 dark:bg-black"><div className="animate-pulse text-slate-500">Lade Daten...</div></div>;
+    return <div className="h-[100dvh] w-screen flex items-center justify-center bg-background"><div className="animate-pulse text-slate-500">Lade Daten...</div></div>;
   }
 
   return (

@@ -120,12 +120,12 @@ export const ReportsView: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6 pb-20">
+    <div className="space-y-4 ">
       {/* Header */}
       <div className="flex items-center justify-between gap-4">
         <div>
           <h2 className="text-sm font-black uppercase tracking-wider text-slate-800 dark:text-slate-200 flex items-center gap-2">
-            <BarChart2 className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+            <BarChart2 className="w-4 h-4 text-primary dark:text-primary" />
             <span>{t ? t('reports_and_analyses') || 'Berichte & Analysen' : 'Berichte & Analysen'}</span>
           </h2>
           <p className="text-[11px] text-slate-500 font-bold mt-0.5">
@@ -135,7 +135,7 @@ export const ReportsView: React.FC = () => {
 
         <button
           onClick={handlePrintReport}
-          className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-3 py-2 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs shrink-0"
+          className="bg-primary hover:bg-primary-hover text-white font-bold text-xs px-3 py-2 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs shrink-0"
         >
           <Printer className="w-3.5 h-3.5" />
           <span>Drucken / PDF</span>
@@ -144,36 +144,36 @@ export const ReportsView: React.FC = () => {
 
       {/* KPI Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-2xs">
-          <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Erhaltene Einnahmen</span>
+        <div className="bg-surface border border-surface-border rounded-xl p-4 shadow-2xs">
+          <span className="block text-[10px] font-bold text-text-muted/70 uppercase tracking-wider">Erhaltene Einnahmen</span>
           <div className="flex items-baseline gap-1 mt-1">
-            <span className="text-xl font-black font-mono text-emerald-600 dark:text-emerald-400">
+            <span className="text-xl font-black font-mono text-primary dark:text-primary">
               +{totalCollectedRevenue.toLocaleString()}
             </span>
             <span className="text-[11px] font-bold text-slate-500">{profile.currency}</span>
           </div>
-          <span className="text-[10px] text-emerald-600 font-bold flex items-center gap-1 mt-2">
+          <span className="text-[10px] text-primary font-bold flex items-center gap-1 mt-2">
             <TrendingUp className="w-3.5 h-3.5" /> Aus Sitzungen bezahlt
           </span>
         </div>
 
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-2xs">
-          <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Offener Betrag</span>
+        <div className="bg-surface border border-surface-border rounded-xl p-4 shadow-2xs">
+          <span className="block text-[10px] font-bold text-text-muted/70 uppercase tracking-wider">Offener Betrag</span>
           <div className="flex items-baseline gap-1 mt-1">
-            <span className="text-xl font-black font-mono text-amber-600 dark:text-amber-400">
+            <span className="text-xl font-black font-mono text-primary dark:text-primary">
               {totalUnpaidAmount.toLocaleString()}
             </span>
             <span className="text-[11px] font-bold text-slate-500">{profile.currency}</span>
           </div>
-          <span className="text-[10px] text-amber-600 font-bold flex items-center gap-1 mt-2">
+          <span className="text-[10px] text-primary font-bold flex items-center gap-1 mt-2">
             <Clock className="w-3.5 h-3.5" /> Ausstehende Zahlungen
           </span>
         </div>
 
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-2xs">
-          <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Sitzungen Absolviert</span>
+        <div className="bg-surface border border-surface-border rounded-xl p-4 shadow-2xs">
+          <span className="block text-[10px] font-bold text-text-muted/70 uppercase tracking-wider">Sitzungen Absolviert</span>
           <div className="flex items-baseline gap-1 mt-1">
-            <span className="text-xl font-black font-mono text-blue-600 dark:text-blue-400">
+            <span className="text-xl font-black font-mono text-primary dark:text-primary">
               {completedSessionsCount}
             </span>
             <span className="text-[11px] font-bold text-slate-500">Sitzungen</span>
@@ -184,7 +184,7 @@ export const ReportsView: React.FC = () => {
         <div className={`border rounded-xl p-4 shadow-2xs transition-all ${
           unpaidLastSessionsCount > 0 
             ? 'bg-red-50/50 dark:bg-red-950/20 border-red-300 dark:border-red-900/60' 
-            : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800'
+            : 'bg-surface border border-surface-border'
         }`}>
           <span className="block text-[10px] font-bold text-red-600 dark:text-red-400 uppercase tracking-wider">
             Letzte Sitzung Unbezahlt
@@ -203,11 +203,11 @@ export const ReportsView: React.FC = () => {
       </div>
 
       {/* WEEKLY SESSIONS & MONEY LOG LIST */}
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-2xs space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-3.5">
+      <div className="bg-surface border border-surface-border rounded-xl p-4 shadow-2xs space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-surface-border pb-3.5">
           <div>
-            <h3 className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
-              <Calendar className="w-4 h-4 text-indigo-600" />
+            <h3 className="text-xs font-black text-text-main uppercase tracking-wider flex items-center gap-2">
+              <Calendar className="w-4 h-4 text-primary" />
               <span>Wöchentliches Sitzungs- & Einnahmen-Protokoll</span>
             </h3>
             <p className="text-[11px] text-slate-500 font-bold mt-0.5">
@@ -216,13 +216,13 @@ export const ReportsView: React.FC = () => {
           </div>
 
           {/* Filter Pills */}
-          <div className="flex items-center gap-1 bg-slate-50 dark:bg-slate-800/80 p-1 rounded-lg border border-slate-200 dark:border-slate-800 text-[11px] font-bold">
+          <div className="flex items-center gap-1 bg-surface-hover/80 p-1 rounded-lg border border-surface-border text-[11px] font-bold">
             <button
               onClick={() => setActiveFilter('all')}
               className={`px-2.5 py-1 rounded transition-all cursor-pointer ${
                 activeFilter === 'all'
-                  ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white border border-slate-200 dark:border-slate-700 shadow-2xs'
-                  : 'text-slate-500 dark:text-slate-400 border border-transparent'
+                  ? 'bg-surface text-text-main border border-surface-border dark:border-surface-border-soft shadow-2xs'
+                  : 'text-text-muted border border-transparent'
               }`}
             >
               Alle
@@ -231,8 +231,8 @@ export const ReportsView: React.FC = () => {
               onClick={() => setActiveFilter('this_week')}
               className={`px-2.5 py-1 rounded transition-all cursor-pointer ${
                 activeFilter === 'this_week'
-                  ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 border border-slate-200 dark:border-slate-700 shadow-2xs'
-                  : 'text-slate-500 dark:text-slate-400 border border-transparent'
+                  ? 'bg-surface text-primary dark:text-primary border border-surface-border dark:border-surface-border-soft shadow-2xs'
+                  : 'text-text-muted border border-transparent'
               }`}
             >
               Diese Woche
@@ -241,8 +241,8 @@ export const ReportsView: React.FC = () => {
               onClick={() => setActiveFilter('paid')}
               className={`px-2.5 py-1 rounded transition-all cursor-pointer ${
                 activeFilter === 'paid'
-                  ? 'bg-emerald-600 text-white shadow-2xs'
-                  : 'text-slate-500 dark:text-slate-400'
+                  ? 'bg-primary text-white shadow-2xs'
+                  : 'text-text-muted'
               }`}
             >
               Bezahlt
@@ -252,7 +252,7 @@ export const ReportsView: React.FC = () => {
               className={`px-2.5 py-1 rounded transition-all cursor-pointer ${
                 activeFilter === 'unpaid'
                   ? 'bg-red-600 text-white shadow-2xs'
-                  : 'text-slate-500 dark:text-slate-400'
+                  : 'text-text-muted'
               }`}
             >
               Unbezahlt
@@ -262,7 +262,7 @@ export const ReportsView: React.FC = () => {
 
         {/* List grouped by week */}
         {Object.keys(weeksGrouped).length === 0 ? (
-          <div className="text-center py-8 text-slate-400 text-xs font-bold italic">
+          <div className="text-center py-5 text-text-muted/70 text-xs font-bold italic">
             Keine Sitzungen für die ausgewählte Filteroption gefunden.
           </div>
         ) : (
@@ -271,25 +271,25 @@ export const ReportsView: React.FC = () => {
             const weekUnpaid = weekLessons.reduce((sum, l) => sum + (l.paymentStatus !== 'paid' ? (l.amountDue - l.amountPaid) : 0), 0);
 
             return (
-              <div key={weekTitle} className="space-y-2 border border-slate-100 dark:border-slate-800/60 rounded-xl overflow-hidden bg-slate-50/25 dark:bg-slate-900/40">
+              <div key={weekTitle} className="space-y-2 border border-slate-100 dark:border-surface-border/60 rounded-xl overflow-hidden bg-background/25 dark:bg-surface/40">
                 {/* Week Header */}
-                <div className="bg-slate-50 dark:bg-slate-800/80 px-4 py-3 flex flex-wrap items-center justify-between gap-2 border-b border-slate-200/60 dark:border-slate-800">
+                <div className="bg-surface-hover/80 px-4 py-3 flex flex-wrap items-center justify-between gap-2 border-b border-surface-border/60 dark:border-surface-border">
                   <div className="flex items-center gap-2">
                     <span className="font-extrabold text-xs text-slate-800 dark:text-slate-200 font-mono">
                       📅 {weekTitle}
                     </span>
-                    <span className="text-[10px] bg-white dark:bg-slate-700 px-2 py-0.5 rounded border border-slate-200/60 dark:border-slate-600 font-bold text-slate-700 dark:text-slate-300">
+                    <span className="text-[10px] bg-surface dark:bg-slate-700 px-2 py-0.5 rounded border border-surface-border/60 dark:border-slate-600 font-bold text-text-main">
                       {weekLessons.length} Sitzungen
                     </span>
                   </div>
 
                   <div className="flex items-center gap-3 text-xs font-mono font-bold">
-                    <span className="text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                    <span className="text-primary dark:text-primary flex items-center gap-1">
                       <DollarSign className="w-3.5 h-3.5" />
                       +{weekRevenue} {profile.currency} erhalten
                     </span>
                     {weekUnpaid > 0 && (
-                      <span className="text-amber-600 dark:text-amber-400 flex items-center gap-1 bg-amber-50 dark:bg-amber-950/60 px-2 py-0.5 rounded border border-amber-200/60">
+                      <span className="text-primary dark:text-primary flex items-center gap-1 bg-primary-soft dark:bg-primary-soft px-2 py-0.5 rounded border border-primary-border">
                         ⚠️ {weekUnpaid} {profile.currency} offen
                       </span>
                     )}
@@ -315,20 +315,20 @@ export const ReportsView: React.FC = () => {
                         {/* Left: Group name, date, session info */}
                         <div className="space-y-1 min-w-0">
                           <div className="flex items-center gap-2 flex-wrap">
-                            <span className="font-bold text-xs text-slate-900 dark:text-white truncate max-w-xs">
+                            <span className="font-bold text-xs text-text-main truncate max-w-xs">
                               {l.groupName || l.title}
                             </span>
 
-                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 border border-indigo-200/40 dark:border-indigo-800/40 font-mono">
+                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-primary-soft dark:bg-primary-soft text-primary dark:text-primary border border-primary-border dark:border-primary-border font-mono">
                               Sitzung {l.sessionNumber}/{l.totalSessionsInPackage}
                             </span>
 
                             {l.status === 'completed' ? (
-                              <span className="text-[9px] font-bold text-emerald-700 bg-emerald-50 dark:bg-emerald-950/40 dark:text-emerald-300 px-1.5 py-0.5 rounded flex items-center gap-0.5">
+                              <span className="text-[9px] font-bold text-primary bg-primary-soft dark:bg-primary-soft dark:text-primary px-1.5 py-0.5 rounded flex items-center gap-0.5">
                                 <CheckCircle2 className="w-2.5 h-2.5" /> Absolviert
                               </span>
                             ) : (
-                              <span className="text-[9px] font-bold text-blue-700 bg-blue-50 dark:bg-blue-950/40 dark:text-blue-300 px-1.5 py-0.5 rounded flex items-center gap-0.5">
+                              <span className="text-[9px] font-bold text-primary bg-primary-soft dark:bg-primary-soft/40 dark:text-primary/70 px-1.5 py-0.5 rounded flex items-center gap-0.5 active:scale-95 transition-all hover:bg-primary/20">
                                 <Clock className="w-2.5 h-2.5" /> Geplant
                               </span>
                             )}
@@ -356,19 +356,19 @@ export const ReportsView: React.FC = () => {
                           <div className="text-right">
                             {l.paymentStatus === 'paid' ? (
                               <div>
-                                <span className="font-bold font-mono text-xs text-emerald-600 dark:text-emerald-400">
+                                <span className="font-bold font-mono text-xs text-primary dark:text-primary">
                                   +{l.amountPaid || l.amountDue} {profile.currency}
                                 </span>
-                                <span className="block text-[9px] font-bold text-emerald-600 uppercase">
+                                <span className="block text-[9px] font-bold text-primary uppercase">
                                   ✓ Bezahlt
                                 </span>
                               </div>
                             ) : l.paymentStatus === 'partial' ? (
                               <div>
-                                <span className="font-bold font-mono text-xs text-indigo-600 dark:text-indigo-400">
+                                <span className="font-bold font-mono text-xs text-primary dark:text-primary">
                                   +{l.amountPaid} {profile.currency}
                                 </span>
-                                <span className="block text-[9px] font-bold text-amber-600 uppercase">
+                                <span className="block text-[9px] font-bold text-primary uppercase">
                                   Teilweise ({l.amountDue - l.amountPaid} offen)
                                 </span>
                               </div>
@@ -388,7 +388,7 @@ export const ReportsView: React.FC = () => {
                           {l.paymentStatus !== 'paid' && (
                             <button
                               onClick={(e) => handleMarkAsPaid(e, l)}
-                              className="px-2 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-xs font-bold transition-all shadow-2xs flex items-center gap-1 cursor-pointer"
+                              className="px-2 py-1 bg-primary hover:bg-primary-hover text-white rounded text-xs font-bold transition-all shadow-2xs flex items-center gap-1 cursor-pointer"
                               title="Als bezahlt markieren"
                             >
                               <Check className="w-3 h-3" />
@@ -409,29 +409,29 @@ export const ReportsView: React.FC = () => {
       {/* Revenue & Attendance Visual Charts */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Weekly Revenue Bar Chart */}
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-2xs space-y-3">
+        <div className="bg-surface border border-surface-border rounded-xl p-4 shadow-2xs space-y-3">
           <h3 className="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider flex items-center gap-1.5">
-            <TrendingUp className="w-4 h-4 text-emerald-600" />
+            <TrendingUp className="w-4 h-4 text-primary" />
             <span>Wöchentlicher Umsatz ({profile.currency})</span>
           </h3>
 
           <div className="h-48 w-full">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={chartData}>
-                <XAxis dataKey="name" stroke="#94a3b8" fontSize={10} />
-                <YAxis stroke="#94a3b8" fontSize={10} />
+                <XAxis dataKey="name" stroke="var(--color-text-muted)" fontSize={10} />
+                <YAxis stroke="var(--color-text-muted)" fontSize={10} />
                 <Tooltip />
-                <Bar dataKey="Einnahmen" fill="#10B981" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="Offen" fill="#EF4444" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="Einnahmen" fill="var(--color-primary)" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="Offen" fill="var(--color-text-muted)" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
         </div>
 
         {/* Attendance Breakdown */}
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-2xs space-y-3">
+        <div className="bg-surface border border-surface-border rounded-xl p-4 shadow-2xs space-y-3">
           <h3 className="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider flex items-center gap-1.5">
-            <BarChart2 className="w-4 h-4 text-indigo-600" />
+            <BarChart2 className="w-4 h-4 text-primary" />
             <span>Anwesenheitsübersicht der Schüler</span>
           </h3>
 
