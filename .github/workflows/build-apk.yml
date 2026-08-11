@@ -70,10 +70,11 @@ jobs:
           
       - name: Fix Corrupt Gradle Wrapper & Build APK
         run: |
-          # 1. Generate the wrapper in an empty temp directory to avoid parsing build.gradle with Gradle 9.7
+          # 1. Generate the wrapper in an empty temp directory (with a fake settings file)
           echo "Generating fresh gradle-wrapper.jar in isolated directory..."
           mkdir -p /tmp/gradle-fix
           cd /tmp/gradle-fix
+          touch settings.gradle
           gradle wrapper --gradle-version 8.7
           
           # 2. Copy the fresh jar back into your repository
