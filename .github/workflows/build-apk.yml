@@ -68,9 +68,11 @@ jobs:
           fi
           echo "Android public assets verified."
           
-      - name: Build Fresh Debug APK (Clean Build)
+      - name: Fix Corrupt Gradle Wrapper & Build APK
         run: |
           cd android
+          echo "Regenerating gradle wrapper to fix corrupt jar..."
+          gradle wrapper
           chmod +x gradlew
           ./gradlew clean assembleDebug --stacktrace
           
