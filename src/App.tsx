@@ -18,6 +18,7 @@ import { ReportsView } from './components/ReportsView';
 import { SessionHistoryView } from './components/SessionHistoryView';
 import { SettingsView } from './components/SettingsView';
 import { FreeTimeSlotsView } from './components/FreeTimeSlotsView';
+import { AndroidWidgetsHub } from './components/AndroidWidgetsHub';
 
 import { AnimatePresence, motion } from 'motion/react';
 import { BottomNav } from './components/BottomNav';
@@ -160,6 +161,7 @@ function MainApp() {
 
           {activeTab === 'settings' && <SettingsView />}
           {activeTab === 'freeTime' && <FreeTimeSlotsView />}
+          {activeTab === 'widgets' && <AndroidWidgetsHub />}
 
             </motion.div>
           </AnimatePresence>
@@ -197,7 +199,7 @@ export default function App() {
       try {
         await migrateFromLocalStorageToIndexedDB();
         const keys = [
-          'dl_theme', 'dl_dark_theme_variant', 'dl_accent_color', 'dl_quick_todos', 'dl_language', 'dl_profile',
+          'dl_theme', 'dl_accent_color', 'dl_quick_todos', 'dl_language', 'dl_profile',
           'dl_groups', 'dl_students', 'dl_lessons', 'dl_payments',
           'dl_notifications', 'dl_notification_settings', 'dl_inspiration_settings', 'dl_inspiration_messages',
           'dl_last_backup_time', 'dl_dismissed_dashboard_lessons', 'dl_recently_deleted',

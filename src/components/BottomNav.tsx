@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
-import { Home, Calendar, Users, MoreHorizontal, Wallet, BarChart2, Settings, Zap, History, Play, Clock } from 'lucide-react';
+import { Home, Calendar, Users, MoreHorizontal, Wallet, BarChart2, Settings, Zap, History, Play, Clock, Smartphone } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 export const BottomNav: React.FC = () => {
@@ -19,7 +19,8 @@ export const BottomNav: React.FC = () => {
   const isHistoryActive = activeTab === 'history';
   const isReportsActive = activeTab === 'reports';
   const isSettingsActive = activeTab === 'settings';
-  const isMoreTabActive = isHistoryActive || isReportsActive || isSettingsActive;
+  const isWidgetsActive = activeTab === 'widgets';
+  const isMoreTabActive = isHistoryActive || isReportsActive || isSettingsActive || isWidgetsActive;
 
   // Define primary tabs
   const leftTabs = [
@@ -37,6 +38,7 @@ export const BottomNav: React.FC = () => {
     if (isHistoryActive) return { label: t('nav_history') || 'Sitzungen', icon: History, colorClass: 'text-primary' };
     if (isReportsActive) return { label: t('nav_reports') || 'Berichte', icon: BarChart2, colorClass: 'text-primary' };
     if (isSettingsActive) return { label: t('nav_settings') || 'Einstellungen', icon: Settings, colorClass: 'text-primary' };
+    if (isWidgetsActive) return { label: 'Widgets', icon: Smartphone, colorClass: 'text-primary' };
     return { label: t('nav_more') || 'Mehr', icon: MoreHorizontal, colorClass: 'text-text-muted/70' };
   };
 
@@ -285,6 +287,17 @@ export const BottomNav: React.FC = () => {
                     transition={{ type: 'spring', stiffness: 450, damping: 25 }}
                     className="absolute bottom-14 right-0 w-44 bg-surface/95 dark:bg-background/95 backdrop-blur-xl border border-surface-border/40 dark:border-surface-border/60 rounded-[20px] shadow-xl p-1.5 space-y-1.5 z-50 origin-bottom-right"
                   >
+                    <button
+                      onClick={() => handleTabClick('widgets')}
+                      className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-bold transition-colors cursor-pointer ${
+                        activeTab === 'widgets'
+                          ? 'bg-primary-soft text-primary dark:bg-primary-soft dark:text-primary'
+                          : 'hover:bg-background dark:hover:bg-slate-900 text-text-main'
+                      }`}
+                    >
+                      <Smartphone className="w-4 h-4 text-primary" />
+                      <span>Android Widgets</span>
+                    </button>
                     <button
                       onClick={() => handleTabClick('freeTime')}
                       className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-bold transition-colors cursor-pointer ${

@@ -40,7 +40,6 @@ export const SettingsView: React.FC = () => {
     addInspirationMessage, updateInspirationMessage, deleteInspirationMessage,
     toggleFavoriteInspirationMessage, restoreDefaultInspirationMessages,
     checkAndTriggerInspirationReminder, accentColor, setAccentColor,
-    darkThemeVariant, setDarkThemeVariant,
     notificationSettings
   } = useApp();
 
@@ -496,7 +495,7 @@ export const SettingsView: React.FC = () => {
           </div>
 
           {/* Theme Section */}
-          <div className="bg-surface border border-surface-border/90 dark:border-surface-border rounded-xl p-5 shadow-2xs space-y-4">
+          <div className="bg-surface border border-surface-border/90 dark:border-surface-border rounded-xl p-5 shadow-2xs space-y-3">
             <div className="flex items-center justify-between">
               <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
                 {theme === 'dark' ? <Moon className="w-4 h-4 text-primary" /> : <Sun className="w-4 h-4 text-primary" />}
@@ -508,7 +507,7 @@ export const SettingsView: React.FC = () => {
               <button
                 type="button"
                 onClick={() => theme !== 'light' && toggleTheme()}
-                className={`p-4 rounded-xl font-bold flex items-center justify-center gap-2 transition-all cursor-pointer border ${
+                className={`p-4 rounded-lg font-bold flex items-center justify-center gap-2 transition-all cursor-pointer border ${
                   theme === 'light'
                     ? 'bg-primary text-white border-primary-border shadow-sm'
                     : 'bg-surface-hover text-text-main border-surface-border dark:border-surface-border-soft hover:bg-slate-100 dark:hover:bg-slate-700'
@@ -521,7 +520,7 @@ export const SettingsView: React.FC = () => {
               <button
                 type="button"
                 onClick={() => theme !== 'dark' && toggleTheme()}
-                className={`p-4 rounded-xl font-bold flex items-center justify-center gap-2 transition-all cursor-pointer border ${
+                className={`p-4 rounded-lg font-bold flex items-center justify-center gap-2 transition-all cursor-pointer border ${
                   theme === 'dark'
                     ? 'bg-primary text-white border-primary-border shadow-sm'
                     : 'bg-surface-hover text-text-main border-surface-border dark:border-surface-border-soft hover:bg-slate-100 dark:hover:bg-slate-700'
@@ -531,123 +530,60 @@ export const SettingsView: React.FC = () => {
                 <span>{t('settings_theme_dark')}</span>
               </button>
             </div>
-
-            {/* Dark Mode Punch Background Variants */}
-            {theme === 'dark' && (
-              <div className="pt-3 border-t border-surface-border/80 space-y-3 animate-scale-up">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-extrabold text-text-main flex items-center gap-1.5">
-                    <Sparkles className="w-3.5 h-3.5 text-primary" />
-                    {_t('أنماط الخلفية الداكنة (Punch Dark Styles)', 'Dark Punch Canvas Style', 'Dunkles Canvas-Design')}
-                  </span>
-                  <span className="text-[10px] text-primary font-bold px-2 py-0.5 rounded-full bg-primary-soft">
-                    {darkThemeVariant || 'oled'}
-                  </span>
-                </div>
-
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                  {[
-                    { id: 'oled' as const, label: _t('OLED أسود حاد', 'OLED Pitch Black'), bgHex: '#000000', borderHex: '#334155' },
-                    { id: 'midnight' as const, label: _t('كحلي ليلي', 'Midnight Navy'), bgHex: '#050811', borderHex: '#1e2b4a' },
-                    { id: 'cyberpunk' as const, label: _t('بنفسجي نيون', 'Cyberpunk Violet'), bgHex: '#0a0414', borderHex: '#32185a' },
-                    { id: 'emerald' as const, label: _t('زمردي داكن', 'Forest Emerald'), bgHex: '#020d08', borderHex: '#14422e' },
-                    { id: 'crimson' as const, label: _t('قرمزي مخملي', 'Crimson Velvet'), bgHex: '#0f0205', borderHex: '#44111d' },
-                    { id: 'amber' as const, label: _t('عنبر ليلي', 'Obsidian Amber'), bgHex: '#0c0904', borderHex: '#402c13' },
-                    { id: 'abyss' as const, label: _t('أعماق المحيط', 'Abyssal Teal'), bgHex: '#020b0e', borderHex: '#113646' },
-                  ].map((v) => {
-                    const isSelected = darkThemeVariant === v.id;
-                    return (
-                      <button
-                        key={v.id}
-                        type="button"
-                        onClick={() => {
-                          setDarkThemeVariant(v.id);
-                          confetti({ particleCount: 30, spread: 40 });
-                        }}
-                        className={`p-2.5 rounded-xl border text-start transition-all cursor-pointer flex items-center gap-2.5 ${
-                          isSelected
-                            ? 'ring-2 ring-primary border-primary bg-primary-soft/40'
-                            : 'border-surface-border hover:border-primary/50 bg-surface-hover'
-                        }`}
-                      >
-                        <div
-                          className="w-5 h-5 rounded-md border shrink-0 flex items-center justify-center shadow-inner"
-                          style={{ backgroundColor: v.bgHex, borderColor: v.borderHex }}
-                        >
-                          {isSelected && <Check className="w-3 h-3 text-primary stroke-[3]" />}
-                        </div>
-                        <span className="text-[11px] font-bold text-text-main truncate">
-                          {v.label}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
           </div>
 
-          {/* Accent Color Section (23 Rich & Punchy Colors) */}
+          {/* Accent Color Section */}
           <div className="bg-surface border border-surface-border/90 dark:border-surface-border rounded-xl p-5 shadow-2xs space-y-4">
             <div className="flex items-center justify-between">
               <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
                 <Sparkles className="w-4 h-4 text-primary" />
                 <span>
-                  {_t('ألوان التمييز والحيوية (23 Accent Colors)', '23 Vibrant Accent Colors', '23 Akzentfarben')}
+                  {_t('لون الواجهة (Accent Color)', 'Accent Color', 'Akzentfarbe')}
                 </span>
               </h3>
-              <span className="text-[11px] font-mono font-bold text-primary px-2.5 py-0.5 rounded-lg bg-primary-soft">
-                {accentColor}
-              </span>
             </div>
 
             <p className="text-xs text-text-muted">
               {_t('اختر لون التمييز المفضل لجميع الأزرار والأيقونات والتبويبات النشطة وعناصر الواجهة التفاعلية.', 'Select your preferred accent color for all buttons, icons, active tabs, and interactive controls.', 'Wählen Sie die bevorzugte Akzentfarbe für alle Schaltflächen, Symbole, Tabs und Steuerelemente.')}
             </p>
 
-            <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-3 pt-2 pb-2">
+            <div className="grid grid-cols-4 sm:grid-cols-7 gap-3 pt-2 pb-2">
               {[
-                { id: 'blue' as const, name: _t('أزرق', 'Blue'), hex: '#3b82f6' },
-                { id: 'darkblue' as const, name: _t('أزرق داكن', 'Dark Blue'), hex: '#1d4ed8' },
-                { id: 'navy' as const, name: _t('نيفي', 'Navy'), hex: '#1e3a8a' },
-                { id: 'sky' as const, name: _t('سماوي', 'Sky'), hex: '#0284c7' },
-                { id: 'indigo' as const, name: _t('نيلي', 'Indigo'), hex: '#6366f1' },
-                { id: 'violet' as const, name: _t('بنفسجي', 'Violet'), hex: '#8b5cf6' },
-                { id: 'purple' as const, name: _t('أرجواني', 'Purple'), hex: '#a855f7' },
-                { id: 'fuchsia' as const, name: _t('فوكسيا', 'Fuchsia'), hex: '#d946ef' },
-                { id: 'pink' as const, name: _t('وردي', 'Pink'), hex: '#ec4899' },
-                { id: 'rose' as const, name: _t('زهري', 'Rose'), hex: '#f43f5e' },
-                { id: 'red' as const, name: _t('أحمر', 'Red'), hex: '#ef4444' },
-                { id: 'crimson' as const, name: _t('قرمزي', 'Crimson'), hex: '#dc2626' },
-                { id: 'bloodorange' as const, name: _t('برتقالي ناري', 'Blood Orange'), hex: '#ea580c' },
-                { id: 'orange' as const, name: _t('برتقالي', 'Orange'), hex: '#f97316' },
-                { id: 'amber' as const, name: _t('عنبري', 'Amber'), hex: '#f59e0b' },
-                { id: 'yellow' as const, name: _t('أصفر', 'Yellow'), hex: '#ca8a04' },
-                { id: 'lime' as const, name: _t('ليموني', 'Lime'), hex: '#84cc16' },
-                { id: 'neon-green' as const, name: _t('نيون أخضر', 'Neon Green'), hex: '#00ff66' },
-                { id: 'green' as const, name: _t('أخضر', 'Green'), hex: '#22c55e' },
-                { id: 'emerald' as const, name: _t('زمردي', 'Emerald'), hex: '#10b981' },
-                { id: 'teal' as const, name: _t('تركوازي', 'Teal'), hex: '#14b8a6' },
-                { id: 'cyan' as const, name: _t('سايان', 'Cyan'), hex: '#06b6d4' },
-                { id: 'slate' as const, name: _t('رمادي', 'Slate'), hex: '#64748b' },
+                { id: 'blue' as const, hex: '#3b82f6', color: 'blue' },
+                { id: 'darkblue' as const, hex: '#1e40af', color: 'darkblue' },
+                { id: 'indigo' as const, hex: '#6366f1', color: 'indigo' },
+                { id: 'violet' as const, hex: '#8b5cf6', color: 'violet' },
+                { id: 'purple' as const, hex: '#a855f7', color: 'purple' },
+                { id: 'fuchsia' as const, hex: '#d946ef', color: 'fuchsia' },
+                { id: 'rose' as const, hex: '#f43f5e', color: 'rose' },
+                { id: 'red' as const, hex: '#ef4444', color: 'red' },
+                { id: 'orange' as const, hex: '#f97316', color: 'orange' },
+                { id: 'amber' as const, hex: '#f59e0b', color: 'amber' },
+                { id: 'green' as const, hex: '#22c55e', color: 'green' },
+                { id: 'emerald' as const, hex: '#10b981', color: 'emerald' },
+                { id: 'lime' as const, hex: '#84cc16', color: 'lime' },
+                { id: 'pink' as const, hex: '#ec4899', color: 'pink' },
+                { id: 'teal' as const, hex: '#14b8a6', color: 'teal' },
+                { id: 'cyan' as const, hex: '#06b6d4', color: 'cyan' },
+                { id: 'slate' as const, hex: '#64748b', color: 'slate' },
               ].map((item) => {
                 const isSelected = accentColor === item.id;
                 return (
                   <button
                     key={item.id}
                     type="button"
-                    title={item.name}
                     onClick={() => {
                       if (accentColor !== item.id) {
                         setAccentColor(item.id);
                         confetti({ particleCount: 30, spread: 40 });
                       }
                     }}
-                    className="flex flex-col items-center gap-1 focus:outline-none group cursor-pointer"
+                    className="flex flex-col items-center gap-1.5 focus:outline-none group cursor-pointer"
                     style={{ WebkitTapHighlightColor: 'transparent' }}
                   >
                     <div 
-                      className={`w-9 h-9 rounded-full flex items-center justify-center shadow-lg relative transition-all duration-300 transform group-hover:scale-110 active:scale-95 ${
+                      
+                      className={`w-10 h-10 rounded-full flex items-center justify-center shadow-lg relative transition-all duration-300 transform group-hover:scale-110 active:scale-95 ${
                         isSelected 
                           ? 'ring-4 ring-offset-2 ring-offset-surface scale-110' 
                           : 'opacity-80 hover:opacity-100 border border-white/20'
@@ -655,12 +591,9 @@ export const SettingsView: React.FC = () => {
                       style={{ backgroundColor: item.hex, ...(isSelected ? { "--tw-ring-color": item.hex } : {}) } as React.CSSProperties}
                     >
                       {isSelected && (
-                        <Check className="w-4 h-4 text-white stroke-[3.5px] drop-shadow-sm animate-scale-up" />
+                        <Check className="w-5 h-5 text-white stroke-[3.5px] drop-shadow-sm animate-scale-up" />
                       )}
                     </div>
-                    <span className={`text-[10px] font-extrabold truncate max-w-[56px] ${isSelected ? 'text-primary' : 'text-text-muted'}`}>
-                      {item.name}
-                    </span>
                   </button>
                 );
               })}
@@ -683,8 +616,8 @@ export const SettingsView: React.FC = () => {
                   <Sparkles className="w-4 h-4" />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-xs font-bold text-text-main truncate">Premium Theme Widget</p>
-                  <p className="text-[10px] text-text-muted truncate">Adapts live to your accent color</p>
+                  <p className="text-xs font-bold text-text-main truncate">Premium Widget</p>
+                  <p className="text-[10px] text-text-muted truncate">Adapts to your accent color</p>
                 </div>
                 <div className="ml-auto shrink-0">
                    <div className="w-8 h-4 rounded-full bg-primary relative cursor-pointer">
@@ -726,13 +659,18 @@ export const SettingsView: React.FC = () => {
                 </label>
               </div>
 
-              <div className="space-y-1 flex-1 min-w-0 pr-2">
-                <p className="text-sm font-extrabold text-text-main truncate max-w-full">{displayName || t('settings_name')}</p>
-                <p className="text-xs text-slate-500 font-mono truncate max-w-full break-all" title={email}>{email || '-'}</p>
-                <div className="flex items-center gap-2 pt-0.5 flex-wrap">
-                  <span className="text-[11px] font-bold text-text-muted bg-surface-hover px-2.5 py-0.5 rounded-md shrink-0">
+              <div className="space-y-1 flex-1 min-w-0">
+                <p className="text-sm font-extrabold text-text-main truncate" title={displayName || t('settings_name')}>
+                  {displayName || t('settings_name')}
+                </p>
+                <p className="text-xs text-slate-500 font-mono truncate" title={email || '-'}>
+                  {email || '-'}
+                </p>
+                <div className="flex items-center gap-2 pt-0.5">
+                  <span className="text-[11px] font-bold text-text-muted bg-surface-hover px-2.5 py-0.5 rounded-md">
                     {t('settings_currency')}: {currency}
                   </span>
+                  
                 </div>
               </div>
             </div>

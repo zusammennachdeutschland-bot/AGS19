@@ -9,12 +9,7 @@ export type LessonStatus = 'scheduled' | 'in_progress' | 'completed' | 'cancelle
 
 export type AppLanguage = 'ar' | 'en' | 'de';
 
-export type AccentColor = 
-  | 'blue' | 'darkblue' | 'navy' | 'sky' | 'indigo' | 'violet' | 'purple' | 'fuchsia' 
-  | 'pink' | 'rose' | 'red' | 'crimson' | 'bloodorange' | 'orange' | 'amber' | 'yellow' 
-  | 'lime' | 'neon-green' | 'green' | 'emerald' | 'teal' | 'cyan' | 'slate';
-
-export type DarkThemeVariant = 'oled' | 'midnight' | 'cyberpunk' | 'emerald' | 'crimson' | 'amber' | 'abyss';
+export type AccentColor = 'blue' | 'green' | 'purple' | 'orange' | 'red' | 'teal' | 'indigo' | 'rose' | 'amber' | 'emerald' | 'fuchsia' | 'cyan' | 'violet' | 'slate' | 'pink' | 'lime' | 'darkblue';
 
 export type PaymentStatus = 'paid' | 'pending' | 'partial';
 
@@ -86,6 +81,7 @@ export interface Group {
   startingSessionNumber?: number; // e.g., 1, 3, 5, 8...
   paymentMethod?: 'vodafone_cash' | 'cash' | 'bank_transfer' | 'paypal' | 'instapay';
   paymentCycle?: PaymentCycle;
+  paymentModel?: 'per_session' | 'package';
   scheduleDays?: string[]; // e.g. ['Sunday', 'Wednesday']
   scheduleTime?: string; // e.g. "17:00"
   scheduleDayTimes?: Record<string, string>; // e.g. { "Sunday": "15:00", "Wednesday": "19:00" }
@@ -119,6 +115,7 @@ export interface Student {
   parentName: string;
   parentPhone: string;
   studentPhone: string;
+  phone?: string;
   notes?: string;
   avatarUrl?: string;
   documents: StudentDocument[];
@@ -132,6 +129,7 @@ export interface Student {
   bundleSize?: number;
   customBundlePrice?: number;
   advanceBalance?: number;
+  monthlyFee?: number;
 }
 
 export interface StudentPaymentDetail {
@@ -144,9 +142,9 @@ export interface StudentPaymentDetail {
 }
 
 export interface LessonReport {
-  attendanceStatus: AttendanceStatus;
+  attendanceStatus?: AttendanceStatus;
   studentAttendance?: Record<string, AttendanceStatus>;
-  homeworkStatus: HomeworkStatus;
+  homeworkStatus?: HomeworkStatus;
   homeworkTitle?: string;
   homeworkDescription?: string;
   quizScore?: number;
@@ -164,7 +162,8 @@ export interface LessonReport {
   arabicParentNotes?: string;
   arabicTemplateMessage?: string;
   arabicFullGeneratedReport?: string;
-  savedAt: string;
+  savedAt?: string;
+  scores?: any;
 }
 
 export interface DeletedItem<T> {
@@ -211,11 +210,16 @@ export interface Lesson {
   amountPaid: number;
   meetingLink?: string;
   locationAddress?: string;
+  location?: string;
   report?: LessonReport;
   studentPayments?: Record<string, StudentPaymentDetail>;
   offlinePaymentAction?: 'paid_now' | 'will_pay_next' | 'partially_paid' | 'not_paid';
+  notes?: string;
+  duration?: number;
   // Quick Lesson fields
   isQuickLesson?: boolean;
+  quickStudentName?: string;
+  quickParentName?: string;
   quickStudentPhone?: string;
   quickParentPhone?: string;
   quickNotes?: string;

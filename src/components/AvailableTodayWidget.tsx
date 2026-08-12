@@ -50,14 +50,14 @@ export const AvailableTodayWidget: React.FC = () => {
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2.5">
-          <div className="p-2 rounded-xl bg-primary-soft dark:bg-primary-soft text-primary dark:text-primary border border-primary-border dark:border-primary-border">
+          <div className="p-2 rounded-xl bg-primary-soft text-primary border border-primary-border">
             <CheckCircle2 className="w-4 h-4" />
           </div>
-          <h3 className="text-xs font-black text-text-main uppercase tracking-wider">
+          <h3 className="text-xs font-black text-text-main tracking-wider">
             {t('free_time_available_today')}
           </h3>
         </div>
-        <ChevronRight className="w-4 h-4 text-text-muted/70 group-hover:text-primary transition-colors" />
+        <ChevronRight className="w-4 h-4 text-text-muted transition-colors" />
       </div>
 
       {/* Stats */}
@@ -74,7 +74,7 @@ export const AvailableTodayWidget: React.FC = () => {
 
         <div className="flex flex-col gap-1 border-l border-surface-border pl-3">
           <span className="text-[10px] font-bold text-text-muted uppercase tracking-wider">{_t('التالي', 'Next Slot', 'Nächster')}</span>
-          <span className="text-xs font-black text-slate-800 dark:text-slate-200 font-mono">
+          <span className="text-xs font-black text-slate-700 dark:text-slate-300 font-mono">
             {nextSlot ? `${nextSlot.start}` : _t('لا يوجد', 'None', 'Keiner')}
           </span>
         </div>

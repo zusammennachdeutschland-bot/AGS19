@@ -12,7 +12,7 @@ export default defineConfig(() => {
       tailwindcss(),
       VitePWA({
         registerType: 'autoUpdate',
-        includeAssets: ['logo.svg'],
+        includeAssets: ['logo.svg', 'favicon.png', 'icon.png', 'logo.png', 'apple-touch-icon.png'],
         manifest: {
           name: 'AGS19 Teacher App',
           short_name: 'AGS19',
@@ -20,14 +20,32 @@ export default defineConfig(() => {
           theme_color: '#ffffff',
           icons: [
             {
-              src: 'logo.svg',
+              src: 'favicon.png',
+              sizes: '64x64',
+              type: 'image/png'
+            },
+            {
+              src: 'icon.png',
               sizes: '192x192',
-              type: 'image/svg+xml'
+              type: 'image/png',
+              purpose: 'any'
+            },
+            {
+              src: 'icon.png',
+              sizes: '512x512',
+              type: 'image/png',
+              purpose: 'any'
             },
             {
               src: 'logo.svg',
-              sizes: '512x512',
-              type: 'image/svg+xml'
+              sizes: '1024x1024',
+              type: 'image/svg+xml',
+              purpose: 'any'
+            },
+            {
+              src: 'apple-touch-icon.png',
+              sizes: '180x180',
+              type: 'image/png'
             }
           ]
         },

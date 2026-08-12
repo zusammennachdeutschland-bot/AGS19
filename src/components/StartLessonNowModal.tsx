@@ -171,7 +171,7 @@ export const StartLessonNowModal: React.FC<StartLessonNowModalProps> = ({ onClos
         quizScore,
         examScore,
         participationScore: 95,
-        paymentStatus: 'unpaid',
+        paymentStatus: 'pending',
         amountPaid: 0,
         teacherNotes,
         savedAt: new Date().toISOString()

@@ -91,7 +91,7 @@ export const AddLessonModal: React.FC<AddLessonModalProps> = ({ onClose }) => {
       type,
       grade: selectedGroup?.grade || grade,
       status: 'scheduled',
-      paymentStatus: 'unpaid',
+      paymentStatus: 'pending',
       amountDue: selectedGroup ? Math.round(selectedGroup.monthlyPackagePrice / selectedGroup.sessionCount) : 250,
       amountPaid: 0
     }, isWeeklyRecurring ? Number(repeatWeeks) : 1);

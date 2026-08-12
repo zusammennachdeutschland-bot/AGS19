@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { Student, Group, Lesson, PaymentRecord } from '../types';
+import { storage } from '../services/storageService';
 import { 
   ALL_BACKUP_CATEGORIES, BackupCategory, calculateBackupStats, 
   generateBackupFilename, encryptBackupData, decryptBackupData, 
@@ -308,6 +309,11 @@ export const SmartBackupCenter: React.FC<SmartBackupCenterProps> = ({ onBack }) 
     setRestoreProgress(10);
 
     // Step 1: Create Automatic Restore Point
+    console.log('students before', students.length);
+    console.log('groups before', groups.length);
+    console.log('lessons before', lessons.length);
+    console.log('payments before', payments.length);
+
     const currentSnapshot = {
       timestamp: new Date().toISOString(),
       students,
@@ -336,93 +342,191 @@ export const SmartBackupCenter: React.FC<SmartBackupCenterProps> = ({ onBack }) 
         const data = parsed.data || parsed;
         setRestoreProgress(60);
 
+        console.log('parsed students', data.students?.length);
+        console.log('parsed groups', data.groups?.length);
+        console.log('parsed lessons', data.lessons?.length);
+        console.log('parsed payments', data.payments?.length);
+        console.log('selectedRestoreCategories', selectedRestoreCategories);
+
         // Smart Restore logic
         if (restoreMode === 'smart') {
           if (selectedRestoreCategories.includes('students') && data.students) {
-            const existingMap = new Map(students.map(s => [s.id, s]));
-            const newStudentsList = [...students];
+            try {
+              const existingMap = new Map(students.map(s => [s.id, s]));
+              const newStudentsList = [...students];
 
-            data.students.forEach((impS: Student) => {
-              if (existingMap.has(impS.id)) {
-                const idx = newStudentsList.findIndex(s => s.id === impS.id);
-                if (idx !== -1) newStudentsList[idx] = { ...newStudentsList[idx], ...impS };
-              } else {
-                newStudentsList.push(impS);
-              }
-            });
-            setStudents(newStudentsList);
+              data.students.forEach((impS: Student) => {
+                if (existingMap.has(impS.id)) {
+                  const idx = newStudentsList.findIndex(s => s.id === impS.id);
+                  if (idx !== -1) newStudentsList[idx] = { ...newStudentsList[idx], ...impS };
+                } else {
+                  newStudentsList.push(impS);
+                }
+              });
+              console.log('calling setStudents');
+              setStudents(newStudentsList);
+              await storage.setItem('dl_students', newStudentsList);
+            } catch (categoryError: any) {
+              console.error('Error during smart restore students', categoryError);
+            }
           }
 
           if (selectedRestoreCategories.includes('groups') && data.groups) {
-            const existingMap = new Map(groups.map(g => [g.id, g]));
-            const newGroupsList = [...groups];
+            try {
+              const existingMap = new Map(groups.map(g => [g.id, g]));
+              const newGroupsList = [...groups];
 
-            data.groups.forEach((impG: Group) => {
-              if (existingMap.has(impG.id)) {
-                const idx = newGroupsList.findIndex(g => g.id === impG.id);
-                if (idx !== -1) newGroupsList[idx] = { ...newGroupsList[idx], ...impG };
-              } else {
-                newGroupsList.push(impG);
-              }
-            });
-            setGroups(newGroupsList);
+              data.groups.forEach((impG: Group) => {
+                if (existingMap.has(impG.id)) {
+                  const idx = newGroupsList.findIndex(g => g.id === impG.id);
+                  if (idx !== -1) newGroupsList[idx] = { ...newGroupsList[idx], ...impG };
+                } else {
+                  newGroupsList.push(impG);
+                }
+              });
+              console.log('calling setGroups');
+              setGroups(newGroupsList);
+              await storage.setItem('dl_groups', newGroupsList);
+            } catch (categoryError: any) {
+              console.error('Error during smart restore groups', categoryError);
+            }
           }
 
           if (selectedRestoreCategories.includes('schedule') && data.lessons) {
-            const existingMap = new Map(lessons.map(l => [l.id, l]));
-            const newLessonsList = [...lessons];
+            try {
+              const existingMap = new Map(lessons.map(l => [l.id, l]));
+              const newLessonsList = [...lessons];
 
-            data.lessons.forEach((impL: Lesson) => {
-              if (existingMap.has(impL.id)) {
-                const idx = newLessonsList.findIndex(l => l.id === impL.id);
-                if (idx !== -1) newLessonsList[idx] = { ...newLessonsList[idx], ...impL };
-              } else {
-                newLessonsList.push(impL);
-              }
-            });
-            setLessons(newLessonsList);
+              data.lessons.forEach((impL: Lesson) => {
+                if (existingMap.has(impL.id)) {
+                  const idx = newLessonsList.findIndex(l => l.id === impL.id);
+                  if (idx !== -1) newLessonsList[idx] = { ...newLessonsList[idx], ...impL };
+                } else {
+                  newLessonsList.push(impL);
+                }
+              });
+              console.log('calling setLessons');
+              setLessons(newLessonsList);
+              await storage.setItem('dl_lessons', newLessonsList);
+            } catch (categoryError: any) {
+              console.error('Error during smart restore lessons', categoryError);
+            }
           }
 
           if (selectedRestoreCategories.includes('financial') && data.payments) {
-            const existingMap = new Map(payments.map(p => [p.id, p]));
-            const newPaymentsList = [...payments];
+            try {
+              const existingMap = new Map(payments.map(p => [p.id, p]));
+              const newPaymentsList = [...payments];
 
-            data.payments.forEach((impP: PaymentRecord) => {
-              if (existingMap.has(impP.id)) {
-                const idx = newPaymentsList.findIndex(p => p.id === impP.id);
-                if (idx !== -1) newPaymentsList[idx] = { ...newPaymentsList[idx], ...impP };
-              } else {
-                newPaymentsList.push(impP);
-              }
-            });
-            setPayments(newPaymentsList);
+              data.payments.forEach((impP: PaymentRecord) => {
+                if (existingMap.has(impP.id)) {
+                  const idx = newPaymentsList.findIndex(p => p.id === impP.id);
+                  if (idx !== -1) newPaymentsList[idx] = { ...newPaymentsList[idx], ...impP };
+                } else {
+                  newPaymentsList.push(impP);
+                }
+              });
+              console.log('calling setPayments');
+              setPayments(newPaymentsList);
+              await storage.setItem('dl_payments', newPaymentsList);
+            } catch (categoryError: any) {
+              console.error('Error during smart restore payments', categoryError);
+            }
           }
         } else if (restoreMode === 'merge') {
           // Merge Mode: append records
           if (selectedRestoreCategories.includes('students') && data.students) {
-            setStudents([...students, ...data.students]);
+            try {
+              const newList = [...students, ...data.students];
+              console.log('calling setStudents');
+              setStudents(newList);
+              await storage.setItem('dl_students', newList);
+            } catch (categoryError: any) {
+              console.error('Error during merge restore students', categoryError);
+            }
           }
           if (selectedRestoreCategories.includes('groups') && data.groups) {
-            setGroups([...groups, ...data.groups]);
+            try {
+              const newList = [...groups, ...data.groups];
+              console.log('calling setGroups');
+              setGroups(newList);
+              await storage.setItem('dl_groups', newList);
+            } catch (categoryError: any) {
+              console.error('Error during merge restore groups', categoryError);
+            }
           }
           if (selectedRestoreCategories.includes('schedule') && data.lessons) {
-            setLessons([...lessons, ...data.lessons]);
+            try {
+              const newList = [...lessons, ...data.lessons];
+              console.log('calling setLessons');
+              setLessons(newList);
+              await storage.setItem('dl_lessons', newList);
+            } catch (categoryError: any) {
+              console.error('Error during merge restore lessons', categoryError);
+            }
           }
           if (selectedRestoreCategories.includes('financial') && data.payments) {
-            setPayments([...payments, ...data.payments]);
+            try {
+              const newList = [...payments, ...data.payments];
+              console.log('calling setPayments');
+              setPayments(newList);
+              await storage.setItem('dl_payments', newList);
+            } catch (categoryError: any) {
+              console.error('Error during merge restore payments', categoryError);
+            }
           }
         } else if (restoreMode === 'replace') {
           // Replace Mode: overwrite selected categories
-          if (selectedRestoreCategories.includes('students') && data.students) setStudents(data.students);
-          if (selectedRestoreCategories.includes('groups') && data.groups) setGroups(data.groups);
-          if (selectedRestoreCategories.includes('schedule') && data.lessons) setLessons(data.lessons);
-          if (selectedRestoreCategories.includes('financial') && data.payments) setPayments(data.payments);
+          if (selectedRestoreCategories.includes('students') && data.students) {
+            try {
+              console.log('calling setStudents');
+              setStudents(data.students);
+              await storage.setItem('dl_students', data.students);
+            } catch (categoryError: any) {
+              console.error('Error during replace restore students', categoryError);
+            }
+          }
+          if (selectedRestoreCategories.includes('groups') && data.groups) {
+            try {
+              console.log('calling setGroups');
+              setGroups(data.groups);
+              await storage.setItem('dl_groups', data.groups);
+            } catch (categoryError: any) {
+              console.error('Error during replace restore groups', categoryError);
+            }
+          }
+          if (selectedRestoreCategories.includes('schedule') && data.lessons) {
+            try {
+              console.log('calling setLessons');
+              setLessons(data.lessons);
+              await storage.setItem('dl_lessons', data.lessons);
+            } catch (categoryError: any) {
+              console.error('Error during replace restore lessons', categoryError);
+            }
+          }
+          if (selectedRestoreCategories.includes('financial') && data.payments) {
+            try {
+              console.log('calling setPayments');
+              setPayments(data.payments);
+              await storage.setItem('dl_payments', data.payments);
+            } catch (categoryError: any) {
+              console.error('Error during replace restore payments', categoryError);
+            }
+          }
         }
 
         // Restore Settings if selected
         if (selectedRestoreCategories.includes('settings') && data.profile) {
-          setProfile({ ...profile, ...data.profile });
+          try {
+            const newProfile = { ...profile, ...data.profile };
+            setProfile(newProfile);
+            await storage.setItem('dl_profile', newProfile);
+          } catch (categoryError: any) {
+            console.error('Error during restore settings', categoryError);
+          }
         }
+
+        console.log('restore finished');
 
         setRestoreProgress(100);
         setRestoreSuccessMsg(_t('✓ تم استعادة البيانات المحددة بنجاح مع إنشاء نقطة استعادة تلقائية!', '✓ Selected categories restored successfully with auto restore point!'));

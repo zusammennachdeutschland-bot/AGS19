@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { 
   TeacherProfile, Group, Student, Lesson, PaymentRecord, NotificationItem, 
-  LessonReport, StudentDocument, PaymentStatus, LessonStatus, AttendanceStatus, HomeworkStatus, SyncStatus, BackupData, BackupIntegrityReport, StudentPaymentDetail, AppLanguage, AccentColor, DarkThemeVariant, RecentlyDeletedData, ActiveLessonSession,
+  LessonReport, StudentDocument, PaymentStatus, LessonStatus, AttendanceStatus, HomeworkStatus, SyncStatus, BackupData, BackupIntegrityReport, StudentPaymentDetail, AppLanguage, AccentColor, RecentlyDeletedData, ActiveLessonSession,
   InspirationSettings, InspirationMessage, InspirationFrequency, InspirationDisplayMethod, InspirationSource,
   NotificationSettings, ScheduledNotificationItem
 } from '../types';
@@ -33,16 +33,14 @@ interface AppContextType {
   // Navigation & Theme & Language & Accent
   theme: 'light' | 'dark';
   toggleTheme: () => void;
-  darkThemeVariant: DarkThemeVariant;
-  setDarkThemeVariant: (variant: DarkThemeVariant) => void;
   language: AppLanguage;
   setLanguage: (lang: AppLanguage) => void;
   accentColor: AccentColor;
   setAccentColor: (color: AccentColor) => void;
   t: (key: TranslationKey) => string;
   _t: (ar: string, en: string, de?: string) => string;
-  activeTab: 'home' | 'schedule' | 'students' | 'history' | 'payments' | 'reports' | 'settings';
-  setActiveTab: (tab: 'home' | 'schedule' | 'students' | 'history' | 'payments' | 'reports' | 'settings') => void;
+  activeTab: 'home' | 'schedule' | 'students' | 'history' | 'payments' | 'reports' | 'settings' | 'freeTime' | 'widgets';
+  setActiveTab: (tab: 'home' | 'schedule' | 'students' | 'history' | 'payments' | 'reports' | 'settings' | 'freeTime' | 'widgets') => void;
 
   // Global Search & Recently Deleted Modals
   isGlobalSearchOpen: boolean;
@@ -205,6 +203,19 @@ interface AppContextType {
   isBackupModalOpen: boolean;
   setIsBackupModalOpen: (open: boolean) => void;
   clearAllData: () => void;
+
+  // Added setters for Backup & Restore Center
+  setStudents: React.Dispatch<React.SetStateAction<Student[]>>;
+  setGroups: React.Dispatch<React.SetStateAction<Group[]>>;
+  setLessons: React.Dispatch<React.SetStateAction<Lesson[]>>;
+  setPayments: React.Dispatch<React.SetStateAction<PaymentRecord[]>>;
+  setNotifications: React.Dispatch<React.SetStateAction<NotificationItem[]>>;
+  setProfile: React.Dispatch<React.SetStateAction<TeacherProfile>>;
+  setNotificationSettings: React.Dispatch<React.SetStateAction<NotificationSettings>>;
+  setInspirationSettings: React.Dispatch<React.SetStateAction<InspirationSettings>>;
+  setInspirationMessages: React.Dispatch<React.SetStateAction<InspirationMessage[]>>;
+  backupToDrive: () => void;
+  restoreFromDrive: (jsonString: string) => boolean;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -219,16 +230,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode, initialData: any
     return saved !== null && saved !== undefined ? saved : 'light';
   });
 
-  const [darkThemeVariant, setDarkThemeVariantState] = useState<DarkThemeVariant>(() => {
-    const saved = initialData['dl_dark_theme_variant'];
-    return saved !== null && saved !== undefined ? saved : 'oled';
-  });
-
-  const setDarkThemeVariant = (variant: DarkThemeVariant) => {
-    setDarkThemeVariantState(variant);
-    storage.setItem('dl_dark_theme_variant', variant);
-  };
-
   const [accentColor, setAccentColorState] = useState<AccentColor>(() => {
     const saved = initialData['dl_accent_color'];
     return saved !== null && saved !== undefined ? saved : 'blue';
@@ -240,24 +241,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode, initialData: any
   };
 
   useEffect(() => {
-    const darkVariants = [
-      'dark-variant-oled', 'dark-variant-midnight', 'dark-variant-cyberpunk',
-      'dark-variant-emerald', 'dark-variant-crimson', 'dark-variant-amber', 'dark-variant-abyss'
-    ];
-    darkVariants.forEach(v => document.documentElement.classList.remove(v));
-    document.documentElement.classList.add(`dark-variant-${darkThemeVariant}`);
-  }, [darkThemeVariant]);
-
-  useEffect(() => {
-    const classes = [
-      'accent-blue', 'accent-darkblue', 'accent-navy', 'accent-sky', 'accent-indigo', 
-      'accent-violet', 'accent-purple', 'accent-fuchsia', 'accent-pink', 'accent-rose', 
-      'accent-red', 'accent-crimson', 'accent-bloodorange', 'accent-orange', 'accent-amber', 
-      'accent-yellow', 'accent-lime', 'accent-neon-green', 'accent-green', 'accent-emerald', 
-      'accent-teal', 'accent-cyan', 'accent-slate'
-    ];
+    const classes = ['accent-blue', 'accent-green', 'accent-purple', 'accent-orange', 'accent-red', 'accent-teal', 'accent-indigo', 'accent-rose', 'accent-amber', 'accent-emerald', 'accent-fuchsia', 'accent-cyan', 'accent-violet', 'accent-slate', 'accent-pink', 'accent-lime', 'accent-darkblue'];
     classes.forEach(c => document.documentElement.classList.remove(c));
     document.documentElement.classList.add(`accent-${accentColor}`);
+    
   }, [accentColor]);
 
   const [todos, setTodos] = useState<any[]>(() => {
@@ -269,7 +256,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode, initialData: any
     storage.setItem('dl_quick_todos', todos);
   }, [todos]);
 
-  const [activeTab, setActiveTab] = useState<'home' | 'schedule' | 'students' | 'history' | 'payments' | 'reports' | 'settings'>('home');
+  const [activeTab, setActiveTab] = useState<'home' | 'schedule' | 'students' | 'history' | 'payments' | 'reports' | 'settings' | 'freeTime' | 'widgets'>('home');
 
   const [profile, setProfile] = useState<TeacherProfile>(() => {
     const saved = initialData['dl_profile'];
@@ -383,7 +370,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode, initialData: any
   });
 
   // System Notification Settings & Scheduled Notifications Engine
-  const [notificationSettings, setNotificationSettingsState] = useState<NotificationSettings>(() => {
+  const [notificationSettings, setNotificationSettings] = useState<NotificationSettings>(() => {
     const saved = initialData['dl_notification_settings'];
     if (saved) {
       return { ...DEFAULT_NOTIFICATION_SETTINGS, ...saved };
@@ -400,7 +387,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode, initialData: any
 
   const updateNotificationSettings = async (updates: Partial<NotificationSettings>) => {
     const newSettings = { ...notificationSettings, ...updates };
-    setNotificationSettingsState(newSettings);
+    setNotificationSettings(newSettings);
     storage.setItem('dl_notification_settings', newSettings);
 
     // Rebuild schedule with updated settings
@@ -2162,8 +2149,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode, initialData: any
         setTodos,
         theme,
         toggleTheme,
-        darkThemeVariant,
-        setDarkThemeVariant,
         language,
         setLanguage,
         accentColor,
@@ -2271,7 +2256,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode, initialData: any
         isAddGroupModalOpen,
         setIsAddGroupModalOpen,
         isBackupModalOpen,
-        setIsBackupModalOpen
+        setIsBackupModalOpen,
+        setStudents,
+        setGroups,
+        setLessons,
+        setPayments,
+        setNotifications,
+        setProfile,
+        setNotificationSettings,
+        setInspirationSettings,
+        setInspirationMessages
       }}
     >
       {children}
