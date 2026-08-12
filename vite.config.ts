@@ -11,6 +11,7 @@ export default defineConfig(() => {
       react(), 
       tailwindcss(),
       VitePWA({
+        selfDestroying: true,
         registerType: 'autoUpdate',
         includeAssets: ['logo.svg', 'favicon.png', 'icon.png', 'logo.png', 'apple-touch-icon.png'],
         manifest: {
