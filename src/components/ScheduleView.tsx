@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { StartLessonNowModal } from './StartLessonNowModal';
 import { LessonReminderModal } from './LessonReminderModal';
+import { ExportMonthlyCalendarModal } from './ExportMonthlyCalendarModal';
 
 export const ScheduleView: React.FC = () => {
   const { lessons, profile, openLessonControl, setIsAddLessonModalOpen, setIsAddQuickLessonModalOpen, updateLesson, deleteLesson, refreshCalendarAndDashboard,  t } = useApp();
@@ -18,6 +19,7 @@ export const ScheduleView: React.FC = () => {
   const [calendarView, setCalendarView] = useState<'day' | 'week' | 'month'>('day');
   const [showRefreshToast, setShowRefreshToast] = useState(false);
   const [showStartLessonNowModal, setShowStartLessonNowModal] = useState(false);
+  const [isExportMonthlyModalOpen, setIsExportMonthlyModalOpen] = useState(false);
   const [reminderLesson, setReminderLesson] = useState<Lesson | null>(null);
 
   const handleRefreshCalendar = () => {
@@ -238,6 +240,16 @@ export const ScheduleView: React.FC = () => {
           >
             <Download className="w-3.5 h-3.5" />
             <span className="hidden md:inline">{t('schedule_ical')}</span>
+          </button>
+
+          {/* Export Monthly Calendar (.ics) */}
+          <button
+            onClick={() => setIsExportMonthlyModalOpen(true)}
+            title="Export Monthly Calendar (.ics)"
+            className="bg-primary/10 hover:bg-primary/20 text-primary border border-primary/30 font-bold text-xs px-3 py-2 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer shrink-0"
+          >
+            <CalendarIcon className="w-3.5 h-3.5" />
+            <span>Export Monthly Calendar (.ics)</span>
           </button>
 
           {/* Quick Lesson */}
@@ -774,6 +786,11 @@ export const ScheduleView: React.FC = () => {
           lesson={reminderLesson}
           onClose={() => setReminderLesson(null)}
         />
+      )}
+
+      {/* EXPORT MONTHLY CALENDAR MODAL */}
+      {isExportMonthlyModalOpen && (
+        <ExportMonthlyCalendarModal onClose={() => setIsExportMonthlyModalOpen(false)} />
       )}
     </div>
   );
