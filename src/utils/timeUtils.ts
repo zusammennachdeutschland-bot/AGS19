@@ -22,8 +22,31 @@ export const formatTimeDisplay = (time: string, language: string): string => {
 };
 
 export const getDayOfWeekIndex = (dateStr: string): number => {
-  const d = new Date(dateStr);
+  const d = parseLocalDate(dateStr);
   return d.getDay(); // 0 = Sun, 1 = Mon ... 6 = Sat
+};
+
+/**
+ * Safely parses a 'YYYY-MM-DD' date string into a local Date object at 00:00:00 local time.
+ * Prevents UTC timezone shifting.
+ */
+export const parseLocalDate = (dateStr: string): Date => {
+  if (!dateStr) return new Date();
+  const parts = dateStr.split('-');
+  if (parts.length !== 3) return new Date(dateStr);
+  const [y, m, d] = parts.map(Number);
+  return new Date(y, m - 1, d);
+};
+
+/**
+ * Safely formats a Date object into 'YYYY-MM-DD' using local time components.
+ * Prevents toISOString() UTC backward/forward day shifts.
+ */
+export const formatLocalDate = (date: Date = new Date()): string => {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
 };
 
 export interface TimeSlot {

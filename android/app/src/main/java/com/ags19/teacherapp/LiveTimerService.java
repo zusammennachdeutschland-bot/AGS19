@@ -28,6 +28,12 @@ public class LiveTimerService extends Service {
     public static final String EXTRA_REMAINING_MINS = "EXTRA_REMAINING_MINS";
     public static final String EXTRA_PERCENT = "EXTRA_PERCENT";
 
+    private final android.os.Handler handler = new android.os.Handler(android.os.Looper.getMainLooper());
+    private Runnable timerRunnable;
+    private long startTime;
+    private int durationMins = 60;
+    private String title;
+
     @Override
     public void onCreate() {
         super.onCreate();
@@ -43,33 +49,55 @@ public class LiveTimerService extends Service {
                 return START_NOT_STICKY;
             }
 
-            String title = intent.getStringExtra(EXTRA_TITLE);
+            title = intent.getStringExtra(EXTRA_TITLE);
             if (title == null || title.trim().isEmpty()) {
                 title = "Live Unterricht";
             }
-            long startTime = intent.getLongExtra(EXTRA_START_TIME, System.currentTimeMillis());
-            int durationMins = intent.getIntExtra(EXTRA_DURATION_MINS, 60);
-            int elapsedMins = intent.getIntExtra(EXTRA_ELAPSED_MINS, 0);
-            int remainingMins = intent.getIntExtra(EXTRA_REMAINING_MINS, durationMins);
-            int percent = intent.getIntExtra(EXTRA_PERCENT, 0);
+            startTime = intent.getLongExtra(EXTRA_START_TIME, System.currentTimeMillis());
+            int rawDuration = intent.getIntExtra(EXTRA_DURATION_MINS, 60);
+            durationMins = rawDuration > 0 ? rawDuration : 60;
 
-            Notification notification = buildNotification(title, startTime, durationMins, elapsedMins, remainingMins, percent);
-
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                if (Build.VERSION.SDK_INT >= 34) {
-                    try {
-                        startForeground(NOTIFICATION_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE);
-                    } catch (Exception e) {
-                        startForeground(NOTIFICATION_ID, notification);
-                    }
-                } else {
-                    startForeground(NOTIFICATION_ID, notification);
-                }
-            } else {
-                startForeground(NOTIFICATION_ID, notification);
-            }
+            startTicker();
         }
         return START_STICKY;
+    }
+
+    private void startTicker() {
+        if (timerRunnable != null) {
+            handler.removeCallbacks(timerRunnable);
+        }
+
+        timerRunnable = new Runnable() {
+            @Override
+            public void run() {
+                long elapsedMillis = System.currentTimeMillis() - startTime;
+                int elapsedMins = (int) (elapsedMillis / (1000 * 60));
+                int remainingMins = Math.max(0, durationMins - elapsedMins);
+
+                // Requirement 1 & 5: progressPercentage = (elapsedLessonTime / lessonDuration) * 100
+                // Prevent division by zero
+                int effectiveDuration = durationMins > 0 ? durationMins : 60;
+                int rawPercent = (int) Math.round(((double) elapsedMins / effectiveDuration) * 100);
+                int percent = Math.min(100, rawPercent);
+                int progressVal = Math.min(effectiveDuration, elapsedMins);
+
+                // Requirement 9: Debug logs
+                android.util.Log.d("LiveTimerService", "Lesson Duration: " + effectiveDuration + " min");
+                android.util.Log.d("LiveTimerService", "Elapsed Time: " + elapsedMins + " min");
+                android.util.Log.d("LiveTimerService", "Calculated Percentage: " + rawPercent + "%");
+                android.util.Log.d("LiveTimerService", "Notification Progress Value: " + progressVal);
+
+                Notification notification = buildNotification(title, startTime, effectiveDuration, elapsedMins, remainingMins, percent);
+                NotificationManager manager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+                if (manager != null) {
+                    manager.notify(NOTIFICATION_ID, notification);
+                }
+
+                // Refresh every 10 seconds in background / screen lock
+                handler.postDelayed(this, 10000);
+            }
+        };
+        handler.post(timerRunnable);
     }
 
     private Notification buildNotification(String title, long startTime, int durationMins, int elapsedMins, int remainingMins, int percent) {
@@ -152,6 +180,9 @@ public class LiveTimerService extends Service {
     }
 
     private void stopForegroundAndSelf() {
+        if (handler != null && timerRunnable != null) {
+            handler.removeCallbacks(timerRunnable);
+        }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             NotificationManager manager = getSystemService(NotificationManager.class);
             if (manager != null) {
@@ -175,6 +206,9 @@ public class LiveTimerService extends Service {
 
     @Override
     public void onDestroy() {
+        if (handler != null && timerRunnable != null) {
+            handler.removeCallbacks(timerRunnable);
+        }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
             stopForeground(STOP_FOREGROUND_REMOVE);
         } else {

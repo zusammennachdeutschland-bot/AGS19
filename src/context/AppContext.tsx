@@ -14,6 +14,7 @@ import { App as CapacitorApp } from '@capacitor/app';
 import { storage } from '../services/storageService';
 import { getStudentCyclePricing } from '../utils/paymentUtils';
 import { getGroupScheduleSlots, getDayNumber } from '../utils/scheduleUtils';
+import { formatLocalDate } from '../utils/timeUtils';
 import { isPendingStatus } from '../utils/lessonUtils';
 import { translations, TranslationKey } from '../i18n/translations';
 import { syncTodayLessonsToWidget } from '../services/widgetService';
@@ -101,6 +102,16 @@ interface AppContextType {
   restoreItem: (type: 'student' | 'group' | 'lesson', id: string) => void;
   permanentlyDeleteItem: (type: 'student' | 'group' | 'lesson', id: string) => void;
   clearRecentlyDeleted: () => void;
+  permanentDeleteGroupModalTarget: Group | null;
+  setPermanentDeleteGroupModalTarget: (group: Group | null) => void;
+  confirmDeleteGroupOnly: (groupId: string) => void;
+  confirmDeleteGroupAndAllData: (groupId: string) => void;
+  pinnedDeleteModalTarget: { type: 'student' | 'group' | 'lesson'; item: any } | null;
+  setPinnedDeleteModalTarget: (target: { type: 'student' | 'group' | 'lesson'; item: any } | null) => void;
+  confirmDeletePinnedItem: (type: 'student' | 'group' | 'lesson', item: any) => void;
+  deletionCompleteModalData: { isOpen: boolean; title?: string; counts: any };
+  setDeletionCompleteModalData: (data: { isOpen: boolean; title?: string; counts: any }) => void;
+  togglePinItem: (type: 'student' | 'group' | 'lesson', id: string) => void;
 
   // Payments
   payments: PaymentRecord[];
@@ -364,10 +375,26 @@ export const AppProvider: React.FC<{ children: React.ReactNode, initialData: any
   };
 
   const [lessons, setLessons] = useState<Lesson[]>(() => {
+    const savedGroups = initialData['dl_groups'] || [];
+    const savedStudents = initialData['dl_students'] || [];
+    if (savedGroups.length === 0 && savedStudents.length === 0) {
+      storage.setItem('dl_lessons', []);
+      return [];
+    }
     const saved = initialData['dl_lessons'];
     const raw: Lesson[] = saved !== null && saved !== undefined ? saved : INITIAL_LESSONS;
+    const validGroupIds = new Set(savedGroups.map((g: Group) => g.id));
+    const validStudentIds = new Set(savedStudents.map((s: Student) => s.id));
+
+    const nonOrphaned = raw.filter(l => {
+      if (l.isQuickLesson) return true;
+      if (l.groupId && l.groupId !== 'quick_group' && !validGroupIds.has(l.groupId)) return false;
+      if (l.studentId && !validStudentIds.has(l.studentId)) return false;
+      return true;
+    });
+
     const seen = new Set<string>();
-    const sanitized = raw.map((item, idx) => {
+    const sanitized = nonOrphaned.map((item, idx) => {
       if (seen.has(item.id)) {
         const newId = `${item.id}_fixed_${idx}_${Math.random().toString(36).substring(2, 6)}`;
         return { ...item, id: newId };
@@ -394,10 +421,25 @@ export const AppProvider: React.FC<{ children: React.ReactNode, initialData: any
   };
 
   const [payments, setPayments] = useState<PaymentRecord[]>(() => {
+    const savedGroups = initialData['dl_groups'] || [];
+    const savedStudents = initialData['dl_students'] || [];
+    if (savedGroups.length === 0 && savedStudents.length === 0) {
+      storage.setItem('dl_payments', []);
+      return [];
+    }
     const saved = initialData['dl_payments'];
     const raw: PaymentRecord[] = saved !== null && saved !== undefined ? saved : INITIAL_PAYMENT_RECORDS;
+    const validGroupIds = new Set(savedGroups.map((g: Group) => g.id));
+    const validStudentIds = new Set(savedStudents.map((s: Student) => s.id));
+
+    const nonOrphaned = raw.filter(p => {
+      if (p.groupId && p.groupId !== 'quick_group' && !validGroupIds.has(p.groupId)) return false;
+      if (p.studentId && !validStudentIds.has(p.studentId)) return false;
+      return true;
+    });
+
     const seen = new Set<string>();
-    const sanitized = raw.map((item, idx) => {
+    const sanitized = nonOrphaned.map((item, idx) => {
       if (seen.has(item.id)) {
         const newId = `${item.id}_fixed_${idx}_${Math.random().toString(36).substring(2, 6)}`;
         return { ...item, id: newId };
@@ -419,6 +461,135 @@ export const AppProvider: React.FC<{ children: React.ReactNode, initialData: any
     return full && full.length > 0 ? full : payments;
   };
 
+  const [permanentDeleteGroupModalTarget, setPermanentDeleteGroupModalTarget] = useState<Group | null>(null);
+  const [pinnedDeleteModalTarget, setPinnedDeleteModalTarget] = useState<{ type: 'student' | 'group' | 'lesson'; item: any } | null>(null);
+  const [deletionCompleteModalData, setDeletionCompleteModalData] = useState<{ isOpen: boolean; title?: string; counts: any }>({ isOpen: false, counts: {} });
+
+  const confirmDeleteGroupOnly = (groupId: string) => {
+    const target = recentlyDeleted.groups.find(d => d.item.id === groupId);
+    const groupName = target?.item.name || 'Group';
+
+    setRecentlyDeleted(prev => ({
+      ...prev,
+      groups: prev.groups.filter(d => d.item.id !== groupId)
+    }));
+
+    setStudents(prev => prev.map(s => s.groupId === groupId ? { ...s, groupId: '' } : s));
+    setLessons(prev => prev.map(l => l.groupId === groupId ? { ...l, groupId: '' } : l));
+
+    setPermanentDeleteGroupModalTarget(null);
+    setDeletionCompleteModalData({
+      isOpen: true,
+      title: 'Deletion Complete',
+      counts: {
+        group: groupName,
+        students: 0,
+        sessions: 0,
+        calendarEvents: 0,
+        payments: 0
+      }
+    });
+  };
+
+  const confirmDeleteGroupAndAllData = (groupId: string) => {
+    const target = recentlyDeleted.groups.find(d => d.item.id === groupId);
+    const groupName = target?.item.name || 'Group';
+
+    const groupStudents = students.filter(s => s.groupId === groupId);
+    const groupLessons = lessons.filter(l => l.groupId === groupId);
+    const groupPayments = payments.filter(p => p.groupId === groupId);
+
+    setRecentlyDeleted(prev => ({
+      ...prev,
+      groups: prev.groups.filter(d => d.item.id !== groupId)
+    }));
+
+    setStudents(prev => prev.filter(s => s.groupId !== groupId));
+    setLessons(prev => prev.filter(l => l.groupId !== groupId));
+    setPayments(prev => prev.filter(p => p.groupId !== groupId));
+
+    storage.getItem<Lesson[]>('dl_lessons').then(full => {
+      if (full) storage.setItem('dl_lessons', full.filter(l => l.groupId !== groupId));
+    });
+    storage.getItem<PaymentRecord[]>('dl_payments').then(full => {
+      if (full) storage.setItem('dl_payments', full.filter(p => p.groupId !== groupId));
+    });
+    storage.getItem<Student[]>('dl_students').then(full => {
+      if (full) storage.setItem('dl_students', full.filter(s => s.groupId !== groupId));
+    });
+
+    setPermanentDeleteGroupModalTarget(null);
+    setDeletionCompleteModalData({
+      isOpen: true,
+      title: 'Deletion Complete',
+      counts: {
+        group: groupName,
+        students: groupStudents.length,
+        sessions: groupLessons.length,
+        calendarEvents: groupLessons.length,
+        payments: groupPayments.length
+      }
+    });
+  };
+
+  const requestDeletePinnedItem = (type: 'student' | 'group' | 'lesson', item: any) => {
+    setPinnedDeleteModalTarget({ type, item });
+  };
+
+  const confirmDeletePinnedItem = (type: 'student' | 'group' | 'lesson', item: any) => {
+    let counts: any = {};
+    if (type === 'group') {
+      const gStudents = students.filter(s => s.groupId === item.id);
+      const gLessons = lessons.filter(l => l.groupId === item.id);
+      const gPayments = payments.filter(p => p.groupId === item.id);
+
+      setGroups(prev => prev.filter(g => g.id !== item.id));
+      setStudents(prev => prev.filter(s => s.groupId !== item.id));
+      setLessons(prev => prev.filter(l => l.groupId !== item.id));
+      setPayments(prev => prev.filter(p => p.groupId !== item.id));
+
+      storage.getItem<Lesson[]>('dl_lessons').then(full => {
+        if (full) storage.setItem('dl_lessons', full.filter(l => l.groupId !== item.id));
+      });
+      storage.getItem<PaymentRecord[]>('dl_payments').then(full => {
+        if (full) storage.setItem('dl_payments', full.filter(p => p.groupId !== item.id));
+      });
+      storage.getItem<Student[]>('dl_students').then(full => {
+        if (full) storage.setItem('dl_students', full.filter(s => s.groupId !== item.id));
+      });
+
+      counts = {
+        group: item.name,
+        students: gStudents.length,
+        sessions: gLessons.length,
+        calendarEvents: gLessons.length,
+        payments: gPayments.length
+      };
+    } else if (type === 'student') {
+      setStudents(prev => prev.filter(s => s.id !== item.id));
+      counts = { students: 1 };
+    } else if (type === 'lesson') {
+      setLessons(prev => prev.filter(l => l.id !== item.id));
+      counts = { sessions: 1, calendarEvents: 1 };
+    }
+
+    setPinnedDeleteModalTarget(null);
+    setDeletionCompleteModalData({
+      isOpen: true,
+      title: 'Permanent Deletion Complete',
+      counts
+    });
+  };
+
+  const togglePinItem = (type: 'student' | 'group' | 'lesson', id: string) => {
+    if (type === 'group') {
+      setGroups(prev => prev.map(g => g.id === id ? { ...g, isPinned: !g.isPinned } : g));
+    } else if (type === 'student') {
+      setStudents(prev => prev.map(s => s.id === id ? { ...s, isPinned: !s.isPinned } : s));
+    } else if (type === 'lesson') {
+      setLessons(prev => prev.map(l => l.id === id ? { ...l, isPinned: !l.isPinned } : l));
+    }
+  };
   const [notifications, setNotifications] = useState<NotificationItem[]>(() => {
     const saved = initialData['dl_notifications'];
     const raw: NotificationItem[] = saved !== null && saved !== undefined ? saved : INITIAL_NOTIFICATIONS;
@@ -600,41 +771,81 @@ export const AppProvider: React.FC<{ children: React.ReactNode, initialData: any
     if (!isInitializedRef.current) return;
     async function syncLessons() {
       if (!lessons) return;
-      const full = (await storage.getItem<Lesson[]>('dl_lessons')) || [];
-      const activeMap = new Map(lessons.map(l => [l.id, l]));
-      const fullIds = new Set(full.map(l => l.id));
+      if (groups.length === 0 && students.length === 0) {
+        await storage.setItem('dl_lessons', []);
+        setLessons([]);
+        return;
+      }
+      const raw = await storage.getItem('dl_lessons');
+      const full = (raw as Lesson[]) || [];
+      const validGroupIds = new Set(groups.map(g => g.id));
+      const validStudentIds = new Set(students.map(s => s.id));
+      const nonOrphanedFull = full.filter((l: Lesson) => {
+        if (l.isQuickLesson) return true;
+        if (l.groupId && l.groupId !== 'quick_group' && !validGroupIds.has(l.groupId)) return false;
+        if (l.studentId && !validStudentIds.has(l.studentId)) return false;
+        return true;
+      });
 
-      const merged = full.map(l => activeMap.get(l.id) || l);
+      const activeMap = new Map(lessons.map(l => [l.id, l]));
+      const fullIds = new Set(nonOrphanedFull.map(l => l.id));
+
+      const merged = nonOrphanedFull.map(l => activeMap.get(l.id) || l);
       lessons.forEach(l => {
         if (!fullIds.has(l.id)) {
           merged.push(l);
         }
       });
 
-      await storage.setItem('dl_lessons', merged);
+      const finalCleaned = merged.filter((l: Lesson) => {
+        if (l.isQuickLesson) return true;
+        if (l.groupId && l.groupId !== 'quick_group' && !validGroupIds.has(l.groupId)) return false;
+        if (l.studentId && !validStudentIds.has(l.studentId)) return false;
+        return true;
+      });
+      await storage.setItem('dl_lessons', finalCleaned);
     }
     syncLessons();
-  }, [lessons]);
+  }, [lessons, groups, students]);
 
   useEffect(() => {
     if (!isInitializedRef.current) return;
     async function syncPayments() {
       if (!payments) return;
-      const full = (await storage.getItem<PaymentRecord[]>('dl_payments')) || [];
-      const activeMap = new Map(payments.map(p => [p.id, p]));
-      const fullIds = new Set(full.map(p => p.id));
+      if (groups.length === 0 && students.length === 0) {
+        await storage.setItem('dl_payments', []);
+        setPayments([]);
+        return;
+      }
+      const raw = await storage.getItem('dl_payments');
+      const full = (raw as PaymentRecord[]) || [];
+      const validGroupIds = new Set(groups.map(g => g.id));
+      const validStudentIds = new Set(students.map(s => s.id));
+      const nonOrphanedFull = full.filter((p: PaymentRecord) => {
+        if (p.groupId && p.groupId !== 'quick_group' && !validGroupIds.has(p.groupId)) return false;
+        if (p.studentId && !validStudentIds.has(p.studentId)) return false;
+        return true;
+      });
 
-      const merged = full.map(p => activeMap.get(p.id) || p);
+      const activeMap = new Map(payments.map(p => [p.id, p]));
+      const fullIds = new Set(nonOrphanedFull.map(p => p.id));
+
+      const merged = nonOrphanedFull.map(p => activeMap.get(p.id) || p);
       payments.forEach(p => {
         if (!fullIds.has(p.id)) {
           merged.push(p);
         }
       });
 
-      await storage.setItem('dl_payments', merged);
+      const finalCleaned = merged.filter((p: PaymentRecord) => {
+        if (p.groupId && p.groupId !== 'quick_group' && !validGroupIds.has(p.groupId)) return false;
+        if (p.studentId && !validStudentIds.has(p.studentId)) return false;
+        return true;
+      });
+      await storage.setItem('dl_payments', finalCleaned);
     }
     syncPayments();
-  }, [payments]);
+  }, [payments, groups, students]);
 
   useEffect(() => {
     if (!isInitializedRef.current) return;
@@ -986,7 +1197,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode, initialData: any
       exportedAt: new Date().toISOString()
     };
     const jsonStr = JSON.stringify(data, null, 2);
-    const fileName = `AGS19_Backup_${new Date().toISOString().split('T')[0]}.json`;
+    const now = new Date();
+    const dateStr = now.toISOString().split('T')[0];
+    const hours = String(now.getHours()).padStart(2, '0');
+    const mins = String(now.getMinutes()).padStart(2, '0');
+    const secs = String(now.getSeconds()).padStart(2, '0');
+    const fileName = `AGS19_Backup_${dateStr}_${hours}-${mins}-${secs}.json`;
 
     if (Capacitor.isNativePlatform()) {
       try {
@@ -1102,13 +1318,28 @@ export const AppProvider: React.FC<{ children: React.ReactNode, initialData: any
 
   const deleteGroup = (id: string) => {
     const targetGroup = groups.find(g => g.id === id);
-    if (targetGroup) {
-      setRecentlyDeleted(prev => ({
-        ...prev,
-        groups: [{ item: targetGroup, deletedAt: new Date().toISOString() }, ...prev.groups]
-      }));
+    if (!targetGroup) return;
+    if (targetGroup.isPinned) {
+      setPinnedDeleteModalTarget({ type: 'group', item: targetGroup });
+      return;
     }
+    const groupLessons = lessons.filter(l => l.groupId === id);
+    setRecentlyDeleted(prev => ({
+      ...prev,
+      groups: [{ item: targetGroup, deletedAt: new Date().toISOString() }, ...prev.groups],
+      lessons: [
+        ...groupLessons.map(l => ({ item: l, deletedAt: new Date().toISOString() })),
+        ...prev.lessons
+      ]
+    }));
     setGroups(prev => prev.filter(g => g.id !== id));
+    setLessons(prev => prev.filter(l => l.groupId !== id));
+    storage.getItem<Lesson[]>('dl_lessons').then(full => {
+      if (full) storage.setItem('dl_lessons', full.filter(l => l.groupId !== id));
+    });
+    storage.getItem<PaymentRecord[]>('dl_payments').then(full => {
+      if (full) storage.setItem('dl_payments', full.filter(p => p.groupId !== id));
+    });
   };
 
   const archiveGroup = (id: string) => {
@@ -1133,12 +1364,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode, initialData: any
 
   const deleteStudent = (id: string) => {
     const targetStudent = students.find(s => s.id === id);
-    if (targetStudent) {
-      setRecentlyDeleted(prev => ({
-        ...prev,
-        students: [{ item: targetStudent, deletedAt: new Date().toISOString() }, ...prev.students]
-      }));
+    if (!targetStudent) return;
+    if (targetStudent.isPinned) {
+      setPinnedDeleteModalTarget({ type: 'student', item: targetStudent });
+      return;
     }
+    setRecentlyDeleted(prev => ({
+      ...prev,
+      students: [{ item: targetStudent, deletedAt: new Date().toISOString() }, ...prev.students]
+    }));
     setStudents(prev => prev.filter(s => s.id !== id));
   };
 
@@ -1179,6 +1413,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode, initialData: any
       if (target) {
         setGroups(prev => [...prev, target.item]);
         setRecentlyDeleted(prev => ({ ...prev, groups: prev.groups.filter(d => d.item.id !== id) }));
+        
+        // Also restore associated lessons
+        const groupDeletedLessons = recentlyDeleted.lessons.filter(dl => dl.item.groupId === id);
+        if (groupDeletedLessons.length > 0) {
+          const restoredLessons = groupDeletedLessons.map(dl => dl.item);
+          setLessons(prev => [...prev, ...restoredLessons]);
+          setRecentlyDeleted(prev => ({
+            ...prev,
+            lessons: prev.lessons.filter(dl => dl.item.groupId !== id)
+          }));
+        }
       }
     } else if (type === 'lesson') {
       const target = recentlyDeleted.lessons.find(d => d.item.id === id);
@@ -1194,7 +1439,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode, initialData: any
     if (type === 'student') {
       setRecentlyDeleted(prev => ({ ...prev, students: prev.students.filter(d => d.item.id !== id) }));
     } else if (type === 'group') {
-      setRecentlyDeleted(prev => ({ ...prev, groups: prev.groups.filter(d => d.item.id !== id) }));
+      setRecentlyDeleted(prev => ({
+        ...prev,
+        groups: prev.groups.filter(d => d.item.id !== id),
+        lessons: prev.lessons.filter(dl => dl.item.groupId !== id)
+      }));
     } else if (type === 'lesson') {
       setRecentlyDeleted(prev => ({ ...prev, lessons: prev.lessons.filter(d => d.item.id !== id) }));
     }
@@ -1250,12 +1499,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode, initialData: any
 
   const deleteLesson = (id: string) => {
     const targetLesson = lessons.find(l => l.id === id);
-    if (targetLesson) {
-      setRecentlyDeleted(prev => ({
-        ...prev,
-        lessons: [{ item: targetLesson, deletedAt: new Date().toISOString() }, ...prev.lessons]
-      }));
+    if (!targetLesson) return;
+    if (targetLesson.isPinned) {
+      setPinnedDeleteModalTarget({ type: 'lesson', item: targetLesson });
+      return;
     }
+    setRecentlyDeleted(prev => ({
+      ...prev,
+      lessons: [{ item: targetLesson, deletedAt: new Date().toISOString() }, ...prev.lessons]
+    }));
     setLessons(prev => prev.filter(l => l.id !== id));
     storage.getItem<Lesson[]>('dl_lessons').then(full => {
       if (full) {
@@ -1618,7 +1870,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode, initialData: any
       const matchingSlot = slots.find(s => getDayNumber(s.day) === dayNum);
 
       if (matchingSlot) {
-        const dateStr = d.toISOString().split('T')[0];
+        const dateStr = formatLocalDate(d);
         const exists = lessons.some(l => l.groupId === groupId && l.date === dateStr);
         if (!exists) {
           const perSessionPrice = targetGroup.paymentCycle === 'per_lesson' && targetGroup.pricePerSession
@@ -2188,7 +2440,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode, initialData: any
       todos,
     };
     const jsonStr = JSON.stringify(backupObj, null, 2);
-    const fileName = `znd_backup_${new Date().toISOString().split('T')[0]}.json`;
+    const now = new Date();
+    const dateStr = now.toISOString().split('T')[0];
+    const hours = String(now.getHours()).padStart(2, '0');
+    const mins = String(now.getMinutes()).padStart(2, '0');
+    const secs = String(now.getSeconds()).padStart(2, '0');
+    const fileName = `znd_backup_${dateStr}_${hours}-${mins}-${secs}.json`;
 
     if (Capacitor.isNativePlatform()) {
       try {
@@ -2289,6 +2546,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode, initialData: any
   const startActiveLessonTimer = (lesson: Lesson) => {
     const startTimeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     const now = Date.now();
+    const targetGroup = groups.find(g => g.id === lesson.groupId);
+    const resolvedDuration = lesson.durationMinutes || targetGroup?.lessonDurationMinutes || profile.defaultLessonDuration || 60;
+    const durationMins = resolvedDuration > 0 ? resolvedDuration : 60;
+
     const session: ActiveLessonSession = {
       lessonId: lesson.id,
       lessonTitle: lesson.title,
@@ -2297,14 +2558,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode, initialData: any
       type: lesson.type,
       startedAt: now,
       accumulatedSeconds: 0,
-      durationMinutes: lesson.durationMinutes || 60,
+      durationMinutes: durationMins,
       isRunning: true,
       startTimeStr
     };
     setActiveLessonSession(session);
     updateLesson(lesson.id, { status: 'in_progress' });
 
-    const durationMins = lesson.durationMinutes || 60;
     const elapsedMins = 0;
     const remainingMins = durationMins;
     const percent = 0;
@@ -2342,11 +2602,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode, initialData: any
       startedAt: now
     });
 
-    const durationMins = activeLessonSession.durationMinutes || 60;
+    const rawDuration = activeLessonSession.durationMinutes || 60;
+    const durationMins = rawDuration > 0 ? rawDuration : 60;
     const totalElapsedSecs = activeLessonSession.accumulatedSeconds;
     const elapsedMins = Math.floor(totalElapsedSecs / 60);
     const remainingMins = Math.max(0, durationMins - elapsedMins);
-    const percent = Math.min(100, Math.floor((elapsedMins / durationMins) * 100));
+    const rawPercent = Math.round(((elapsedMins / durationMins) * 100));
+    const percent = Math.min(100, Math.floor(((elapsedMins / durationMins) * 100)));
 
     // Resume native timer with offset startTime so chronometer reflects total accumulated time
     const effectiveStartTime = now - (activeLessonSession.accumulatedSeconds * 1000);
@@ -2477,6 +2739,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode, initialData: any
         restoreItem,
         permanentlyDeleteItem,
         clearRecentlyDeleted,
+        permanentDeleteGroupModalTarget,
+        setPermanentDeleteGroupModalTarget,
+        confirmDeleteGroupOnly,
+        confirmDeleteGroupAndAllData,
+        pinnedDeleteModalTarget,
+        setPinnedDeleteModalTarget,
+        confirmDeletePinnedItem,
+        deletionCompleteModalData,
+        setDeletionCompleteModalData,
+        togglePinItem,
         payments,
         recordPayment,
         addPaymentRecord,

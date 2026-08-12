@@ -94,6 +94,7 @@ export interface Group {
   lessonDurationMinutes?: number; // Default 60 mins
   status?: 'active' | 'archived';
   whatsAppGroupLink?: string;
+  isPinned?: boolean;
 }
 
 export interface StudentDocument {
@@ -131,6 +132,7 @@ export interface Student {
   customBundlePrice?: number;
   advanceBalance?: number;
   monthlyFee?: number;
+  isPinned?: boolean;
 }
 
 export interface StudentPaymentDetail {
@@ -216,6 +218,7 @@ export interface Lesson {
   meetingLink?: string;
   locationAddress?: string;
   location?: string;
+  isPinned?: boolean;
   report?: LessonReport;
   studentPayments?: Record<string, StudentPaymentDetail>;
   offlinePaymentAction?: 'paid_now' | 'will_pay_next' | 'partially_paid' | 'not_paid';

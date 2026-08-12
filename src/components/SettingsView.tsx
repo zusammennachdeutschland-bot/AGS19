@@ -1554,7 +1554,7 @@ export const SettingsView: React.FC = () => {
 
             {/* Application Version */}
             <div className="text-center pt-2 text-xs font-mono font-bold text-text-muted/70">
-              AGS19 • Version 2.5.0
+              AGS19 • Version 1.9
             </div>
           </div>
         </div>

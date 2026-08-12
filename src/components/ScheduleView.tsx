@@ -2,6 +2,7 @@ import { checkOverlap } from "../utils/lessonUtils";
 import React, { useState, useMemo } from 'react';
 import { useApp } from '../context/AppContext';
 import { Lesson } from '../types';
+import { parseLocalDate, formatLocalDate } from '../utils/timeUtils';
 import { 
   Calendar as CalendarIcon, Clock, ChevronLeft, ChevronRight, 
   Video, MapPin, CheckCircle2, AlertTriangle, Trash2, ArrowLeftRight, 
@@ -14,7 +15,7 @@ import { ExportMonthlyCalendarModal } from './ExportMonthlyCalendarModal';
 export const ScheduleView: React.FC = () => {
   const { lessons, profile, openLessonControl, setIsAddLessonModalOpen, setIsAddQuickLessonModalOpen, updateLesson, deleteLesson, refreshCalendarAndDashboard,  t } = useApp();
 
-  const todayStr = new Date().toISOString().split('T')[0];
+  const todayStr = formatLocalDate(new Date());
   const [selectedDate, setSelectedDate] = useState<string>(todayStr);
   const [calendarView, setCalendarView] = useState<'day' | 'week' | 'month'>('day');
   const [showRefreshToast, setShowRefreshToast] = useState(false);
@@ -82,7 +83,7 @@ export const ScheduleView: React.FC = () => {
 
   // WEEK VIEW CALCULATIONS
   const weekDays = useMemo(() => {
-    const current = new Date(selectedDate);
+    const current = parseLocalDate(selectedDate);
     const dayOfWeek = current.getDay();
     const distanceToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
     
@@ -95,7 +96,7 @@ export const ScheduleView: React.FC = () => {
     for (let i = 0; i < 7; i++) {
       const d = new Date(monday);
       d.setDate(monday.getDate() + i);
-      const dateStr = d.toISOString().split('T')[0];
+      const dateStr = formatLocalDate(d);
       const lessonsOnDay = lessons.filter((l) => l.date === dateStr).sort((a, b) => a.time.localeCompare(b.time));
 
       days.push({
@@ -113,7 +114,7 @@ export const ScheduleView: React.FC = () => {
 
   // MONTH VIEW CALCULATIONS
   const monthData = useMemo(() => {
-    const current = new Date(selectedDate);
+    const current = parseLocalDate(selectedDate);
     const year = current.getFullYear();
     const month = current.getMonth();
 
@@ -337,11 +338,11 @@ export const ScheduleView: React.FC = () => {
         <div className="flex items-center justify-between">
           <button
             onClick={() => {
-              const current = new Date(selectedDate);
+              const current = parseLocalDate(selectedDate);
               if (calendarView === 'day') current.setDate(current.getDate() - 1);
               else if (calendarView === 'week') current.setDate(current.getDate() - 7);
               else current.setMonth(current.getMonth() - 1);
-              setSelectedDate(current.toISOString().split('T')[0]);
+              setSelectedDate(formatLocalDate(current));
             }}
             className="p-2 hover:bg-surface-hover rounded-xl cursor-pointer transition-all"
           >
@@ -358,7 +359,7 @@ export const ScheduleView: React.FC = () => {
                   className="text-sm font-extrabold text-text-main bg-transparent border-none focus:outline-none cursor-pointer font-mono text-center"
                 />
                 <span className="block text-[10px] text-primary dark:text-primary font-extrabold uppercase">
-                  {selectedDate === todayStr ? t('schedule_today') : new Date(selectedDate).toLocaleDateString(undefined, { weekday: 'long', day: '2-digit', month: 'long' })}
+                  {selectedDate === todayStr ? t('schedule_today') : parseLocalDate(selectedDate).toLocaleDateString(undefined, { weekday: 'long', day: '2-digit', month: 'long' })}
                 </span>
               </>
             )}
@@ -378,11 +379,11 @@ export const ScheduleView: React.FC = () => {
 
           <button
             onClick={() => {
-              const current = new Date(selectedDate);
+              const current = parseLocalDate(selectedDate);
               if (calendarView === 'day') current.setDate(current.getDate() + 1);
               else if (calendarView === 'week') current.setDate(current.getDate() + 7);
               else current.setMonth(current.getMonth() + 1);
-              setSelectedDate(current.toISOString().split('T')[0]);
+              setSelectedDate(formatLocalDate(current));
             }}
             className="p-2 hover:bg-surface-hover rounded-xl cursor-pointer transition-all"
           >

@@ -166,7 +166,7 @@ export const LessonControlModal: React.FC = () => {
         // Individual lesson - initialize for single student
         const targetSt = students.find(s => 
           (selectedLesson.studentId && s.id === selectedLesson.studentId) || 
-          (selectedLesson.studentName && s.name.trim().toLowerCase() === selectedLesson.studentName.trim().toLowerCase())
+          (selectedLesson.studentName && s.name && s.name.trim().toLowerCase() === selectedLesson.studentName.trim().toLowerCase())
         );
         if (targetSt) {
           setStudentAttendance({ [targetSt.id]: 'present' });
@@ -290,7 +290,7 @@ export const LessonControlModal: React.FC = () => {
 
   const targetStudent = students.find(s => 
     (selectedLesson.studentId && s.id === selectedLesson.studentId) || 
-    (selectedLesson.studentName && s.name.trim().toLowerCase() === selectedLesson.studentName.trim().toLowerCase())
+    (selectedLesson.studentName && s.name && s.name.trim().toLowerCase() === selectedLesson.studentName.trim().toLowerCase())
   ) || (selectedLesson.groupId ? students.find(s => s.groupId === selectedLesson.groupId) : undefined);
   
   const activeLessonStudents = selectedLesson.groupId 
@@ -869,7 +869,7 @@ export const LessonControlModal: React.FC = () => {
                           const lastSessionHwStatus = (() => {
                             const studentLessons = lessons.filter(l => 
                               l.status === 'completed' && l.report && 
-                              (l.groupId === st.groupId || l.studentId === st.id || l.studentName?.trim().toLowerCase() === st.name.trim().toLowerCase())
+                              (l.groupId === st.groupId || l.studentId === st.id || (l.studentName && st.name && l.studentName.trim().toLowerCase() === st.name.trim().toLowerCase()))
                             );
                             const completedLessons = [...studentLessons].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
                             const lastLessonWithReport = completedLessons.find(l => l.id !== selectedLesson.id && l.report);
