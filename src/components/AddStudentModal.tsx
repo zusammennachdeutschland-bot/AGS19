@@ -57,6 +57,10 @@ export const AddStudentModal: React.FC<AddStudentModalProps> = ({ onClose }) => 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name || !groupId) return;
+    if (!parentPhone.trim()) {
+      alert(_t('رقم هاتف ولي الأمر مطلوب إجبارياً', 'Parent phone number is required', 'Telefonnummer der Eltern ist erforderlich'));
+      return;
+    }
     const isDuplicate = students.some(s => s.name.toLowerCase() === name.toLowerCase() && s.groupId === groupId);
     if (isDuplicate) {
       if (!window.confirm(t('duplicate_student_warning') || 'طالب بنفس الاسم موجود بالفعل. هل تريد المتابعة؟ / A student with the same name already exists in this group. Do you want to continue?')) return;
@@ -192,10 +196,11 @@ export const AddStudentModal: React.FC<AddStudentModalProps> = ({ onClose }) => 
           <div className="grid grid-cols-2 gap-2">
             <div className="space-y-1">
               <label className="text-xs font-bold text-text-main">
-                {_t('هاتف ولي الأمر', 'Parent Phone', 'Telefon Eltern')}
+                {_t('هاتف ولي الأمر *', 'Parent Phone *', 'Telefon Eltern *')}
               </label>
               <input
                 type="tel"
+                required
                 placeholder="+20 100 123 4567"
                 value={parentPhone}
                 onChange={(e) => setParentPhone(e.target.value)}
@@ -205,7 +210,7 @@ export const AddStudentModal: React.FC<AddStudentModalProps> = ({ onClose }) => 
 
             <div className="space-y-1">
               <label className="text-xs font-bold text-text-main">
-                {_t('هاتف الطالب', 'Student Phone', 'Telefon Schüler')}
+                {_t('هاتف الطالب (اختياري)', 'Student Phone (Optional)', 'Telefon Schüler (Optional)')}
               </label>
               <input
                 type="tel"

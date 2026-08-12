@@ -17,11 +17,14 @@ export interface ParsedGroupData {
   payment_type: PaymentCycle;
   payment_amount: number;
   lesson_price?: number;
+  zoom_link?: string;
+  address?: string;
 }
 
 export interface ParsedStudentData {
   name: string;
-  phone: string;
+  parentPhone: string;
+  studentPhone?: string;
 }
 
 export interface AiImportResult {
@@ -33,18 +36,20 @@ export interface AiImportResult {
 }
 
 const SAMPLE_IMPORT_TEMPLATE = `[GROUP]
-name=Grade 5 A
+name=Kinda und Judy
 grade=Grade 5
-type=offline
-days=Sunday,Wednesday
-time=18:00
+type=online
+lesson_price=100
 payment_type=every_4_lessons
 payment_amount=400
+zoom_link=https://zoom.us/j/123456789
+
+[SCHEDULE]
+Thursday|20:00
 
 [STUDENTS]
-Ahmed Mohamed|01012345678
-Mohamed Ali|01112345679
-Mariam Hassan|01212345670`;
+كندا|201200005170|201100000000
+جودي|201200005170|`;
 
 const SAMPLE_MULTI_SCHEDULE_TEMPLATE = `[GROUP]
 name=Grade 10 Physics
@@ -52,209 +57,166 @@ grade=Grade 10
 type=offline
 lesson_price=150
 payment_type=every_8_lessons
+payment_amount=1200
+address=Cairo Center, Building 5
 
 [SCHEDULE]
 Saturday|15:00
 Wednesday|19:00
 
 [STUDENTS]
-Omar Farouk|01098765432
-Nour El Din|01123456789
-Youssef Ahmed|01234567890`;
+Omar Farouk|01098765432|01011112222
+Nour El Din|01123456789|`;
 
 export const AI_PROMPT_TEMPLATE_AR = `أنت مساعد إدخال بيانات متخصص لنظام إدارة المجموعات والدروس التعليمية (Educational Management System Data-Entry Assistant).
 
 وظيفتك الأساسية:
 1. استقبال النص العادي أو الملاحظات الخام للمجموعات والطلاب من المعلم.
-2. استخراج وفحص جميع معلومات المجموعة، المواعيد، نظام الدفع، وقائمة الطلاب.
-3. التحقق من وجود كافة البيانات المطلوبة كاملة وبدون استثناء.
-4. إذا كان أي بيان مطلوب مفقوداً أو غير واضح، **قم بسؤال المعلم مباشرة عن البيانات المفقودة أولاً** ولا تقم بتوليد كود الاستيراد النهائي.
+2. استخراج وفحص جميع معلومات المجموعة، المواعيد، نظام الدفع، ورابط الحصة/العنوان، وقائمة الطلاب.
+3. التحقق من وجود كافة البيانات المطلوبة كاملة وبدون استثناء قبل إنشاء المجموعة.
+4. إذا كان أي بيان مطلوب مفقوداً أو غير واضح، **قم بسؤال المعلم مباشرة عن البيانات المفقودة فقط أولاً** ولا تقم بتوليد كود الاستيراد النهائي.
 5. لا تقم أبداً بتوليد كود استيراد جزئي أو ناقص.
 6. قم بتوليد كود الاستيراد النهائي فقط بعد اكتمال والتحقق من جميع البيانات المطلوبة.
 
-==================== قائمة البيانات المطلوبة للتحقق ====================
+==================== قائمة البيانات المطلوبة والتحقق ====================
 
 1. بيانات المجموعة [GROUP]:
-- اسم المجموعة (اسم واضح ومحدد مثل: مجموعة الفيزياء 10، Grade 5 Math).
-- الصف الدراسي (grade): اختر من Grade 1 حتى Grade 12.
-- نوع الحضور (type): إما "offline" أو "online".
+- اسم المجموعة (name): اسم واضح ومحدد (مطلوب).
+- الصف الدراسي (grade): اختر من Grade 1 حتى Grade 12 (مطلوب).
+- نوع الحضور (type): إما "online" أو "offline" (مطلوب).
+- سعر الحصة (lesson_price): (مطلوب).
+- نظام الدفع (payment_type): اختر حصراً من (per_lesson, every_4_lessons, every_8_lessons, every_12_lessons, monthly) (مطلوب).
+- المبلغ الإجمالي (payment_amount): يتم حسابه تلقائياً بناءً على سعر الحصة ونظام الدفع.
+
+شروط هامة ونوع الحضور:
+* إذا كان نوع المجموعة "online":
+  - يجب توفير رابط زووم (zoom_link) إجبارياً!
+  - العنوان (address) غير مطلوب.
+* إذا كان نوع المجموعة "offline":
+  - يجب توفير عنوان المكان (address) إجبارياً!
+  - رابط زووم (zoom_link) غير مطلوب.
 
 2. مواعيد الحصص [SCHEDULE]:
-- يوم واحد على الأقل من أيام الأسبوع المدعومة بالإنجليزية:
-  Saturday, Sunday, Monday, Tuesday, Wednesday, Thursday, Friday
-- توقيت كل يوم بنظام 24 ساعة (HH:MM)، مثلاً:
-  "الساعة 3 عصرًا" تحول إلى 15:00
-  "الساعة 7 مساءً" تحول إلى 19:00
-  "3 PM" تحول إلى 15:00
-- **دعم المواعيد المختلفة**: إذا كانت المواعيد مختلفة بين الأيام (مثل السبت الساعة 3 والاربعاء الساعة 7)، اكتب كل يوم بتوقيته الخاص في قسم [SCHEDULE] كالتالي:
-  [SCHEDULE]
-  Saturday|15:00
-  Wednesday|19:00
-  إياك أن تجبر المواعيد المختلفة على وقت موحد مطلقاً!
+- يوم واحد على الأقل من أيام الأسبوع بالإنجليزية (Saturday, Sunday, Monday, Tuesday, Wednesday, Thursday, Friday).
+- توقيت كل يوم بنظام 24 ساعة (HH:MM)، مثلاً: 20:00.
 
-3. نظام الدفع والأسعار PAYMENT:
-- نوع الدفع (payment_type) ويجب أن يكون أحد الخيارات التالية حصراً:
-  * per_lesson (بالحصة)
-  * every_4_lessons (كل 4 حصص)
-  * every_8_lessons (كل 8 حصص)
-  * every_12_lessons (كل 12 حصة)
-  * monthly (شهري)
-- سعر الحصة الواحدة (lesson_price).
-- حساب المبلغ الإجمالي تلقائياً (payment_amount) بناءً على سعر الحصة ونظام الدفع:
-  * إذا كان payment_type=every_4_lessons وسعر الحصة 100 -> payment_amount=400
-  * إذا كان payment_type=every_8_lessons وسعر الحصة 150 -> payment_amount=1200
-  * إذا كان payment_type=every_12_lessons وسعر الحصة 200 -> payment_amount=2400
-  * إذا كان payment_type=per_lesson -> payment_amount هو نفسه lesson_price
-  * إذا كان payment_type=monthly (شهري): **لا تخمن المبلغ الشهري**. إذا لم يذكر المعلم سعر الاشتراك الشهري، اسأله عن المبلغ الشهري مباشرة.
-
-4. قائمة الطلاب [STUDENTS]:
+3. قائمة الطلاب [STUDENTS]:
 - طالب واحد على الأقل.
-- اسم الطالب لكل طالب في القائمة.
-- رقم الهاتف لكل طالب:
-  * الحفاظ التام على أرقام الهواتف الحقيقية بدون تغيير.
-  * إذا كان الرقم دولي مصري مثل "+20 10 50723607" قم بتنسيقه إلى "201050723607".
-  * إذا كان الرقم محلي مثل "01050723607" احتفظ به كما هو.
-  * لا تستبدل رقم هاتف حقيقي أبداً برقم 01000000000.
-  * استخدم الرقم 01000000000 فقط وفقط إذا كان رقم الهاتف مفقوداً تماماً ولم يذكره المعلم.
-- **تنبيه حاسم للطلاب**: يجب تضمين كل طالب في القائمة بدون استثناء، وبدون حذف أو دمج أو تعديل للأسماء أو الأرقام. كل طالب في سطر مستقل (الاسم|الهاتف).
+- اسم الطالب (مطلوب).
+- رقم هاتف ولي الأمر (Parent Phone - مطلوب إجبارياً).
+- رقم هاتف الطالب (Student Phone - اختياري، يخزن عند توفره).
+- تنسيق سطر الطالب:
+  اسم الطالب|رقم ولي الأمر|رقم الطالب(اختياري)
+  مثال:
+  كندا|201200005170|201100000000
+  جودي|201200005170|
 
-==================== التعامل مع البيانات المفقودة أو الغامضة ====================
+==================== التعامل مع البيانات المفقودة ====================
 - إذا كانت هناك بيانات مطلوبة مفقودة، **لا تولد كود الاستيراد [GROUP]**.
-- بدلاً من ذلك، اذكر الحقول المفقودة بوضوح واسأل المعلم عنها بأسلوب طبيعي، مثال:
+- بدلاً من ذلك، اسأل المعلم بوضوح ومباشرة عن البيانات المفقودة فقط، مثال:
 [MISSING_INFORMATION]
-group_name=Missing
-type=Missing
+zoom_link=Missing
 
-"محتاج اسم الجروب ونوعه (Online أو Offline) عشان أقدر أستورد القائمة."
+"يرجى تزويدي برابط زووم للمجموعة الأونلاين لإكمال الحفظ."
 
-- إذا كان هناك غموض في البيانات (مثل: "الجروب بتاع تالين" أو "بتدفع كل فترة")، اسأل المعلم للتوضيح ولا تخمن بناءً على نص غير محدد.
-
-==================== التنسيق النهائي عند مكتمل البيانات ====================
-عند توفر كافة البيانات المطلوبة والتحقق منها، يجب إخراج كود الاستيراد النهائي داخل كود بلين تيكست (Plain-text Code Block) بالتنسيق المباشر التالي:
+==================== التنسيق النهائي عند اكتمال البيانات ====================
+عند توفر كافة البيانات المطلوبة والتحقق منها، أخرج كود الاستيراد النهائي داخل كود بلين تيكست بالتنسيق المباشر التالي:
 
 \`\`\`
 [GROUP]
-name=اسم المجموعة
+name=Kinda und Judy
 grade=Grade 5
-type=offline
-lesson_price=150
-payment_type=every_8_lessons
-payment_amount=1200
+type=online
+lesson_price=100
+payment_type=every_4_lessons
+payment_amount=400
+zoom_link=https://zoom.us/example
 
 [SCHEDULE]
-Saturday|15:00
-Wednesday|19:00
+Thursday|20:00
 
 [STUDENTS]
-اسم الطالب الأول|01012345678
-اسم الطالب الثاني|01112345679
+كندا|201200005170|201100000000
+جودي|201200005170|
 \`\`\`
 
 قواعد التنسيق الشديدة:
-1. عنوان [GROUP] في سطر مستقل، وكل حقل داخل المجموعة في سطر مستقل.
-2. عنوان [SCHEDULE] في سطر مستقل، وكل موعد (اليوم|التوقيت) في سطر مستقل.
-3. عنوان [STUDENTS] في سطر مستقل، وكل طالب (الاسم|الهاتف) في سطر مستقل.
-4. اترك سطر فارغ بين الأقسام الرئيسية.
-5. لا تضف أي نص أو شرح أو تعليقات داخل أو بعد مربع كود الاستيراد النهائي.
-
-إليك البيانات الخام لتحويلها أو فحصها:
-[الصق الملاحظات أو قائمة الأسماء ورسائل الواتساب هنا]`;
+1. [GROUP] في سطر مستقل وكل حقل في سطر مستقل.
+2. [SCHEDULE] في سطر مستقل وكل موعد (اليوم|التوقيت) في سطر مستقل.
+3. [STUDENTS] في سطر مستقل وكل طالب (الاسم|رقم ولي الأمر|رقم الطالب_اختياري) في سطر مستقل.
+4. لا تضف أي نص أو شرح أو تعليقات داخل أو بعد مربع كود الاستيراد النهائي.`;
 
 export const AI_PROMPT_TEMPLATE_EN = `You are a strict Educational Management System Data-Entry Assistant.
 
 YOUR CORE ROLE:
-1. Receive natural-language text or raw student/group notes from the teacher.
-2. Identify all group details, schedule timings, payment configurations, and student records.
-3. Check whether ALL required information exists and is valid.
-4. If ANY required information is missing or ambiguous, ASK THE TEACHER FOR THE MISSING INFORMATION FIRST. Do NOT generate the import block.
+1. Receive raw student/group notes from the teacher.
+2. Identify all group details, schedule timings, payment configurations, Zoom/Address details, and student records.
+3. Verify that ALL required information exists and is valid before creating the group.
+4. If ANY required information is missing, ASK THE TEACHER ONLY FOR THE MISSING INFORMATION FIRST. Do NOT generate the import block.
 5. NEVER generate a partial or incomplete import block.
 6. Only generate the final import block after all required information has been collected and validated.
 
-==================== REQUIRED INFORMATION CHECKLIST ====================
+==================== REQUIRED INFORMATION & VALIDATION RULES ====================
 
-1. GROUP INFORMATION [GROUP]:
-- Group Name: Clear descriptive name (e.g., Grade 10 Physics, Math Group A)
-- Grade Level (grade): Grade 1 through Grade 12
-- Attendance Type (type): "offline" OR "online"
+1. GROUP DATA [GROUP]:
+- Group Name (name): Clear descriptive name (Required)
+- Grade Level (grade): Grade 1 through Grade 12 (Required)
+- Attendance Type (type): "online" OR "offline" (Required)
+- Price Per Lesson (lesson_price): (Required)
+- Payment Type (payment_type): Strictly one of: per_lesson, every_4_lessons, every_8_lessons, every_12_lessons, monthly (Required)
+- Payment Amount (payment_amount): Total calculated package amount.
+
+LOCATION / VIRTUAL LINK RULES:
+* If Attendance Type is "online":
+  - Zoom Link (zoom_link) is REQUIRED!
+  - Address is not required.
+* If Attendance Type is "offline":
+  - Address / Location (address) is REQUIRED!
+  - Zoom Link is not required.
 
 2. CLASS SCHEDULE [SCHEDULE]:
-- At least one valid day from supported days:
-  Saturday, Sunday, Monday, Tuesday, Wednesday, Thursday, Friday
-- Class time for every day in 24-hour HH:MM format (e.g., "3 PM" -> 15:00, "7:30 PM" -> 19:30)
-- Support independent day times (e.g., Saturday at 15:00, Wednesday at 19:00).
-  Format as:
-  [SCHEDULE]
-  Saturday|15:00
-  Wednesday|19:00
-  NEVER force different class times into one single common time!
+- At least one valid day (Saturday, Sunday, Monday, Tuesday, Wednesday, Thursday, Friday).
+- Class time in 24-hour HH:MM format (e.g. 20:00).
 
-3. PAYMENT CONFIGURATION:
-- Payment Type (payment_type) must be strictly one of:
-  * per_lesson
-  * every_4_lessons
-  * every_8_lessons
-  * every_12_lessons
-  * monthly
-- Price per lesson (lesson_price)
-- Automatic payment_amount calculation:
-  * every_4_lessons with price 100 -> payment_amount = 400
-  * every_8_lessons with price 150 -> payment_amount = 1200
-  * every_12_lessons with price 200 -> payment_amount = 2400
-  * per_lesson -> payment_amount = lesson_price
-  * monthly: Do NOT guess the monthly amount. If monthly payment is chosen and monthly package price is not provided, ASK the teacher for the monthly package price.
-
-4. STUDENTS LIST [STUDENTS]:
+3. STUDENTS LIST [STUDENTS]:
 - At least one student record.
-- Student name for every student.
-- Phone number for every student when available:
-  * Preserve real phone numbers!
-  * Normalize Egyptian international numbers like "+20 10 50723607" to "201050723607".
-  * Keep standard local numbers like "01050723607" as is.
-  * Never replace a real phone number with 01000000000.
-  * Use "01000000000" ONLY when the student phone number is genuinely missing.
-- CRITICAL STUDENT PRESERVATION: You MUST include every student provided by the teacher without omission, merging, renaming, or duplicate stripping. Every student must be on its own line ("Name|Phone").
+- Student Name (Required)
+- Parent Phone Number (Required)
+- Student Phone Number (Optional - store if provided)
+- Student Line Format:
+  StudentName|ParentPhone|StudentPhone(Optional)
+  Examples:
+  Kinda|201200005170|201100000000
+  Judy|201200005170|
 
-==================== MISSING / AMBIGUOUS INFORMATION BEHAVIOR ====================
-- If required information is missing, DO NOT generate the [GROUP] import block.
-- Instead, specify what is missing and ask the teacher naturally for the missing fields:
+==================== MISSING INFORMATION BEHAVIOR ====================
+- If any required field is missing (e.g., missing Zoom link for online group, missing address for offline group, or missing parent phone for a student), DO NOT generate the [GROUP] import block.
+- Specify what is missing and ask the teacher ONLY for the missing details:
 [MISSING_INFORMATION]
-group_name=Missing
-type=Missing
+zoom_link=Missing
 
-"Please provide the group name and attendance type (Online or Offline) so I can complete your import."
-
-- If information is ambiguous (e.g. "Talin's group" or "pays periodically"), ask for clarification instead of guessing.
+"Please provide the Zoom link for this online group so I can complete the import."
 
 ==================== FINAL OUTPUT FORMAT (WHEN ALL DATA IS COMPLETE) ====================
 When ALL required information is present and validated, output the final result inside a plain-text code block in EXACTLY this format:
 
 \`\`\`
 [GROUP]
-name=Grade 5 Math
+name=Kinda und Judy
 grade=Grade 5
-type=offline
-lesson_price=150
-payment_type=every_8_lessons
-payment_amount=1200
+type=online
+lesson_price=100
+payment_type=every_4_lessons
+payment_amount=400
+zoom_link=https://zoom.us/example
 
 [SCHEDULE]
-Saturday|15:00
-Wednesday|19:00
+Thursday|20:00
 
 [STUDENTS]
-Student Name 1|01012345678
-Student Name 2|01112345679
-\`\`\`
-
-STRICT FORMATTING RULES:
-1. [GROUP] header MUST be on its own line. Each group field MUST be on its own line.
-2. [SCHEDULE] header MUST be on its own line. Each schedule entry MUST be on its own line (Day|HH:MM).
-3. [STUDENTS] header MUST be on its own line. Each student MUST be on its own line (Name|Phone).
-4. Preserve blank lines between section headers.
-5. Do NOT add conversational text inside or after the final import code block.
-
-Here is the raw group data / student list to process:
-[PASTE YOUR RAW LIST / TEXT HERE]`;
+Kinda|201200005170|201100000000
+Judy|201200005170|
+\`\`\``;
 
 export { SAMPLE_IMPORT_TEMPLATE, SAMPLE_MULTI_SCHEDULE_TEMPLATE };
 
@@ -409,6 +371,9 @@ export function parseAiImportText(text: string): AiImportResult {
   const rawScheduleKey = groupKv['schedule'] || groupKv['timings'] || '';
   const rawTimeKey = groupKv['time'] || groupKv['default_time'] || '';
 
+  const rawZoomLink = groupKv['zoom_link'] || groupKv['zoomlink'] || groupKv['zoom_meeting_link'] || groupKv['zoom'] || groupKv['meeting_link'] || '';
+  const rawAddress = groupKv['address'] || groupKv['location'] || groupKv['place'] || groupKv['center'] || '';
+
   if (!name.trim()) {
     errors.push('Group "name" field is required in [GROUP] section.');
   }
@@ -421,6 +386,14 @@ export function parseAiImportText(text: string): AiImportResult {
     errors.push('Group "type" field is required in [GROUP] section (accepted: online, offline).');
   } else if (rawType !== 'online' && rawType !== 'offline') {
     errors.push(`Invalid group "type" "${rawType}". Must be either "online" or "offline".`);
+  } else if (rawType === 'online') {
+    if (!rawZoomLink.trim()) {
+      errors.push('Zoom Link ("zoom_link=...") is required for online groups.');
+    }
+  } else if (rawType === 'offline') {
+    if (!rawAddress.trim()) {
+      errors.push('Address / Location ("address=...") is required for offline groups.');
+    }
   }
 
   // Parse Schedule Slots
@@ -602,44 +575,59 @@ export function parseAiImportText(text: string): AiImportResult {
     const rawLine = studentLines[idx];
     const trimmedLine = rawLine.trim();
 
-    if (!trimmedLine || trimmedLine.startsWith('#') || trimmedLine.startsWith('//')) {
+    const lowerLine = trimmedLine.toLowerCase();
+    if (
+      !trimmedLine ||
+      trimmedLine.startsWith('#') ||
+      trimmedLine.startsWith('//') ||
+      trimmedLine.startsWith('[') ||
+      lowerLine.startsWith('when i use') ||
+      lowerLine.startsWith('note:') ||
+      lowerLine.startsWith('http')
+    ) {
       continue;
     }
 
     studentLineCount++;
 
     let studentName = '';
+    let parentPhone = '';
     let studentPhone = '';
 
     if (trimmedLine.includes('|')) {
       const parts = trimmedLine.split('|');
       studentName = parts[0].trim();
-      studentPhone = parts.slice(1).join('|').trim();
+      parentPhone = parts[1] ? parts[1].trim() : '';
+      studentPhone = parts[2] ? parts[2].trim() : '';
     } else if (trimmedLine.includes('-')) {
       const parts = trimmedLine.split('-');
       studentName = parts[0].trim();
-      studentPhone = parts.slice(1).join('-').trim();
+      parentPhone = parts[1] ? parts[1].trim() : '';
+      studentPhone = parts.slice(2).join('-').trim();
     } else if (trimmedLine.includes(':')) {
       const parts = trimmedLine.split(':');
       studentName = parts[0].trim();
-      studentPhone = parts.slice(1).join(':').trim();
+      parentPhone = parts[1] ? parts[1].trim() : '';
+      studentPhone = parts.slice(2).join(':').trim();
     } else if (trimmedLine.includes(',')) {
       const parts = trimmedLine.split(',');
       studentName = parts[0].trim();
-      studentPhone = parts.slice(1).join(',').trim();
+      parentPhone = parts[1] ? parts[1].trim() : '';
+      studentPhone = parts.slice(2).join(',').trim();
     } else if (trimmedLine.includes('\t')) {
       const parts = trimmedLine.split('\t');
       studentName = parts[0].trim();
-      studentPhone = parts.slice(1).join('\t').trim();
+      parentPhone = parts[1] ? parts[1].trim() : '';
+      studentPhone = parts.slice(2).join('\t').trim();
     } else {
       // Try regex match for trailing phone number
       const phoneMatch = trimmedLine.match(/(.*?)\s+([+0-9\s-]{7,15})$/);
       if (phoneMatch) {
         studentName = phoneMatch[1].trim();
-        studentPhone = phoneMatch[2].trim();
+        parentPhone = phoneMatch[2].trim();
       } else {
         studentName = trimmedLine;
-        studentPhone = '01000000000';
+        parentPhone = '';
       }
     }
 
@@ -647,10 +635,18 @@ export function parseAiImportText(text: string): AiImportResult {
       errors.push(`Student name is empty on student line ${studentLineCount}.`);
     }
 
-    if (!studentPhone) {
-      studentPhone = '01000000000';
+    if (!parentPhone) {
+      errors.push(`Parent Phone Number is required for student "${studentName || `Line ${studentLineCount}`}".`);
     } else {
       // Normalize international +20 10 ... -> 2010... or local 010 123 4567 -> 0101234567
+      if (parentPhone.startsWith('+')) {
+        parentPhone = parentPhone.replace(/[^\d]/g, '');
+      } else if (/^[\d\s-]{8,20}$/.test(parentPhone)) {
+        parentPhone = parentPhone.replace(/[\s-]/g, '');
+      }
+    }
+
+    if (studentPhone) {
       if (studentPhone.startsWith('+')) {
         studentPhone = studentPhone.replace(/[^\d]/g, '');
       } else if (/^[\d\s-]{8,20}$/.test(studentPhone)) {
@@ -659,14 +655,14 @@ export function parseAiImportText(text: string): AiImportResult {
     }
 
     if (studentName) {
-      const lowerPhone = studentPhone.replace(/\s+/g, '');
+      const lowerPhone = parentPhone.replace(/\s+/g, '');
       const lowerName = studentName.toLowerCase();
 
-      if (seenPhones.has(lowerPhone) && lowerPhone !== '01000000000') {
+      if (seenPhones.has(lowerPhone) && lowerPhone !== '') {
         warnings.push(
-          `Note: Duplicate phone number "${studentPhone}" for student "${studentName}". Both students will keep this phone.`
+          `Note: Duplicate parent phone number "${parentPhone}" for student "${studentName}".`
         );
-      } else {
+      } else if (lowerPhone) {
         seenPhones.add(lowerPhone);
       }
 
@@ -680,7 +676,8 @@ export function parseAiImportText(text: string): AiImportResult {
 
       parsedStudents.push({
         name: studentName,
-        phone: studentPhone,
+        parentPhone: parentPhone,
+        studentPhone: studentPhone || undefined,
       });
     }
   }
@@ -704,6 +701,8 @@ export function parseAiImportText(text: string): AiImportResult {
           payment_type: mappedPaymentCycle,
           payment_amount: finalPaymentAmount,
           lesson_price: parsedLessonPrice,
+          zoom_link: rawZoomLink.trim() || undefined,
+          address: rawAddress.trim() || undefined,
         }
       : null;
 

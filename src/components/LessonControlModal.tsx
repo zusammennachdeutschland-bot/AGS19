@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { ParentSummaryModal } from './ParentSummaryModal';
 import { ArabicParentReportModal } from './ArabicParentReportModal';
+import { LessonReminderModal } from './LessonReminderModal';
 import { buildWhatsAppUrl, formatWhatsAppPhone } from '../utils/phoneUtils';
 import confetti from 'canvas-confetti';
 
@@ -70,6 +71,7 @@ export const LessonControlModal: React.FC = () => {
   const [teacherNotes, setTeacherNotes] = useState('Gute Interaktion, Wortschatz wurde erfolgreich wiederholt.');
   const [studentPayments, setStudentPayments] = useState<Record<string, { status: PaymentStatus; amount: number }>>({});
   const [reminderCopied, setReminderCopied] = useState(false);
+  const [showLessonReminderModal, setShowLessonReminderModal] = useState(false);
 
   // Group students for bulk/individual attendance
   const groupStudents = selectedLesson?.groupId 
@@ -551,68 +553,66 @@ export const LessonControlModal: React.FC = () => {
                 </p>
 
                 <div className="flex flex-wrap items-center gap-2">
+                  {/* Main Send Lesson Reminder Button */}
+                  <button
+                    type="button"
+                    onClick={() => setShowLessonReminderModal(true)}
+                    className="bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-black text-xs px-4 py-2.5 rounded-xl transition-all flex items-center gap-2 cursor-pointer shadow-md shadow-emerald-600/20"
+                  >
+                    <Send className="w-4 h-4 fill-white" />
+                    <span>{_t('إرسال تذكير الحصة', 'Send Lesson Reminder', 'Lektionserinnerung senden')}</span>
+                  </button>
+
                   {selectedLesson.type === 'online' ? (
                     <>
-                      <button
-                        onClick={handleSendConfirmationMessage}
-                        className="bg-primary-soft dark:bg-primary-soft/60 hover:bg-primary-soft dark:hover:bg-primary-soft border border-primary-border dark:border-primary-border text-primary dark:text-primary/70 font-bold text-xs px-3.5 py-2 rounded-xl transition-all flex items-center gap-1.5 cursor-pointer active:scale-95"
-                      >
-                        <Send className="w-3.5 h-3.5" />
-                        <span>{_t('إرسال رسالة تأكيد', 'Send Confirmation Message', 'Bestätigungsnachricht senden')}</span>
-                      </button>
-
                       <a
-                        href={selectedLesson.meetingLink || profile.defaultZoomLink}
+                        href={selectedLesson.meetingLink || targetGroup?.zoomLink || profile.defaultZoomLink}
                         target="_blank"
                         rel="noreferrer"
-                        className="bg-primary hover:bg-primary-hover text-white font-bold text-xs px-3.5 py-2 rounded-xl transition-all flex items-center gap-1.5 shadow-xs active:scale-95 hover:shadow-lg hover:shadow-primary/30"
+                        className="bg-primary hover:bg-primary-hover text-white font-bold text-xs px-3.5 py-2.5 rounded-xl transition-all flex items-center gap-1.5 shadow-xs active:scale-95"
                       >
                         <Video className="w-3.5 h-3.5" />
                         <span>{_t('فتح رابط زووم', 'Open Zoom Link', 'Zoom-Link öffnen')}</span>
                         <ExternalLink className="w-3 h-3" />
                       </a>
 
-                      <a
-                        href={profile.defaultMeetLink}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="bg-primary hover:bg-primary-hover text-white font-bold text-xs px-3.5 py-2 rounded-xl transition-all flex items-center gap-1.5 shadow-xs"
-                      >
-                        <Video className="w-3.5 h-3.5" />
-                        <span>{_t('فتح جوجل ميت', 'Open Google Meet', 'Google Meet öffnen')}</span>
-                        <ExternalLink className="w-3 h-3" />
-                      </a>
+                      {profile.defaultMeetLink && (
+                        <a
+                          href={profile.defaultMeetLink}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="bg-primary hover:bg-primary-hover text-white font-bold text-xs px-3.5 py-2.5 rounded-xl transition-all flex items-center gap-1.5 shadow-xs"
+                        >
+                          <Video className="w-3.5 h-3.5" />
+                          <span>{_t('فتح جوجل ميت', 'Open Google Meet', 'Google Meet öffnen')}</span>
+                          <ExternalLink className="w-3 h-3" />
+                        </a>
+                      )}
                     </>
                   ) : (
                     <>
                       <button
+                        type="button"
                         onClick={handleSendOfflineLessonStartMessage}
-                        className="bg-primary hover:bg-primary-hover text-white font-black text-xs px-3.5 py-2 rounded-xl transition-all flex items-center gap-1.5 cursor-pointer shadow-xs"
-                        title="Send Offline Lesson Started message"
+                        className="bg-primary hover:bg-primary-hover text-white font-bold text-xs px-3.5 py-2.5 rounded-xl transition-all flex items-center gap-1.5 cursor-pointer shadow-xs"
                       >
                         <Send className="w-3.5 h-3.5" />
                         <span>{_t('إرسال إشعار بدء الحصة', 'Send Lesson Started Notice', 'Unterrichtsbeginn senden')}</span>
                       </button>
 
                       <button
-                        onClick={handleStartTrip}
-                        className="bg-primary hover:bg-primary-hover text-white font-bold text-xs px-3.5 py-2 rounded-xl transition-all flex items-center gap-1.5 cursor-pointer shadow-xs"
-                      >
-                        <Navigation className="w-3.5 h-3.5" />
-                        <span>{_t('بدء الرحلة وإشعار ولي الأمر', 'Start Trip & Notify Parent', 'Fahrt starten & Eltern benachrichtigen')}</span>
-                      </button>
-
-                      <button
+                        type="button"
                         onClick={handleSendPaymentRequestMessage}
-                        className="bg-primary hover:bg-primary-hover text-white font-bold text-xs px-3.5 py-2 rounded-xl transition-all flex items-center gap-1.5 cursor-pointer shadow-xs"
+                        className="bg-primary hover:bg-primary-hover text-white font-bold text-xs px-3.5 py-2.5 rounded-xl transition-all flex items-center gap-1.5 cursor-pointer shadow-xs"
                       >
                         <DollarSign className="w-3.5 h-3.5" />
                         <span>{_t('إرسال مطالبة بالدفع', 'Send Payment Request', 'Zahlungsaufforderung senden')}</span>
                       </button>
 
                       <button
+                        type="button"
                         onClick={handleOpenMaps}
-                        className="bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs px-3.5 py-2 rounded-xl transition-all flex items-center gap-1.5 cursor-pointer shadow-xs"
+                        className="bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs px-3.5 py-2.5 rounded-xl transition-all flex items-center gap-1.5 cursor-pointer shadow-xs"
                       >
                         <MapPin className="w-3.5 h-3.5 text-primary" />
                         <span>{_t('فتح خرائط جوجل', 'Open Google Maps Navigation', 'Google Maps Navigation öffnen')}</span>
@@ -1204,6 +1204,16 @@ export const LessonControlModal: React.FC = () => {
           profile={profile}
           onClose={() => setShowArabicParentReportModal(false)}
           onGoToHomeScreen={closeLessonControl}
+        />
+      )}
+
+      {/* Lesson Reminder Modal overlay */}
+      {showLessonReminderModal && (
+        <LessonReminderModal
+          lesson={selectedLesson}
+          group={targetGroup}
+          recipientPhone={recipientPhone}
+          onClose={() => setShowLessonReminderModal(false)}
         />
       )}
     </div>

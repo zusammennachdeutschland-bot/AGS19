@@ -99,6 +99,8 @@ export const AiImportModal: React.FC<AiImportModalProps> = ({
       sessionCount,
       monthlyPackagePrice,
       pricePerSession,
+      zoomLink: group.type === 'online' ? (group.zoom_link || '') : undefined,
+      address: group.type === 'offline' ? (group.address || '') : undefined,
       color: 'indigo'
     });
 
@@ -106,8 +108,8 @@ export const AiImportModal: React.FC<AiImportModalProps> = ({
     students.forEach((st) => {
       addStudent({
         name: st.name,
-        studentPhone: st.phone,
-        parentPhone: st.phone,
+        studentPhone: st.studentPhone || '',
+        parentPhone: st.parentPhone,
         parentName: '',
         groupId: newGroup.id,
         grade: group.grade
@@ -363,10 +365,10 @@ export const AiImportModal: React.FC<AiImportModalProps> = ({
 
                         <div>
                           <div className="text-[10px] text-text-muted font-medium">
-                            {_t('الصف', 'Grade')}
+                            {_t('الصف والنوع', 'Grade & Type')}
                           </div>
-                          <div className="font-bold text-slate-800 dark:text-slate-200">
-                            {parseResult.group.grade || '—'}
+                          <div className="font-bold text-slate-800 dark:text-slate-200 capitalize">
+                            {parseResult.group.grade} • {parseResult.group.type}
                           </div>
                         </div>
 
@@ -381,11 +383,10 @@ export const AiImportModal: React.FC<AiImportModalProps> = ({
 
                         <div>
                           <div className="text-[10px] text-text-muted font-medium">
-                            {_t('نظام المحاسبة', 'Payment System')}
+                            {parseResult.group.type === 'online' ? _t('رابط زووم', 'Zoom Link') : _t('العنوان / المكان', 'Address')}
                           </div>
-                          <div className="font-bold text-primary dark:text-primary">
-                            {parseResult.group.payment_type} ({parseResult.group.payment_amount})
-                            {parseResult.group.lesson_price ? ` [${parseResult.group.lesson_price}/lesson]` : ''}
+                          <div className="font-bold text-primary dark:text-primary truncate" title={parseResult.group.type === 'online' ? parseResult.group.zoom_link : parseResult.group.address}>
+                            {parseResult.group.type === 'online' ? (parseResult.group.zoom_link || '—') : (parseResult.group.address || '—')}
                           </div>
                         </div>
                       </div>
@@ -393,12 +394,13 @@ export const AiImportModal: React.FC<AiImportModalProps> = ({
                       {/* Student Table Preview */}
                       {parseResult.students.length > 0 && (
                         <div className="border border-surface-border rounded-xl overflow-hidden max-h-48 overflow-y-auto">
-                          <table className="w-full text-left text-xs">
+                          <table className="w-full text-left rtl:text-right text-xs">
                             <thead className="bg-surface-hover/90 text-slate-600 dark:text-slate-300 font-bold sticky top-0 border-b border-surface-border dark:border-surface-border-soft">
                               <tr>
                                 <th className="p-2.5 w-10 text-center">#</th>
                                 <th className="p-2.5">{_t('اسم الطالب', 'Student Name')}</th>
-                                <th className="p-2.5">{_t('رقم الهاتف', 'Phone')}</th>
+                                <th className="p-2.5">{_t('هاتف ولي الأمر (مطلوب)', 'Parent Phone (Req)')}</th>
+                                <th className="p-2.5">{_t('هاتف الطالب (اختياري)', 'Student Phone (Opt)')}</th>
                               </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-slate-800 dark:text-slate-200 bg-surface">
@@ -406,7 +408,8 @@ export const AiImportModal: React.FC<AiImportModalProps> = ({
                                 <tr key={i} className="hover:bg-background dark:hover:bg-slate-800/50 transition-colors">
                                   <td className="p-2 text-center text-text-muted/70 text-[11px]">{i + 1}</td>
                                   <td className="p-2 font-extrabold">{st.name}</td>
-                                  <td className="p-2 font-mono text-text-muted">{st.phone}</td>
+                                  <td className="p-2 font-mono font-bold text-primary">{st.parentPhone}</td>
+                                  <td className="p-2 font-mono text-text-muted">{st.studentPhone || '—'}</td>
                                 </tr>
                               ))}
                             </tbody>

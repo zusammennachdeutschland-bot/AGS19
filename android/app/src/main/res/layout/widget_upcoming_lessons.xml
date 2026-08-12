@@ -40,23 +40,27 @@
             android:textStyle="bold" />
     </LinearLayout>
 
-    <ListView
-        android:id="@+id/upcoming_list_view"
+    <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_marginTop="8dp"
-        android:layout_weight="1"
-        android:divider="@android:color/transparent"
-        android:dividerHeight="4dp" />
+        android:layout_weight="1">
 
-    <TextView
-        android:id="@+id/upcoming_empty_view"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:gravity="center"
-        android:text="Keine kommenden Lektionen 🗓️"
-        android:textColor="#94A3B8"
-        android:textSize="12sp"
-        android:visibility="gone" />
+        <ListView
+            android:id="@+id/upcoming_list_view"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:divider="@android:color/transparent"
+            android:dividerHeight="4dp" />
+
+        <TextView
+            android:id="@+id/upcoming_empty_view"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:gravity="center"
+            android:text="Keine kommenden Lektionen 🗓️"
+            android:textColor="#94A3B8"
+            android:textSize="12sp"
+            android:visibility="gone" />
+    </FrameLayout>
 </LinearLayout>

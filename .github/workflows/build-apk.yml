@@ -47,9 +47,7 @@ jobs:
           rm -rf dist android/app/src/main/assets/public
 
       - name: Install Dependencies
-        run: |
-          npm install --legacy-peer-deps
-          npm install @capacitor/app @capacitor/device @capacitor/dialog @capacitor/filesystem @capacitor/haptics @capacitor/keyboard @capacitor/local-notifications @capacitor/preferences @capacitor/share @capacitor/splash-screen @capacitor/status-bar @capacitor/toast
+        run: npm install --legacy-peer-deps
 
       - name: Build Web Application
         run: npm run build
@@ -75,13 +73,6 @@ jobs:
             exit 1
           fi
           echo "Android public assets verified."
-
-      - name: Fix Gradle Wrapper Jar
-        run: |
-          cd android
-          rm -rf gradle/wrapper/gradle-wrapper.jar
-          # Download a clean official Gradle wrapper jar file
-          curl -sLo gradle/wrapper/gradle-wrapper.jar https://raw.githubusercontent.com/gradle/gradle/v8.14.3/gradle/wrapper/gradle-wrapper.jar
 
       - name: Create Fixed Debug Keystore
         run: |

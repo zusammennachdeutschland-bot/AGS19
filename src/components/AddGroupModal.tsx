@@ -65,9 +65,26 @@ export const AddGroupModal: React.FC<AddGroupModalProps> = ({ onClose }) => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name) return;
-    if (createStudentWithGroup && !studentName.trim()) {
-      alert(_t('يرجى إدخال اسم الطالب', 'Please enter student name', 'Bitte Schülernamen eingeben'));
+
+    if (type === 'online' && !zoomLink.trim()) {
+      alert(_t('رابط زووم مطلوب للمجموعات الأونلاين', 'Zoom link is required for online groups', 'Zoom-Link ist für Online-Gruppen erforderlich'));
       return;
+    }
+
+    if (type === 'offline' && !address.trim()) {
+      alert(_t('العنوان / المكان مطلوب للمجموعات الأوفلاين', 'Address / Location is required for offline groups', 'Adresse / Ort ist für Offline-Gruppen erforderlich'));
+      return;
+    }
+
+    if (createStudentWithGroup) {
+      if (!studentName.trim()) {
+        alert(_t('يرجى إدخال اسم الطالب', 'Please enter student name', 'Bitte Schülernamen eingeben'));
+        return;
+      }
+      if (!studentParentPhone.trim()) {
+        alert(_t('رقم هاتف ولي الأمر مطلوب للطالب', 'Parent phone number is required for the student', 'Telefonnummer der Eltern ist für den Schüler erforderlich'));
+        return;
+      }
     }
 
     const calcMonthlyPrice = paymentCycle === 'per_lesson' 

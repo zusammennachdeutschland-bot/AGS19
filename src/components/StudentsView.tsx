@@ -385,8 +385,13 @@ export const StudentsView: React.FC = () => {
                           {studentGroup?.name || 'Gruppe A1'}
                         </span>
                         <span className="text-[11px] text-text-muted/70">
-                          • {t('students_parent_phone_label')}: <span className="font-semibold text-slate-600 dark:text-slate-300">{student.parentName}</span> ({student.parentPhone})
+                          • {_t('ولي الأمر', 'Parent', 'Eltern')}: <span className="font-semibold text-slate-600 dark:text-slate-300">{student.parentPhone}</span>
                         </span>
+                        {student.studentPhone && (
+                          <span className="text-[11px] text-text-muted/70">
+                            • {_t('الطالب', 'Student', 'Schüler')}: <span className="font-semibold text-slate-600 dark:text-slate-300">{student.studentPhone}</span>
+                          </span>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -583,6 +588,16 @@ export const StudentsView: React.FC = () => {
                       <span className="text-text-muted/70 text-[11px] truncate max-w-[150px] sm:max-w-[240px]" title={formatGroupScheduleDisplay(group, language)}>
                         • {formatGroupScheduleDisplay(group, language)}
                       </span>
+                      {group.type === 'online' && group.zoomLink && (
+                        <span className="text-[10px] font-mono text-primary truncate max-w-[160px]" title={group.zoomLink}>
+                          • Zoom: {group.zoomLink}
+                        </span>
+                      )}
+                      {group.type === 'offline' && group.address && (
+                        <span className="text-[10px] text-text-muted/80 truncate max-w-[160px]" title={group.address}>
+                          • {group.address}
+                        </span>
+                      )}
                     </div>
                   </div>
                 </div>

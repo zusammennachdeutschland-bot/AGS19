@@ -5,9 +5,10 @@ import { Lesson } from '../types';
 import { 
   Calendar as CalendarIcon, Clock, ChevronLeft, ChevronRight, 
   Video, MapPin, CheckCircle2, AlertTriangle, Trash2, ArrowLeftRight, 
-  Download, X, Check, Zap, RefreshCw, Play
+  Download, X, Check, Zap, RefreshCw, Play, Send 
 } from 'lucide-react';
 import { StartLessonNowModal } from './StartLessonNowModal';
+import { LessonReminderModal } from './LessonReminderModal';
 
 export const ScheduleView: React.FC = () => {
   const { lessons, profile, openLessonControl, setIsAddLessonModalOpen, setIsAddQuickLessonModalOpen, updateLesson, deleteLesson, refreshCalendarAndDashboard,  t } = useApp();
@@ -17,6 +18,7 @@ export const ScheduleView: React.FC = () => {
   const [calendarView, setCalendarView] = useState<'day' | 'week' | 'month'>('day');
   const [showRefreshToast, setShowRefreshToast] = useState(false);
   const [showStartLessonNowModal, setShowStartLessonNowModal] = useState(false);
+  const [reminderLesson, setReminderLesson] = useState<Lesson | null>(null);
 
   const handleRefreshCalendar = () => {
     refreshCalendarAndDashboard();
@@ -502,6 +504,15 @@ export const ScheduleView: React.FC = () => {
                           )}
 
                           <button
+                            type="button"
+                            onClick={() => setReminderLesson(lesson)}
+                            title="إرسال تذكير الحصة"
+                            className="p-1.5 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:hover:bg-emerald-900/60 rounded-lg text-emerald-600 dark:text-emerald-400 transition-all cursor-pointer"
+                          >
+                            <Send className="w-3.5 h-3.5" />
+                          </button>
+
+                          <button
                             onClick={() => openReschedule(lesson)}
                             className="p-1.5 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg text-slate-600 dark:text-slate-300 transition-all cursor-pointer"
                           >
@@ -755,6 +766,14 @@ export const ScheduleView: React.FC = () => {
       {/* START LESSON NOW MODAL */}
       {showStartLessonNowModal && (
         <StartLessonNowModal onClose={() => setShowStartLessonNowModal(false)} />
+      )}
+
+      {/* LESSON REMINDER MODAL */}
+      {reminderLesson && (
+        <LessonReminderModal
+          lesson={reminderLesson}
+          onClose={() => setReminderLesson(null)}
+        />
       )}
     </div>
   );

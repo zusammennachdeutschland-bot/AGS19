@@ -866,15 +866,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode, initialData: any
         const matchingSlot = slots.find(s => getDayNumber(s.day) === dayNum);
         if (matchingSlot) {
           const dateStr = d.toISOString().split('T')[0];
-          const existsInLessons = lessons.some(l => l.groupId === group.id && l.date === dateStr);
-          const existsInNew = newAutoLessons.some(l => l.groupId === group.id && l.date === dateStr);
+          const sessionTime = matchingSlot.time || '17:00';
+
+          const existsInLessons = lessons.some(l => l.groupId === group.id && l.date === dateStr && l.time === sessionTime);
+          const existsInNew = newAutoLessons.some(l => l.groupId === group.id && l.date === dateStr && l.time === sessionTime);
 
           if (!existsInLessons && !existsInNew) {
             const perSessionPrice = group.paymentCycle === 'per_lesson' && group.pricePerSession
               ? group.pricePerSession
               : Math.round((group.monthlyPackagePrice || 1200) / (group.sessionCount || 8));
-
-            const sessionTime = matchingSlot.time || '17:00';
 
             newAutoLessons.push({
               id: `l_${Date.now()}_auto_${Math.random().toString(36).substring(2, 6)}`,
@@ -901,7 +901,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode, initialData: any
     });
 
     if (newAutoLessons.length > 0) {
-      setLessons(prev => [...prev, ...newAutoLessons]);
+      setLessons(prev => {
+        const deduplicated = newAutoLessons.filter(
+          nl => !prev.some(l => l.groupId === nl.groupId && l.date === nl.date && l.time === nl.time)
+        );
+        return deduplicated.length > 0 ? [...prev, ...deduplicated] : prev;
+      });
     }
   }, [groups]);
 
@@ -922,21 +927,34 @@ export const AppProvider: React.FC<{ children: React.ReactNode, initialData: any
     const currentStudentIds = new Set(students.map(s => s.id));
     const currentStudentNames = new Set(students.map(s => s.name.toLowerCase()));
 
-    // Clean up orphaned lessons (e.g. if student or group was deleted)
-    setLessons(prev => prev.filter(lesson => {
-      // If group lesson and group no longer exists
-      if (lesson.groupId && lesson.groupId !== 'quick_group' && !currentGroupIds.has(lesson.groupId)) {
-        return false;
-      }
-      // If student lesson and student no longer exists
-      if (lesson.studentId && !currentStudentIds.has(lesson.studentId)) {
-        return false;
-      }
-      if (lesson.studentName && !lesson.isQuickLesson && !currentStudentNames.has(lesson.studentName.toLowerCase()) && !lesson.groupId) {
-        return false;
-      }
-      return true;
-    }));
+    // Clean up orphaned & duplicate lessons
+    setLessons(prev => {
+      const seenGroupLessons = new Set<string>();
+      return prev.filter(lesson => {
+        // If group lesson and group no longer exists
+        if (lesson.groupId && lesson.groupId !== 'quick_group' && !currentGroupIds.has(lesson.groupId)) {
+          return false;
+        }
+        // If student lesson and student no longer exists
+        if (lesson.studentId && !currentStudentIds.has(lesson.studentId)) {
+          return false;
+        }
+        if (lesson.studentName && !lesson.isQuickLesson && !currentStudentNames.has(lesson.studentName.toLowerCase()) && !lesson.groupId) {
+          return false;
+        }
+
+        // Deduplicate group lessons (same group, same date, same time)
+        if (lesson.groupId && lesson.groupId !== 'quick_group') {
+          const key = `${lesson.groupId}_${lesson.date}_${lesson.time}`;
+          if (seenGroupLessons.has(key)) {
+            return false;
+          }
+          seenGroupLessons.add(key);
+        }
+
+        return true;
+      });
+    });
 
     // Clean up orphaned payments
     setPayments(prev => prev.filter(payment => {
@@ -1638,7 +1656,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode, initialData: any
     }
 
     if (newLessons.length > 0) {
-      setLessons(prev => [...prev, ...newLessons]);
+      setLessons(prev => {
+        const deduplicated = newLessons.filter(
+          nl => !prev.some(l => l.groupId === nl.groupId && l.date === nl.date && l.time === nl.time)
+        );
+        return deduplicated.length > 0 ? [...prev, ...deduplicated] : prev;
+      });
     }
   };
 
@@ -2281,10 +2304,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode, initialData: any
     setActiveLessonSession(session);
     updateLesson(lesson.id, { status: 'in_progress' });
 
-    // Trigger Android Native Foreground Service for Dynamic Island / Honor Magic Capsule
+    const durationMins = lesson.durationMinutes || 60;
+    const elapsedMins = 0;
+    const remainingMins = durationMins;
+    const percent = 0;
+
+    // Trigger Android Native Foreground Service for Google Maps navigation style notification
     LiveTimer.startTimer({
-      title: lesson.title || 'Live Unterricht',
-      startTime: now
+      title: `${lesson.title} (${session.groupName})`,
+      startTime: now,
+      durationMins,
+      elapsedMins,
+      remainingMins,
+      percent
     }).catch(err => console.warn('LiveTimer start error:', err));
   };
 
@@ -2310,11 +2342,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode, initialData: any
       startedAt: now
     });
 
+    const durationMins = activeLessonSession.durationMinutes || 60;
+    const totalElapsedSecs = activeLessonSession.accumulatedSeconds;
+    const elapsedMins = Math.floor(totalElapsedSecs / 60);
+    const remainingMins = Math.max(0, durationMins - elapsedMins);
+    const percent = Math.min(100, Math.floor((elapsedMins / durationMins) * 100));
+
     // Resume native timer with offset startTime so chronometer reflects total accumulated time
     const effectiveStartTime = now - (activeLessonSession.accumulatedSeconds * 1000);
     LiveTimer.startTimer({
-      title: activeLessonSession.lessonTitle || 'Live Unterricht',
-      startTime: effectiveStartTime
+      title: `${activeLessonSession.lessonTitle} (${activeLessonSession.groupName})`,
+      startTime: effectiveStartTime,
+      durationMins,
+      elapsedMins,
+      remainingMins,
+      percent
     }).catch(err => console.warn('LiveTimer resume error:', err));
   };
 

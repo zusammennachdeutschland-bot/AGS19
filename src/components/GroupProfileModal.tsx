@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { Group, PaymentCycle } from '../types';
-import { X, Users, Video, MapPin, ExternalLink, Save, DollarSign, Calendar, Trash2 } from 'lucide-react';
+import { X, Users, Video, MapPin, ExternalLink, Save, DollarSign, Calendar, Trash2, Send } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { DeleteConfirmModal } from './DeleteConfirmModal';
+import { LessonReminderModal } from './LessonReminderModal';
 
 interface GroupProfileModalProps {
   group: Group;
@@ -11,7 +12,11 @@ interface GroupProfileModalProps {
 }
 
 export const GroupProfileModal: React.FC<GroupProfileModalProps> = ({ group, onClose }) => {
-  const { updateGroup, deleteGroup, archiveGroup, generateGroupScheduleLessons, profile, students, lessons, payments, t } = useApp();
+  const { updateGroup, deleteGroup, archiveGroup, generateGroupScheduleLessons, profile, students, lessons, payments, t, language } = useApp();
+
+  const _t = (ar: string, en: string, de?: string) => {
+    return language === 'ar' ? ar : language === 'de' ? (de || en) : en;
+  };
 
   const [name, setName] = useState(group.name);
   const [type, setType] = useState(group.type);
@@ -28,6 +33,7 @@ export const GroupProfileModal: React.FC<GroupProfileModalProps> = ({ group, onC
   const [lessonDurationMinutes, setLessonDurationMinutes] = useState(group.lessonDurationMinutes || 60);
   const [whatsAppGroupLink, setWhatsAppGroupLink] = useState(group.whatsAppGroupLink || '');
   const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
+  const [showReminderModal, setShowReminderModal] = useState(false);
 
   const groupStudents = students.filter(s => s.groupId === group.id);
 
@@ -53,6 +59,16 @@ export const GroupProfileModal: React.FC<GroupProfileModalProps> = ({ group, onC
       day,
       time: dayTimes[day] || scheduleTime || '17:00'
     }));
+
+    if (type === 'online' && !zoomLink.trim()) {
+      alert(_t('رابط زووم مطلوب للمجموعات الأونلاين', 'Zoom link is required for online groups', 'Zoom-Link ist für Online-Gruppen erforderlich'));
+      return;
+    }
+
+    if (type === 'offline' && !address.trim()) {
+      alert(_t('العنوان / المكان مطلوب للمجموعات الأوفلاين', 'Address / Location is required for offline groups', 'Adresse / Ort ist für Offline-Gruppen erforderlich'));
+      return;
+    }
 
     const updatedGroupData = {
       ...group,
@@ -351,7 +367,16 @@ export const GroupProfileModal: React.FC<GroupProfileModalProps> = ({ group, onC
             </div>
           </div>
 
-          <div className="flex items-center gap-2 pt-2">
+          <div className="flex flex-wrap items-center gap-2 pt-2">
+            <button
+              type="button"
+              onClick={() => setShowReminderModal(true)}
+              className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-4 py-3 rounded-lg transition-all flex items-center gap-2 cursor-pointer shadow-sm shadow-emerald-600/20 shrink-0"
+            >
+              <Send className="w-4 h-4 fill-white" />
+              <span>إرسال تذكير الحصة</span>
+            </button>
+
             <button
               type="button"
               onClick={() => setIsConfirmingDelete(true)}
@@ -364,7 +389,7 @@ export const GroupProfileModal: React.FC<GroupProfileModalProps> = ({ group, onC
 
             <button
               type="submit"
-              className="flex-1 bg-primary hover:bg-primary-hover text-white font-bold text-xs py-3 rounded-lg shadow-md transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+              className="flex-1 bg-primary hover:bg-primary-hover text-white font-bold text-xs py-3 rounded-lg shadow-md transition-all flex items-center justify-center gap-1.5 cursor-pointer min-w-[140px]"
             >
               <Save className="w-4 h-4" />
               <span>Änderungen Speichern</span>
@@ -372,6 +397,13 @@ export const GroupProfileModal: React.FC<GroupProfileModalProps> = ({ group, onC
           </div>
         </form>
       </div>
+
+      {showReminderModal && (
+        <LessonReminderModal
+          group={group}
+          onClose={() => setShowReminderModal(false)}
+        />
+      )}
 
       <DeleteConfirmModal
         isOpen={isConfirmingDelete}

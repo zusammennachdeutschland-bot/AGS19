@@ -2,10 +2,16 @@ import { registerPlugin } from '@capacitor/core';
 
 export interface LiveTimerPluginInterface {
   /**
-   * Starts the native android Foreground Service with chronometer notification for Magic Capsule / Dynamic Island
-   * @param options Object containing title and initial start timestamp in milliseconds
+   * Starts the native android Foreground Service with Google Maps navigation-style live notification
    */
-  startTimer(options: { title?: string; startTime: number }): Promise<void>;
+  startTimer(options: {
+    title?: string;
+    startTime: number;
+    durationMins?: number;
+    elapsedMins?: number;
+    remainingMins?: number;
+    percent?: number;
+  }): Promise<void>;
 
   /**
    * Stops the native android Foreground Service and removes the notification
