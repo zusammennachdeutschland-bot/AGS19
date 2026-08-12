@@ -2,6 +2,9 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { Student, Group, Lesson, PaymentRecord } from '../types';
 import { storage } from '../services/storageService';
+import { Capacitor } from '@capacitor/core';
+import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
+import { Share } from '@capacitor/share';
 import { 
   ALL_BACKUP_CATEGORIES, BackupCategory, calculateBackupStats, 
   generateBackupFilename, encryptBackupData, decryptBackupData, 
@@ -31,8 +34,16 @@ export const SmartBackupCenter: React.FC<SmartBackupCenterProps> = ({ onBack }) 
     t, _t
   } = useApp();
 
-  // Active Tab: 'backup' | 'restore' | 'auto_settings' | 'history'
-  const [activeTab, setActiveTab] = useState<'backup' | 'restore' | 'auto_settings' | 'history'>('backup');
+  // Active Tab: 'simple' | 'backup' | 'restore' | 'auto_settings' | 'history'
+  const [activeTab, setActiveTab] = useState<'simple' | 'backup' | 'restore' | 'auto_settings' | 'history'>('simple');
+
+  // Simple Tab states
+  const [isSimpleExporting, setIsSimpleExporting] = useState<boolean>(false);
+  const [isSimpleRestoring, setIsSimpleRestoring] = useState<boolean>(false);
+  const [simpleRestoreFileName, setSimpleRestoreFileName] = useState<string>('');
+  const [simpleSuccessMsg, setSimpleSuccessMsg] = useState<string | null>(null);
+  const [simpleErrorMsg, setSimpleErrorMsg] = useState<string | null>(null);
+  const simpleFileInputRef = useRef<HTMLInputElement>(null);
 
   // Backup Category Selection
   const [selectedCategories, setSelectedCategories] = useState<BackupCategory[]>(
@@ -218,16 +229,44 @@ export const SmartBackupCenter: React.FC<SmartBackupCenterProps> = ({ onBack }) 
 
         setExportProgress(90);
 
-        // Download JSON
-        const blob = new Blob([jsonString], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = fileName;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
+        if (Capacitor.isNativePlatform()) {
+          try {
+            const savedFile = await Filesystem.writeFile({
+              path: fileName,
+              data: jsonString,
+              directory: Directory.Cache,
+              encoding: Encoding.UTF8
+            });
+            await Share.share({
+              title: 'AGS19 Backup',
+              text: 'Backup Export Data (AGS19)',
+              url: savedFile.uri,
+              dialogTitle: 'Export Backup JSON'
+            });
+          } catch (nativeErr) {
+            console.warn('Native export failed, falling back to blob:', nativeErr);
+            const blob = new Blob([jsonString], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = fileName;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+          }
+        } else {
+          // Download JSON
+          const blob = new Blob([jsonString], { type: 'application/json' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = fileName;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+        }
 
         // Update last backup time
         performBackup();
@@ -241,6 +280,194 @@ export const SmartBackupCenter: React.FC<SmartBackupCenterProps> = ({ onBack }) 
         setIsExporting(false);
       }
     }, 300);
+  };
+
+  // Simple 1-Click Backup All
+  const handleSimpleBackup = async () => {
+    setIsSimpleExporting(true);
+    setSimpleSuccessMsg(null);
+    setSimpleErrorMsg(null);
+    
+    setTimeout(async () => {
+      try {
+        const payloadData: any = {
+          students,
+          groups,
+          lessons,
+          payments,
+          notifications,
+          profile,
+          workingHours: profile.workingHours,
+          parentMessageTemplates: profile.parentMessageTemplates,
+          meetingLinks: { defaultZoomLink: profile.defaultZoomLink, defaultMeetLink: profile.defaultMeetLink },
+          todos
+        };
+
+        const backupPayload = {
+          app: 'TeacherAssistant' as const,
+          version: '2.5.0',
+          timestamp: new Date().toISOString(),
+          backupType: 'Full' as const,
+          encrypted: false,
+          categories: ALL_BACKUP_CATEGORIES.map(c => c.id),
+          counts: {
+            students: students?.length || 0,
+            groups: groups?.length || 0,
+            lessons: lessons?.length || 0,
+            payments: payments?.length || 0,
+            notifications: notifications?.length || 0,
+            todos: todos?.length || 0
+          },
+          metadata: {
+            teacherName: profile.displayName || 'Teacher',
+            totalRecords: (students?.length || 0) + (groups?.length || 0) + (lessons?.length || 0) + (payments?.length || 0),
+            estimatedSizeKb: Math.round(JSON.stringify(payloadData).length / 1024)
+          },
+          data: payloadData
+        };
+
+        const jsonString = JSON.stringify(backupPayload, null, 2);
+        const fileName = `AGS19_Quick_Backup_${new Date().toISOString().split('T')[0]}.json`;
+
+        if (Capacitor.isNativePlatform()) {
+          const savedFile = await Filesystem.writeFile({
+            path: fileName,
+            data: jsonString,
+            directory: Directory.Cache,
+            encoding: Encoding.UTF8
+          });
+          await Share.share({
+            title: 'AGS19 Simple Backup',
+            text: 'Quick Backup Data (AGS19)',
+            url: savedFile.uri,
+            dialogTitle: 'Save Backup File'
+          });
+        } else {
+          const blob = new Blob([jsonString], { type: 'application/json' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = fileName;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+        }
+
+        performBackup(); // update last backup time
+        setSimpleSuccessMsg(_t('✓ تم إنشاء وتنزيل النسخة الاحتياطية بنجاح!', '✓ Quick backup created and saved successfully!'));
+      } catch (e: any) {
+        console.error('Simple backup failed:', e);
+        setSimpleErrorMsg(_t('❌ فشل إنشاء النسخة الاحتياطية: ', '❌ Backup failed: ') + (e.message || 'Error'));
+      } finally {
+        setIsSimpleExporting(false);
+      }
+    }, 400);
+  };
+
+  // Simple 1-Click Restore All
+  const handleSimpleRestoreUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setSimpleRestoreFileName(file.name);
+    setSimpleSuccessMsg(null);
+    setSimpleErrorMsg(null);
+
+    const reader = new FileReader();
+    reader.onload = async (evt) => {
+      const content = evt.target?.result as string;
+      if (!content) return;
+
+      setIsSimpleRestoring(true);
+      
+      // Safety step: Create automatic restore point first!
+      const currentSnapshot = {
+        timestamp: new Date().toISOString(),
+        students,
+        groups,
+        lessons,
+        payments,
+        notifications,
+        profile,
+        notificationSettings,
+        inspirationSettings,
+        inspirationMessages,
+        todos
+      };
+      localStorage.setItem('dl_restore_point_snapshot', JSON.stringify(currentSnapshot));
+      setHasRestorePoint(true);
+
+      setTimeout(async () => {
+        try {
+          let parsed = JSON.parse(content);
+          
+          // support decrypted or standard formats
+          const data = parsed.data || parsed;
+          if (!data) {
+            throw new Error('Invalid backup file format');
+          }
+
+          // Restore each category present in the backup payload
+          if (data.students && Array.isArray(data.students)) {
+            setStudents(data.students);
+            await storage.setItem('dl_students', data.students);
+          }
+          if (data.groups && Array.isArray(data.groups)) {
+            setGroups(data.groups);
+            await storage.setItem('dl_groups', data.groups);
+          }
+          if (data.lessons && Array.isArray(data.lessons)) {
+            setLessons(data.lessons);
+            await storage.setItem('dl_lessons', data.lessons);
+          }
+          if (data.payments && Array.isArray(data.payments)) {
+            setPayments(data.payments);
+            await storage.setItem('dl_payments', data.payments);
+          }
+          if (data.profile) {
+            const newProfile = { ...profile, ...data.profile };
+            setProfile(newProfile);
+            await storage.setItem('dl_profile', newProfile);
+          }
+
+          // Optional extra lists if available in full backup
+          if (data.todos && Array.isArray(data.todos)) {
+            await storage.setItem('dl_todos', data.todos);
+          }
+
+          setSimpleSuccessMsg(_t('✓ تم استعادة جميع البيانات بنجاح تام وتم حفظ الملف!', '✓ All data restored successfully!'));
+          
+          // Log to history
+          const totalRecs = (data.students?.length || 0) + (data.groups?.length || 0) + (data.lessons?.length || 0) + (data.payments?.length || 0);
+          const newLog: RestoreHistoryEntry = {
+            id: 'hist_' + Date.now(),
+            timestamp: new Date().toISOString(),
+            backupName: file.name,
+            mode: 'replace',
+            categories: ['students', 'groups', 'schedule', 'financial', 'notifications', 'settings'],
+            status: 'success',
+            totalRecordsAdded: totalRecs,
+            totalRecordsUpdated: 0,
+            notes: 'Simple 1-Tap Complete Restore'
+          };
+          const updatedLogs = [newLog, ...historyLogs].slice(0, retentionCount);
+          setHistoryLogs(updatedLogs);
+          localStorage.setItem('dl_restore_history', JSON.stringify(updatedLogs));
+
+        } catch (err: any) {
+          console.error('Simple restore failed:', err);
+          setSimpleErrorMsg(_t('❌ فشل استعادة البيانات. يرجى التأكد من اختيار ملف JSON صحيح.', '❌ Failed to restore data. Please make sure to choose a valid JSON backup file.'));
+        } finally {
+          setIsSimpleRestoring(false);
+          // Reset file input
+          if (simpleFileInputRef.current) {
+            simpleFileInputRef.current.value = '';
+          }
+        }
+      }, 600);
+    };
+    reader.readAsText(file);
   };
 
   // Analyze File for Restore
@@ -634,37 +861,50 @@ export const SmartBackupCenter: React.FC<SmartBackupCenterProps> = ({ onBack }) 
         </div>
 
         {/* Tab Switcher */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2 border-t border-surface-border/80">
+        <div className="flex overflow-x-auto pb-1 gap-1.5 pt-2 border-t border-surface-border/80 no-scrollbar sm:grid sm:grid-cols-5">
+          <button
+            type="button"
+            onClick={() => setActiveTab('simple')}
+            className={`py-2.5 px-3 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-2 shrink-0 cursor-pointer ${
+              activeTab === 'simple'
+                ? 'bg-primary text-white shadow-xs'
+                : 'bg-surface-hover hover:bg-slate-200 dark:hover:bg-slate-700 text-text-muted hover:text-text-main'
+            }`}
+          >
+            <Sparkles className="w-4 h-4 text-amber-400" />
+            <span>{_t('نسخ سريع (1-Tap)', '1-Tap Backup')}</span>
+          </button>
+
           <button
             type="button"
             onClick={() => setActiveTab('backup')}
-            className={`py-2.5 px-3 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-2 cursor-pointer ${
+            className={`py-2.5 px-3 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-2 shrink-0 cursor-pointer ${
               activeTab === 'backup'
                 ? 'bg-primary text-white shadow-xs'
                 : 'bg-surface-hover hover:bg-slate-200 dark:hover:bg-slate-700 text-text-muted hover:text-text-main'
             }`}
           >
             <Download className="w-4 h-4" />
-            <span>{_t('إنشاء نسخة احتياطية', 'Create Backup')}</span>
+            <span>{_t('تصدير مخصص', 'Custom Export')}</span>
           </button>
 
           <button
             type="button"
             onClick={() => setActiveTab('restore')}
-            className={`py-2.5 px-3 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-2 cursor-pointer ${
+            className={`py-2.5 px-3 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-2 shrink-0 cursor-pointer ${
               activeTab === 'restore'
                 ? 'bg-primary text-white shadow-xs'
                 : 'bg-surface-hover hover:bg-slate-200 dark:hover:bg-slate-700 text-text-muted hover:text-text-main'
             }`}
           >
             <Upload className="w-4 h-4" />
-            <span>{_t('استعادة البيانات', 'Restore Center')}</span>
+            <span>{_t('استعادة مخصصة', 'Custom Restore')}</span>
           </button>
 
           <button
             type="button"
             onClick={() => setActiveTab('auto_settings')}
-            className={`py-2.5 px-3 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-2 cursor-pointer ${
+            className={`py-2.5 px-3 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-2 shrink-0 cursor-pointer ${
               activeTab === 'auto_settings'
                 ? 'bg-primary text-white shadow-xs'
                 : 'bg-surface-hover hover:bg-slate-200 dark:hover:bg-slate-700 text-text-muted hover:text-text-main'
@@ -677,7 +917,7 @@ export const SmartBackupCenter: React.FC<SmartBackupCenterProps> = ({ onBack }) 
           <button
             type="button"
             onClick={() => setActiveTab('history')}
-            className={`py-2.5 px-3 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-2 cursor-pointer ${
+            className={`py-2.5 px-3 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-2 shrink-0 cursor-pointer ${
               activeTab === 'history'
                 ? 'bg-primary text-white shadow-xs'
                 : 'bg-surface-hover hover:bg-slate-200 dark:hover:bg-slate-700 text-text-muted hover:text-text-main'
@@ -709,6 +949,136 @@ export const SmartBackupCenter: React.FC<SmartBackupCenterProps> = ({ onBack }) 
         }`}>
           <span>{restoreSuccessMsg}</span>
           <button type="button" onClick={() => setRestoreSuccessMsg(null)} className="text-text-muted hover:text-text-main cursor-pointer">✕</button>
+        </div>
+      )}
+
+      {/* ==========================================
+          TAB 0: SIMPLE 1-TAP BACKUP & RESTORE
+      ========================================== */}
+      {activeTab === 'simple' && (
+        <div className="space-y-6 animate-fade-in">
+          {/* Simple Tab Feedbacks */}
+          {simpleSuccessMsg && (
+            <div className="p-4 rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 text-xs font-bold flex items-center justify-between gap-3 animate-scale-up">
+              <span className="flex items-center gap-2">
+                <CheckCircle2 className="w-4.5 h-4.5 text-emerald-500" />
+                <span>{simpleSuccessMsg}</span>
+              </span>
+              <button type="button" onClick={() => setSimpleSuccessMsg(null)} className="text-text-muted hover:text-text-main cursor-pointer">✕</button>
+            </div>
+          )}
+
+          {simpleErrorMsg && (
+            <div className="p-4 rounded-2xl bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20 text-xs font-bold flex items-center justify-between gap-3 animate-scale-up">
+              <span className="flex items-center gap-2">
+                <AlertTriangle className="w-4.5 h-4.5 text-rose-500" />
+                <span>{simpleErrorMsg}</span>
+              </span>
+              <button type="button" onClick={() => setSimpleErrorMsg(null)} className="text-text-muted hover:text-text-main cursor-pointer">✕</button>
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            {/* Quick Backup Section */}
+            <div className="bg-surface border border-surface-border p-5 sm:p-6 rounded-2xl shadow-xs flex flex-col justify-between space-y-4">
+              <div className="space-y-2">
+                <div className="p-3 bg-primary-soft text-primary border border-primary-border/40 rounded-2xl w-fit">
+                  <Save className="w-6 h-6" />
+                </div>
+                <h3 className="text-base font-black text-text-main">
+                  {_t('حفظ نسخة احتياطية سريعة', 'Instant 1-Click Backup')}
+                </h3>
+                <p className="text-xs text-text-muted leading-relaxed">
+                  {_t(
+                    'قم بتنزيل أو حفظ ملف يحتوي على كامل بيانات التطبيق (المعلمين، الطلاب، المجموعات، الحصص، والمدفوعات) بضغطة واحدة وبدون تعقيدات.',
+                    'Export and save a complete backup containing all application data (teachers, students, groups, schedule, and financial records) in one simple tap.'
+                  )}
+                </p>
+              </div>
+
+              <div className="pt-2">
+                <button
+                  type="button"
+                  onClick={handleSimpleBackup}
+                  disabled={isSimpleExporting}
+                  className="w-full py-3.5 px-4 rounded-xl bg-primary text-white hover:bg-primary-hover disabled:bg-slate-300 dark:disabled:bg-slate-800 text-xs font-black transition-all flex items-center justify-center gap-2 cursor-pointer shadow-xs active:scale-98"
+                >
+                  {isSimpleExporting ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 animate-spin" />
+                      <span>{_t('جاري الحفظ والمشاركة...', 'Saving and Sharing...')}</span>
+                    </>
+                  ) : (
+                    <>
+                      <Save className="w-4 h-4" />
+                      <span>{_t('اضغط للنسخ الاحتياطي والحفظ', 'Tap to Backup & Save Everything')}</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+
+            {/* Quick Restore Section */}
+            <div className="bg-surface border border-surface-border p-5 sm:p-6 rounded-2xl shadow-xs flex flex-col justify-between space-y-4">
+              <div className="space-y-2">
+                <div className="p-3 bg-amber-500/10 text-amber-500 border border-amber-500/20 rounded-2xl w-fit">
+                  <Upload className="w-6 h-6" />
+                </div>
+                <h3 className="text-base font-black text-text-main">
+                  {_t('استعادة كاملة بضغطة واحدة', 'Instant 1-Click Restore')}
+                </h3>
+                <p className="text-xs text-text-muted leading-relaxed">
+                  {_t(
+                    'اختر ملف نسخة احتياطية (ملف JSON تم تحميله سابقاً) وسيقوم التطبيق فوراً باستعادة كافة السجلات وإرجاع حالتها الأصلية مع الحفاظ التلقائي على نسخة احتياطية للتراجع.',
+                    'Select a backup JSON file you downloaded previously to restore and replace all system data instantly. An automatic restore point will be saved first for safety.'
+                  )}
+                </p>
+              </div>
+
+              <div className="pt-2 space-y-3">
+                <input
+                  type="file"
+                  accept=".json"
+                  ref={simpleFileInputRef}
+                  onChange={handleSimpleRestoreUpload}
+                  className="hidden"
+                />
+                
+                <button
+                  type="button"
+                  onClick={() => simpleFileInputRef.current?.click()}
+                  disabled={isSimpleRestoring}
+                  className="w-full py-3.5 px-4 rounded-xl bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 hover:bg-slate-800 dark:hover:bg-white disabled:bg-slate-300 dark:disabled:bg-slate-800 text-xs font-black transition-all flex items-center justify-center gap-2 cursor-pointer shadow-xs active:scale-98"
+                >
+                  {isSimpleRestoring ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 animate-spin" />
+                      <span>{_t('جاري استعادة البيانات والملفات...', 'Restoring All Data...')}</span>
+                    </>
+                  ) : (
+                    <>
+                      <FileCode className="w-4 h-4" />
+                      <span>{_t('اختر ملف واسترجع الآن', 'Choose File & Restore All')}</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Prompt/Info box on safety */}
+          <div className="p-4 bg-slate-50 dark:bg-slate-800/40 rounded-2xl border border-slate-200/60 dark:border-slate-800/60 text-[11px] leading-relaxed text-text-muted flex items-start gap-2.5">
+            <ShieldCheck className="w-4.5 h-4.5 text-primary shrink-0 mt-0.5" />
+            <div className="space-y-1">
+              <span className="font-bold text-text-main block">{_t('حماية تلقائية للبيانات', 'Automatic Data Protection')}</span>
+              <span>
+                {_t(
+                  'عندما تقوم بعملية استعادة سريعة، يقوم النظام تلقائياً بأخذ لقطة تأمينية لبياناتك الحالية. في حال رغبت بالتراجع عن الاستعادة وإرجاع بياناتك السابقة، يمكنك الضغط على زر "التراجع عن آخر استعادة" باللون البرتقالي في الأعلى.',
+                  'Before performing any restore action, the app secures your current state. You can revert any restore process back to your previous state instantly by clicking the "Undo Last Restore" button above.'
+                )}
+              </span>
+            </div>
+          </div>
         </div>
       )}
 

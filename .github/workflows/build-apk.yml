@@ -74,22 +74,9 @@ jobs:
           fi
           echo "Android public assets verified."
 
-      - name: Fix Corrupt Gradle Wrapper & Build APK
+      - name: Build Fresh Debug APK (Clean Build)
         run: |
-          # 1. Generate the wrapper in an empty temp directory (with a fake settings file)
-          echo "Generating fresh gradle-wrapper.jar in isolated directory..."
-          mkdir -p /tmp/gradle-fix
-          cd /tmp/gradle-fix
-          touch settings.gradle
-          gradle wrapper --gradle-version 8.7
-          
-          # 2. Copy the fresh jar back into your repository
-          echo "Copying fixed jar to Android directory..."
-          cd $GITHUB_WORKSPACE/android
-          cp /tmp/gradle-fix/gradle/wrapper/gradle-wrapper.jar gradle/wrapper/
-          
-          # 3. Build the APK using the local, corrected 8.7 wrapper
-          echo "Building APK with fixed wrapper..."
+          cd android
           chmod +x gradlew
           ./gradlew clean assembleDebug --stacktrace
 

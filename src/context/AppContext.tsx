@@ -7,7 +7,8 @@ import {
 } from '../types';
 import { 
   clearActiveLessonNotification, getPendingScheduledNotifications, 
-  cancelScheduledNotification, cancelAllScheduledNotifications, rebuildAllNotificationSchedules 
+  cancelScheduledNotification, cancelAllScheduledNotifications, rebuildAllNotificationSchedules,
+  sendSystemNotification
 } from '../services/notificationService';
 import { App as CapacitorApp } from '@capacitor/app';
 import { storage } from '../services/storageService';
@@ -214,8 +215,9 @@ interface AppContextType {
   setNotificationSettings: React.Dispatch<React.SetStateAction<NotificationSettings>>;
   setInspirationSettings: React.Dispatch<React.SetStateAction<InspirationSettings>>;
   setInspirationMessages: React.Dispatch<React.SetStateAction<InspirationMessage[]>>;
-  backupToDrive: () => void;
+  backupToDrive: () => void | Promise<void>;
   restoreFromDrive: (jsonString: string) => boolean;
+  addAppNotification: (title: string, message: string, type: 'system' | 'reminder' | 'payment', extraFields?: any) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -675,15 +677,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode, initialData: any
         }
       }
 
-      const newNotif: NotificationItem = {
-        id: `notif_insp_${Date.now()}`,
-        title: '💡 إلهام وامتنان اليوم',
-        message: selectedMsg.text,
-        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        type: 'system',
-        read: false
-      };
-      setNotifications(prev => [newNotif, ...prev.slice(0, 49)]);
+      addAppNotification('💡 إلهام وامتنان اليوم', selectedMsg.text, 'system');
     }
   };
 
@@ -728,18 +722,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode, initialData: any
           const bodyText = `Die Lektion "${studentOrGroupName}" beginnt ${diffMins === 0 ? 'jetzt' : `in ${diffMins} Minuten`} um ${lesson.time} Uhr!`;
 
           if (profile.enableLessonAlerts !== false) {
-            setNotifications(prev => [
-              {
-                id: `alert_${lesson.id}_${Date.now()}`,
-                title: titleText,
-                message: bodyText,
-                time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                type: 'reminder',
-                read: false,
-                lessonId: lesson.id
-              },
-              ...prev
-            ]);
+            addAppNotification(titleText, bodyText, 'reminder', { lessonId: lesson.id });
           }
 
           if (profile.enableBrowserPush && typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
@@ -870,7 +853,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode, initialData: any
   };
 
   // Drive Backup export
-  const backupToDrive = () => {
+  const backupToDrive = async () => {
     const data = {
       profile,
       groups,
@@ -882,13 +865,46 @@ export const AppProvider: React.FC<{ children: React.ReactNode, initialData: any
       inspirationMessages,
       exportedAt: new Date().toISOString()
     };
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `AGS19_Backup_${new Date().toISOString().split('T')[0]}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
+    const jsonStr = JSON.stringify(data, null, 2);
+    const fileName = `AGS19_Backup_${new Date().toISOString().split('T')[0]}.json`;
+
+    if (Capacitor.isNativePlatform()) {
+      try {
+        const savedFile = await Filesystem.writeFile({
+          path: fileName,
+          data: jsonStr,
+          directory: Directory.Cache,
+          encoding: Encoding.UTF8
+        });
+        await Share.share({
+          title: 'AGS19 Backup',
+          text: 'Backup Export Data (AGS19)',
+          url: savedFile.uri,
+          dialogTitle: 'Export Backup JSON'
+        });
+      } catch (err) {
+        console.warn('Native export via Filesystem failed, falling back to download blob:', err);
+        const blob = new Blob([jsonStr], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }
+    } else {
+      const blob = new Blob([jsonStr], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
 
     const timeNow = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     updateProfile({ lastSyncedAt: timeNow });
@@ -914,6 +930,26 @@ export const AppProvider: React.FC<{ children: React.ReactNode, initialData: any
       console.error('Failed to restore backup', err);
       return false;
     }
+  };
+
+  // Synchronized notification handler (app state + phone system)
+  const addAppNotification = (title: string, message: string, type: 'system' | 'reminder' | 'payment', extraFields?: any) => {
+    const newNotif: NotificationItem = {
+      id: `notif_${type}_${Date.now()}`,
+      title,
+      message,
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      type,
+      read: false,
+      ...extraFields
+    };
+
+    setNotifications(prev => [newNotif, ...prev.slice(0, 49)]);
+
+    // Mirror to native device main notification tray
+    sendSystemNotification(title, message, type).catch(err => {
+      console.warn('Failed to dispatch native system notification:', err);
+    });
   };
 
   // Group operations
@@ -1310,17 +1346,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode, initialData: any
       const packageTitle = targetLesson.groupName || targetLesson.studentName || targetLesson.title;
       const notifMsg = `Paket beendet: ${targetLesson.sessionNumber} von ${updatedTotalSessions} Sitzungen abgeschlossen für ${packageTitle}. Zahlung erforderlich.`;
       
-      const newNotif: NotificationItem = {
-        id: `notif_${Date.now()}`,
-        title: '⚠️ Paket beendet & Zahlung fällig',
-        message: notifMsg,
-        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        type: 'payment',
-        read: false,
-        lessonId
-      };
-
-      setNotifications(prev => [newNotif, ...prev]);
+      addAppNotification('⚠️ Paket beendet & Zahlung fällig', notifMsg, 'payment', { lessonId });
     }
 
     if (selectedLesson && selectedLesson.id === lessonId) {
@@ -2265,7 +2291,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode, initialData: any
         setProfile,
         setNotificationSettings,
         setInspirationSettings,
-        setInspirationMessages
+        setInspirationMessages,
+        addAppNotification
       }}
     >
       {children}

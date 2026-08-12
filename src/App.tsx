@@ -1,5 +1,5 @@
 import { App as CapacitorApp } from '@capacitor/app';
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { AppProvider, useApp } from './context/AppContext';
 import { Header } from './components/Header';
 import { TodaysProgressTimeline } from './components/TodaysProgressTimeline';
@@ -40,23 +40,108 @@ import { StatusBar, Style } from '@capacitor/status-bar';
 function MainApp() {
   useLessonReminders();
 
-  useEffect(() => {
-    if (Capacitor.isNativePlatform()) {
-      StatusBar.setOverlaysWebView({ overlay: true }).catch(() => {});
-      StatusBar.setStyle({ style: Style.Dark }).catch(() => {});
-    }
-  }, []);
-
   const { 
     activeTab, setActiveTab, 
-    isControlModalOpen, 
+    isControlModalOpen, closeLessonControl,
     isAddLessonModalOpen, setIsAddLessonModalOpen,
     isAddQuickLessonModalOpen, setIsAddQuickLessonModalOpen,
     isStartLessonNowModalOpen, setIsStartLessonNowModalOpen,
     isAddStudentModalOpen, setIsAddStudentModalOpen,
     isAddGroupModalOpen, setIsAddGroupModalOpen,
-    isBackupModalOpen, setIsBackupModalOpen
+    isBackupModalOpen, setIsBackupModalOpen,
+    isGlobalSearchOpen, setIsGlobalSearchOpen,
+    isRecentlyDeletedModalOpen, setIsRecentlyDeletedModalOpen
   } = useApp();
+
+  const stateRef = useRef({
+    activeTab,
+    isGlobalSearchOpen,
+    isRecentlyDeletedModalOpen,
+    isControlModalOpen,
+    isAddLessonModalOpen,
+    isAddQuickLessonModalOpen,
+    isStartLessonNowModalOpen,
+    isAddStudentModalOpen,
+    isAddGroupModalOpen,
+    isBackupModalOpen
+  });
+
+  // Keep state reference up to date for back button handler to avoid stale closures
+  useEffect(() => {
+    stateRef.current = {
+      activeTab,
+      isGlobalSearchOpen,
+      isRecentlyDeletedModalOpen,
+      isControlModalOpen,
+      isAddLessonModalOpen,
+      isAddQuickLessonModalOpen,
+      isStartLessonNowModalOpen,
+      isAddStudentModalOpen,
+      isAddGroupModalOpen,
+      isBackupModalOpen
+    };
+  }, [
+    activeTab,
+    isGlobalSearchOpen,
+    isRecentlyDeletedModalOpen,
+    isControlModalOpen,
+    isAddLessonModalOpen,
+    isAddQuickLessonModalOpen,
+    isStartLessonNowModalOpen,
+    isAddStudentModalOpen,
+    isAddGroupModalOpen,
+    isBackupModalOpen
+  ]);
+
+  useEffect(() => {
+    if (Capacitor.isNativePlatform()) {
+      StatusBar.setOverlaysWebView({ overlay: true }).catch(() => {});
+      StatusBar.setStyle({ style: Style.Dark }).catch(() => {});
+
+      const backButtonListener = CapacitorApp.addListener('backButton', () => {
+        const {
+          activeTab: currentActiveTab,
+          isGlobalSearchOpen: searchOpen,
+          isRecentlyDeletedModalOpen: deletedOpen,
+          isControlModalOpen: controlOpen,
+          isAddLessonModalOpen: addLessonOpen,
+          isAddQuickLessonModalOpen: addQuickOpen,
+          isStartLessonNowModalOpen: startNowOpen,
+          isAddStudentModalOpen: addStudentOpen,
+          isAddGroupModalOpen: addGroupOpen,
+          isBackupModalOpen: backupOpen
+        } = stateRef.current;
+
+        if (searchOpen) {
+          setIsGlobalSearchOpen(false);
+        } else if (deletedOpen) {
+          setIsRecentlyDeletedModalOpen(false);
+        } else if (controlOpen) {
+          closeLessonControl();
+        } else if (addLessonOpen) {
+          setIsAddLessonModalOpen(false);
+        } else if (addQuickOpen) {
+          setIsAddQuickLessonModalOpen(false);
+        } else if (startNowOpen) {
+          setIsStartLessonNowModalOpen(false);
+        } else if (addStudentOpen) {
+          setIsAddStudentModalOpen(false);
+        } else if (addGroupOpen) {
+          setIsAddGroupModalOpen(false);
+        } else if (backupOpen) {
+          setIsBackupModalOpen(false);
+        } else if (currentActiveTab !== 'home') {
+          setActiveTab('home');
+        } else {
+          CapacitorApp.exitApp();
+        }
+      });
+
+      return () => {
+        backButtonListener.then((listener) => listener.remove());
+      };
+    }
+  }, []);
 
 
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
@@ -189,7 +274,6 @@ function MainApp() {
 
 import { migrateFromLocalStorageToIndexedDB } from './services/migrationService';
 import { storage } from './services/storageService';
-import { useEffect } from 'react';
 
 export default function App() {
   const [initialData, setInitialData] = useState<any>(null);
