@@ -1,7 +1,7 @@
 {
   "name": "ags19",
   "private": true,
-  "version": "1.0.2",
+  "version": "1.0.3",
   "type": "module",
   "scripts": {
     "dev": "vite --port=3000 --host=0.0.0.0",
@@ -36,6 +36,7 @@
     "motion": "^12.23.24",
     "react": "^19.0.1",
     "react-dom": "^19.0.1",
+    "react-is": "^19.0.0",
     "recharts": "^3.10.1"
   },
   "devDependencies": {
