@@ -15,19 +15,6 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Display Build Metadata
-        run: |
-          echo "========================================="
-          echo "       BUILD INTEGRITY METADATA"
-          echo "========================================="
-          echo "Branch: ${GITHUB_REF_NAME}"
-          echo "Commit SHA: ${GITHUB_SHA}"
-          echo "Commit Message: $(git log -1 --pretty=%B)"
-          echo "Timestamp: $(date -u +'%Y-%m-%dT%H:%M:%SZ')"
-          echo "Version Code: 1"
-          echo "Version Name: 1.0"
-          echo "========================================="
-
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
@@ -46,8 +33,10 @@ jobs:
           echo "Removing stale dist/ and android web assets..."
           rm -rf dist android/app/src/main/assets/public
 
-      - name: Install Dependencies
-        run: npm install --legacy-peer-deps
+      - name: Install Dependencies & Force Fix React-Is
+        run: |
+          npm install --legacy-peer-deps
+          npm install react-is@19.0.0 --legacy-peer-deps
 
       - name: Build Web Application
         run: npm run build
@@ -74,9 +63,22 @@ jobs:
           fi
           echo "Android public assets verified."
 
-      - name: Build Fresh Debug APK (Clean Build)
+      - name: Fix Corrupt Gradle Wrapper & Build APK
         run: |
-          cd android
+          # 1. Generate the wrapper in an empty temp directory (with a fake settings file)
+          echo "Generating fresh gradle-wrapper.jar in isolated directory..."
+          mkdir -p /tmp/gradle-fix
+          cd /tmp/gradle-fix
+          touch settings.gradle
+          gradle wrapper --gradle-version 8.7
+          
+          # 2. Copy the fresh jar back into your repository
+          echo "Copying fixed jar to Android directory..."
+          cd $GITHUB_WORKSPACE/android
+          cp /tmp/gradle-fix/gradle/wrapper/gradle-wrapper.jar gradle/wrapper/
+          
+          # 3. Build the APK using the local, corrected 8.7 wrapper
+          echo "Building APK with fixed wrapper..."
           chmod +x gradlew
           ./gradlew clean assembleDebug --stacktrace
 
