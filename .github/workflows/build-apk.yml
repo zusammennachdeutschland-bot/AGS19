@@ -76,6 +76,13 @@ jobs:
           fi
           echo "Android public assets verified."
 
+      - name: Fix Gradle Wrapper Jar
+        run: |
+          cd android
+          rm -rf gradle/wrapper/gradle-wrapper.jar
+          # Download a clean official Gradle wrapper jar file
+          curl -sLo gradle/wrapper/gradle-wrapper.jar https://raw.githubusercontent.com/gradle/gradle/v8.14.3/gradle/wrapper/gradle-wrapper.jar
+
       - name: Create Fixed Debug Keystore
         run: |
           mkdir -p android/app
