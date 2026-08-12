@@ -152,17 +152,18 @@ export const StartLessonNowModal: React.FC<StartLessonNowModalProps> = ({ onClos
     };
 
     // Add directly using custom context dispatch via addLesson logic or custom trigger
-    addLesson(newLessonData, 1);
+    const addedLessons = addLesson(newLessonData, 1);
+    const addedLesson = addedLessons[0] || newLessonData;
 
     if (mode === 'start_live') {
       // Launch live timer & control modal immediately
       confetti({ particleCount: 70, spread: 60 });
-      startActiveLessonTimer(newLessonData);
-      openLessonControl(newLessonData);
+      startActiveLessonTimer(addedLesson);
+      openLessonControl(addedLesson);
       onClose();
     } else {
       // Save completed report immediately
-      saveLessonReport(newLessonId, {
+      saveLessonReport(addedLesson.id, {
         attendanceStatus: 'present',
         studentAttendance,
         homeworkStatus,
@@ -183,8 +184,14 @@ export const StartLessonNowModal: React.FC<StartLessonNowModalProps> = ({ onClos
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-end sm:items-center justify-center sm: pt-[max(24px,env(safe-area-inset-top,24px))] overflow-y-auto p-0 sm:p-4 pb-0">
-      <div className="bg-surface border border-surface-border rounded-t-[28px] sm:rounded-xl pb-safe-bottom sm:pb-0 mb-0 w-full max-w-xl shadow-2xl overflow-hidden animate-scale-up space-y-0">
+    <div 
+      onClick={onClose} 
+      className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-end sm:items-center justify-center sm: pt-[max(24px,env(safe-area-inset-top,24px))] overflow-y-auto p-0 sm:p-4 pb-0"
+    >
+      <div 
+        onClick={(e) => e.stopPropagation()} 
+        className="bg-surface border border-surface-border rounded-t-[28px] sm:rounded-xl pb-safe-bottom sm:pb-0 mb-0 w-full max-w-xl shadow-2xl overflow-hidden animate-scale-up space-y-0"
+      >
         <div className="w-12 h-1.5 bg-slate-200 dark:bg-slate-800 rounded-full mx-auto mt-3 mb-1 sm:hidden shrink-0" />
         
         {/* Header */}

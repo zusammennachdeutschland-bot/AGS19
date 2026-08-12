@@ -2,6 +2,7 @@ import { isPendingStatus } from '../utils/lessonUtils';
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { Student, Lesson } from '../types';
+import { buildWhatsAppUrl } from '../utils/phoneUtils';
 import { X, Send, Copy, Check, MessageSquare, ExternalLink, Calendar, DollarSign } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
@@ -78,12 +79,7 @@ ${lessonDatesStr || 'لا توجد حصص مسجلة حتى الآن'}
   };
 
   const handleSendWhatsApp = () => {
-    const cleanPhone = customPhone.replace(/[^0-9]/g, '');
-    let formattedPhone = cleanPhone;
-    if (cleanPhone.startsWith('01')) {
-      formattedPhone = `2${cleanPhone}`;
-    }
-    const url = `https://wa.me/${formattedPhone}?text=${encodeURIComponent(arabicMessage)}`;
+    const url = buildWhatsAppUrl(customPhone, arabicMessage);
     window.open(url, '_blank');
     confetti({ particleCount: 70, spread: 60 });
   };

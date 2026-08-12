@@ -1,9 +1,10 @@
+import { App as CapacitorApp } from '@capacitor/app';
 import React, { useState, useEffect } from 'react';
-import { Lesson, Student, TeacherProfile, AttendanceStatus } from '../types';
+import { Lesson, Student, TeacherProfile } from '../types';
 import { useApp } from '../context/AppContext';
+import { buildWhatsAppUrl } from '../utils/phoneUtils';
 import { 
-  X, Copy, Check, Send, Phone, MessageSquare, Sparkles, Award, 
-  FileText, CheckCircle2, AlertTriangle, HelpCircle, Edit3, Share2, Printer
+  X, Copy, Check, Send, Phone, Printer, Sparkles, User, MessageSquare, Users, Link2, Home
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
@@ -13,96 +14,35 @@ interface ArabicParentReportModalProps {
   profile: TeacherProfile;
   onClose: () => void;
   onSaveReport?: (arabicReportText: string, updatedFields?: Record<string, any>) => void;
+  onGoToHomeScreen?: () => void;
 }
-
-export const ARABIC_PERFORMANCE_OPTIONS = [
-  'ممتاز',
-  'جيد جداً',
-  'جيد',
-  'مقبول',
-  'يحتاج متابعة',
-  'يحتاج مذاكرة أكثر',
-  'يحتاج تركيز أكثر',
-  'شارك بشكل ممتاز',
-  'متحسن عن الحصص السابقة'
-];
-
-export const ARABIC_HOMEWORK_OPTIONS = [
-  'أكمل الواجب بالكامل',
-  'أكمل جزء من الواجب',
-  'لم يكمل الواجب',
-  'الواجب ممتاز',
-  'يحتاج تحسين في الواجب'
-];
-
-export const ARABIC_QUICK_NOTES = [
-  'يرجى المتابعة اليومية.',
-  'يرجى مراجعة الكلمات الجديدة.',
-  'يرجى التدريب على الإملاء.',
-  'يرجى حل الواجب قبل الحصة القادمة.',
-  'الطالب متحسن بشكل ملحوظ.',
-  'الطالب يحتاج مزيداً من التركيز.',
-  'مستوى الطالب ممتاز.'
-];
-
-export interface ArabicTemplate {
-  id: string;
-  title: string;
-  badge: string;
-  text: string;
-}
-
-export const ARABIC_MESSAGE_TEMPLATES: ArabicTemplate[] = [
-  {
-    id: 'excellent',
-    title: 'طالب ممتاز',
-    badge: '🌟 ممتاز',
-    text: 'السلام عليكم ورحمة الله وبركاته،\n\nأداء الطالب اليوم ممتاز، وكان متفاعلاً طوال الحصة وحقق نتائج جيدة. نشكركم على المتابعة المستمرة.'
-  },
-  {
-    id: 'very_good',
-    title: 'طالب جيد جداً',
-    badge: '👍 جيد جداً',
-    text: 'السلام عليكم ورحمة الله وبركاته،\n\nمستوى الطالب جيد جداً اليوم، ونوصي بالاستمرار في المراجعة المنزلية للحفاظ على هذا المستوى.'
-  },
-  {
-    id: 'needs_followup',
-    title: 'يحتاج متابعة',
-    badge: '⚠️ يحتاج متابعة',
-    text: 'السلام عليكم ورحمة الله وبركاته،\n\nالطالب يحتاج إلى بعض المتابعة والمراجعة الإضافية خلال الفترة القادمة، ونرجو الاهتمام بحل الواجبات والتدريب المنتظم.'
-  },
-  {
-    id: 'homework_missing',
-    title: 'عدم أداء الواجب',
-    badge: '❌ الواجب ناقص',
-    text: 'السلام عليكم ورحمة الله وبركاته،\n\nلم يتم استكمال الواجب المطلوب، لذا نرجو متابعة الطالب والتأكد من إنجاز الواجب قبل الحصة القادمة.'
-  },
-  {
-    id: 'improvement',
-    title: 'ملاحظة تحسن',
-    badge: '📈 تحسن ملحوظ',
-    text: 'السلام عليكم ورحمة الله وبركاته،\n\nهناك تحسن ملحوظ في مستوى الطالب مقارنة بالفترة السابقة، ونأمل الاستمرار بنفس المستوى من المتابعة والالتزام.'
-  }
-];
 
 export const ArabicParentReportModal: React.FC<ArabicParentReportModalProps> = ({
   lesson,
   student,
   profile,
   onClose,
-  onSaveReport
+  onSaveReport,
+  onGoToHomeScreen
 }) => {
-  const { students, groups } = useApp();
+  const { students, groups, _t, language } = useApp();
   const [copied, setCopied] = useState(false);
-  const [activeTab, setActiveTab] = useState<'quick' | 'templates' | 'preview'>('quick');
+
+  // Find the associated group (if any)
+  const associatedGroup = groups.find(g => g.id === lesson.groupId);
+  const groupWhatsAppLink = associatedGroup?.whatsAppGroupLink || '';
 
   // Find students associated with this lesson or group
   const groupStudents = lesson.groupId 
     ? students.filter(s => s.groupId === lesson.groupId) 
     : [];
 
-  const isGroupLesson = Boolean(lesson.groupId) || groupStudents.length > 0;
-  const [isBulkMode, setIsBulkMode] = useState<boolean>(groupStudents.length > 1);
+  const isGroupLesson = (Boolean(lesson.groupId) || groupStudents.length > 0) && groupStudents.length > 1;
+
+  // Tabs: 'individual' | 'bulk'
+  const [activeTab, setActiveTab] = useState<'individual' | 'bulk'>(
+    isGroupLesson ? 'bulk' : 'individual'
+  );
 
   const initialResolvedStudent = student || 
     students.find(s => (lesson.studentId && s.id === lesson.studentId) || (lesson.studentName && s.name.trim().toLowerCase() === lesson.studentName.trim().toLowerCase())) || 
@@ -114,982 +54,411 @@ export const ArabicParentReportModal: React.FC<ArabicParentReportModalProps> = (
 
   const activeStudent = students.find(s => s.id === selectedStudentId) || initialResolvedStudent;
 
-  // Find active group for package vs unit determination
-  const activeGroup = (lesson.groupId ? groups.find(g => g.id === lesson.groupId) : undefined) ||
-    (activeStudent?.groupId ? groups.find(g => g.id === activeStudent.groupId) : undefined);
-
-  // Determine if this is per-lesson / per-unit ("by unit") vs package (4, 8, 12 format)
-  const isGroupPerSession = activeGroup 
-    ? (activeGroup.paymentModel === 'per_session' || activeGroup.paymentCycle === 'per_lesson' || activeGroup.sessionCount === 1)
-    : false;
-
-  const isStudentPerSession = (!isBulkMode && activeStudent)
-    ? (activeStudent.paymentPlan === 'per_lesson' || activeStudent.bundleSize === 1)
-    : false;
-
-  const isPerSession = isGroupPerSession || isStudentPerSession || lesson.totalSessionsInPackage === 1;
-  const hasPackage = !isPerSession;
-
-  // Helper to resolve group/student package size (4, 8, 12, etc.)
-  const getGroupOrStudentPackageSize = (): number => {
-    if (activeGroup && activeGroup.sessionCount && activeGroup.sessionCount > 1) {
-      return activeGroup.sessionCount;
-    }
-    if (activeGroup?.paymentCycle) {
-      if (activeGroup.paymentCycle === '4_lessons') return 4;
-      if (activeGroup.paymentCycle === '8_lessons') return 8;
-      if (activeGroup.paymentCycle === '12_lessons') return 12;
-    }
-    if (!isBulkMode && activeStudent) {
-      if (activeStudent.bundleSize && activeStudent.bundleSize > 1) return activeStudent.bundleSize;
-      if (activeStudent.paymentPlan === '4_lessons') return 4;
-      if (activeStudent.paymentPlan === '8_lessons') return 8;
-      if (activeStudent.paymentPlan === '12_lessons') return 12;
-    }
-    if (lesson.totalSessionsInPackage && lesson.totalSessionsInPackage > 1) {
-      return lesson.totalSessionsInPackage;
-    }
-    return 8;
-  };
-
-  const parentName = isBulkMode 
-    ? 'أولياء الأمور المحترمين'
-    : (activeStudent?.parentName || lesson.quickParentName || 'ولي الأمر المحترم');
-
-  const rawParentPhone = isBulkMode
-    ? ''
-    : (activeStudent?.parentPhone || lesson.quickParentPhone || activeStudent?.studentPhone || lesson.quickStudentPhone || '');
-    
+  const parentName = activeStudent?.parentName || lesson.quickParentName || 'ولي الأمر المحترم';
+  const rawParentPhone = activeStudent?.parentPhone || lesson.quickParentPhone || activeStudent?.studentPhone || lesson.quickStudentPhone || '';
   const parentPhone = rawParentPhone.trim();
-  const studentName = isBulkMode
-    ? (lesson.groupName || lesson.title || 'المجموعة')
-    : (activeStudent?.name || lesson.studentName || lesson.groupName || lesson.title);
-
-  // Attendance state
-  const [studentAttendance, setStudentAttendance] = useState<Record<string, AttendanceStatus>>(() => {
-    if (lesson.report?.studentAttendance) {
-      return { ...lesson.report.studentAttendance };
-    }
-    const initialAtt: Record<string, AttendanceStatus> = {};
-    if (lesson.groupId && groupStudents.length > 0) {
-      groupStudents.forEach(st => {
-        initialAtt[st.id] = lesson.report?.attendanceStatus || 'present';
-      });
-    }
-    return initialAtt;
-  });
-
-  const [overallAttendance, setOverallAttendance] = useState<AttendanceStatus>(
-    lesson.report?.attendanceStatus || 'present'
-  );
-
-  const getStudentAttendanceStatus = (stId: string): AttendanceStatus => {
-    if (studentAttendance[stId]) return studentAttendance[stId];
-    return overallAttendance;
-  };
-
-  // Session number & total package sessions state
-  const [sessionNum, setSessionNum] = useState<number>(lesson.sessionNumber || 1);
-  const [totalSessions, setTotalSessions] = useState<number>(() => {
-    if (lesson.totalSessionsInPackage && lesson.totalSessionsInPackage > 1) return lesson.totalSessionsInPackage;
-    return getGroupOrStudentPackageSize();
-  });
-
-  useEffect(() => {
-    if (lesson.sessionNumber) setSessionNum(lesson.sessionNumber);
-    if (hasPackage) {
-      const syncedSize = getGroupOrStudentPackageSize();
-      setTotalSessions(syncedSize);
-    }
-  }, [
-    lesson.sessionNumber, 
-    lesson.totalSessionsInPackage, 
-    lesson.groupId, 
-    selectedStudentId, 
-    activeGroup?.sessionCount, 
-    activeGroup?.paymentCycle,
-    activeStudent?.bundleSize, 
-    activeStudent?.paymentPlan, 
-    hasPackage
-  ]);
-
-  // Form selections
-  const [performance, setPerformance] = useState<string>(
-    lesson.report?.arabicPerformance || 'ممتاز'
-  );
-  const [homeworkOption, setHomeworkOption] = useState<string>(
-    lesson.report?.arabicHomeworkOption || 'أكمل الواجب بالكامل'
-  );
-  const [dictationScore, setDictationScore] = useState<string>(
-    lesson.report?.dictationScore || '10 / 10'
-  );
-  const [examScore, setExamScore] = useState<string>(
-    lesson.report?.arabicExamScore || '20 / 20'
-  );
-  const [homeworkRequired, setHomeworkRequired] = useState<string>(
-    lesson.report?.arabicHomeworkRequired || lesson.report?.homeworkTitle || 'مراجعة درس اليوم وحفظ الكلمات الجديدة'
-  );
-  const [selectedNotes, setSelectedNotes] = useState<string[]>(
-    lesson.report?.arabicParentNotes ? lesson.report.arabicParentNotes.split('\n') : ['مستوى الطالب ممتاز.']
-  );
-  const [selectedTemplateId, setSelectedTemplateId] = useState<string>(
-    lesson.report?.arabicTemplateMessage ? 'custom' : 'excellent'
-  );
-  const [customTemplateText, setCustomTemplateText] = useState<string>(
-    lesson.report?.arabicTemplateMessage || ARABIC_MESSAGE_TEMPLATES[0].text
-  );
 
   // Editable generated report
   const [finalGeneratedText, setFinalGeneratedText] = useState<string>('');
   const [isManualEdited, setIsManualEdited] = useState<boolean>(false);
 
-  // Toggle quick note selection
-  const toggleQuickNote = (note: string) => {
-    setSelectedNotes(prev => 
-      prev.includes(note) ? prev.filter(n => n !== note) : [...prev, note]
-    );
+  // Generate Bulk Group Report Text
+  const getBulkReportText = () => {
+    const taughtToday = lesson.report?.teacherNotes || 'لم يحدد بعد';
+    const nextHomework = lesson.report?.homeworkDescription || 'لا يوجد واجب';
+    
+    let text = `السلام عليكم ورحمة الله وبركاته 👋
+📊 تقرير الحصة المجمع لمجموعة: ${associatedGroup?.name || 'مجموعة اللغة الألمانية'}
+📅 الدرس: ${lesson.title}
+
+تم اليوم شرح:
+${taughtToday}
+
+الواجب لجميع الطلاب:
+${nextHomework}
+
+----------------------------------
+👥 تفاصيل حضور وأداء الطلاب اليوم:
+`;
+
+    groupStudents.forEach((st, idx) => {
+      const stAtt = lesson.report?.studentAttendance?.[st.id] || lesson.report?.attendanceStatus || 'present';
+      const attendanceArabic = stAtt === 'present' ? 'حاضر ✅' : stAtt === 'late' ? 'متأخر ⚠️' : 'غائب ❌';
+
+      const hwDone = lesson.report?.studentHomeworkDone?.[st.id];
+      const homeworkOption = hwDone === 'yes' ? 'تم الحل 👍' : hwDone === 'no' ? 'لم يتم الحل 👎' : 'غير محدد';
+
+      const dictationGrade = lesson.report?.studentDictationGrade?.[st.id];
+      const dictationScore = dictationGrade !== undefined ? `${dictationGrade} / 10` : 'لا يوجد';
+
+      const examGrade = lesson.report?.studentExamGrade?.[st.id];
+      const examScore = examGrade !== undefined ? `${examGrade} / 10` : 'لا يوجد';
+
+      const studentNote = lesson.report?.studentNotes?.[st.id] || 'مستوى ممتاز ومتفاعل في الحصة.';
+
+      text += `
+👤 [${idx + 1}] الطالب: ${st.name}
+• الحضور: ${attendanceArabic}
+• الواجب السابق: ${homeworkOption}
+• درجة الإملاء: ${dictationScore}
+• درجة الامتحان: ${examScore}
+• ملاحظات: ${studentNote}
+----------------------------------`;
+    });
+
+    text += `\n\nشكراً لكم،\nأ. ${profile.displayName} - معلم اللغة الألمانية 🇩🇪`;
+    return text;
   };
 
-  // Select template
-  const handleSelectTemplate = (tmpl: ArabicTemplate) => {
-    setSelectedTemplateId(tmpl.id);
-    setCustomTemplateText(tmpl.text);
-  };
-
-  // Generate complete Arabic parent report text dynamically
+  // Auto-generate report based on student data or bulk mode
   useEffect(() => {
     if (isManualEdited) return;
 
-    const dateFormatted = lesson.date ? lesson.date.split('-').reverse().join('/') : '';
+    if (activeTab === 'bulk') {
+      setFinalGeneratedText(getBulkReportText());
+      return;
+    }
 
-    let attendanceArabic = '';
-    if (!isBulkMode && activeStudent) {
-      const stAtt = getStudentAttendanceStatus(activeStudent.id);
+    let attendanceArabic = 'حاضر ✅';
+    let homeworkOption = 'غير محدد';
+    let dictationScore = 'لا يوجد إملاء';
+    let examScore = 'لا يوجد اختبار';
+    let studentNote = '';
+
+    if (activeStudent) {
+      const stAtt = lesson.report?.studentAttendance?.[activeStudent.id] || lesson.report?.attendanceStatus || 'present';
       attendanceArabic = stAtt === 'present' ? 'حاضر ✅' : stAtt === 'late' ? 'متأخر ⚠️' : 'غائب ❌';
-    } else if (isGroupLesson && groupStudents.length > 0) {
-      const presentCount = groupStudents.filter(st => getStudentAttendanceStatus(st.id) === 'present').length;
-      const lateCount = groupStudents.filter(st => getStudentAttendanceStatus(st.id) === 'late').length;
-      const absentCount = groupStudents.filter(st => getStudentAttendanceStatus(st.id) === 'absent').length;
 
-      if (presentCount === groupStudents.length) {
-        attendanceArabic = 'حاضر للجميع ✅';
-      } else if (absentCount === groupStudents.length) {
-        attendanceArabic = 'غائب للجميع ❌';
-      } else if (lateCount === groupStudents.length) {
-        attendanceArabic = 'متأخر للجميع ⚠️';
-      } else {
-        attendanceArabic = `${presentCount} حاضر ✅ | ${lateCount} متأخر ⚠️ | ${absentCount} غائب ❌`;
-      }
+      const hwDone = lesson.report?.studentHomeworkDone?.[activeStudent.id];
+      homeworkOption = hwDone === 'yes' ? 'تم الحل بالكامل 👍' : hwDone === 'no' ? 'لم يتم الحل 👎' : 'غير محدد';
+
+      const dictationGrade = lesson.report?.studentDictationGrade?.[activeStudent.id];
+      dictationScore = dictationGrade !== undefined ? `${dictationGrade} / 10` : 'لا يوجد إملاء';
+
+      const examGrade = lesson.report?.studentExamGrade?.[activeStudent.id];
+      examScore = examGrade !== undefined ? `${examGrade} / 10` : 'لا يوجد اختبار';
+
+      studentNote = lesson.report?.studentNotes?.[activeStudent.id] || '';
     } else {
-      attendanceArabic = overallAttendance === 'present' ? 'حاضر ✅' : overallAttendance === 'late' ? 'متأخر ⚠️' : 'غائب ❌';
+      const rawAtt = lesson.report?.attendanceStatus || 'present';
+      attendanceArabic = rawAtt === 'present' ? 'حاضر ✅' : rawAtt === 'late' ? 'متأخر ⚠️' : 'غائب ❌';
     }
 
-    const notesCombined = selectedNotes.length > 0 ? selectedNotes.join('\n• ') : 'لا توجد ملاحظات إضافية.';
+    const taughtToday = lesson.report?.teacherNotes || 'لم يحدد بعد';
+    const nextHomework = lesson.report?.homeworkDescription || 'لا يوجد واجب';
+    const notesCombined = studentNote.trim() || 'مستوى الطالب ممتاز ومتفاعل خلال الحصة.';
 
-    const templateContent = selectedTemplateId === 'custom' 
-      ? customTemplateText 
-      : (ARABIC_MESSAGE_TEMPLATES.find(t => t.id === selectedTemplateId)?.text || customTemplateText);
+    const generated = `السلام عليكم ورحمة الله وبركاته 👋
 
-    const sessionInfoPart = hasPackage 
-      ? ` | الحصة رقم (${sessionNum} من ${totalSessions})` 
-      : '';
+تم اليوم شرح:
+${taughtToday}
 
-    let generated = '';
+الواجب:
+${nextHomework}
 
-    if (isBulkMode && groupStudents.length > 0) {
-      generated = `تقرير ولي الأمر - تقرير الحصة الجماعية 📊
-----------------------------------
-👥 المجموعة: ${studentName} (${groupStudents.length} طلاب)
-👨‍🏫 المعلم: أ. ${profile.displayName}
-📅 التاريخ: ${dateFormatted}${sessionInfoPart}
+الحضور:
+${attendanceArabic}
 
-📌 الحضور والغياب للمجموعة: ${attendanceArabic}
-🌟 أداء المجموعة اليوم: ${performance}
-✍️ درجة الإملاء: ${dictationScore}
-📝 درجة الاختبار: ${examScore}
-📖 وضع الواجب الحالي: ${homeworkOption}
-📚 الواجب المنزلي القادم: ${homeworkRequired || 'لا يوجد'}
+الواجب السابق:
+${homeworkOption}
 
-💬 ملاحظات المعلم لأولياء الأمور:
+درجة الإملاء:
+${dictationScore}
+
+درجة الامتحان (Quiz):
+${examScore}
+
+ملاحظات المعلم:
 • ${notesCombined}
 
-✉️ الرسالة الموجهة لأولياء الأمور:
-${templateContent}
-
-مع تحيات،
+شكراً لكم،
 أ. ${profile.displayName} - معلم اللغة الألمانية 🇩🇪`;
-    } else {
-      generated = `تقرير ولي الأمر - تقرير الحصة 📊
-----------------------------------
-👤 الطالب: ${studentName}
-👨‍🏫 المعلم: أ. ${profile.displayName}
-📅 التاريخ: ${dateFormatted}${sessionInfoPart}
-
-📌 الحضور والغياب: ${attendanceArabic}
-🌟 أداء الطالب اليوم: ${performance}
-✍️ درجة الإملاء: ${dictationScore}
-📝 درجة الاختبار: ${examScore}
-📖 وضع الواجب الحالي: ${homeworkOption}
-📚 الواجب المنزلي القادم: ${homeworkRequired || 'لا يوجد'}
-
-💬 ملاحظات المعلم لولي الأمر:
-• ${notesCombined}
-
-✉️ الرسالة الموجهة لولي الأمر:
-${templateContent}
-
-مع تحيات،
-أ. ${profile.displayName} - معلم اللغة الألمانية 🇩🇪`;
-    }
 
     setFinalGeneratedText(generated);
   }, [
-    isBulkMode,
-    performance, 
-    homeworkOption, 
-    dictationScore, 
-    examScore, 
-    homeworkRequired, 
-    selectedNotes, 
-    selectedTemplateId, 
-    customTemplateText, 
-    lesson, 
-    profile, 
-    isManualEdited,
-    studentName,
+    selectedStudentId,
+    lesson.report,
     activeStudent,
-    studentAttendance,
-    overallAttendance,
-    groupStudents.length,
-    sessionNum,
-    totalSessions,
-    hasPackage
+    isManualEdited,
+    activeTab,
+    profile.displayName
   ]);
 
   const handleCopyText = () => {
     navigator.clipboard.writeText(finalGeneratedText);
     setCopied(true);
-    setTimeout(() => setCopied(false), 2500);
+    confetti({ particleCount: 40, spread: 60, origin: { y: 0.8 } });
+    setTimeout(() => setCopied(false), 2000);
   };
 
-  const handleWhatsAppSend = () => {
-    const phoneToUse = parentPhone || lesson.quickParentPhone || lesson.quickStudentPhone || (groupStudents[0]?.parentPhone || groupStudents[0]?.studentPhone || '');
-    const encodedText = encodeURIComponent(finalGeneratedText);
-    const cleanPhone = phoneToUse.replace(/[^0-9+]/g, '');
-    if (cleanPhone) {
-      window.open(`https://wa.me/${cleanPhone}?text=${encodedText}`, '_blank');
-    } else {
-      window.open(`https://wa.me/?text=${encodedText}`, '_blank');
-    }
-    confetti({ particleCount: 50, spread: 40 });
-
-    if (onSaveReport) {
-      onSaveReport(finalGeneratedText, {
-        attendanceStatus: overallAttendance,
-        studentAttendance,
-        sessionNumber: sessionNum,
-        totalSessionsInPackage: totalSessions,
-        arabicPerformance: performance,
-        arabicHomeworkOption: homeworkOption,
-        dictationScore,
-        arabicExamScore: examScore,
-        arabicHomeworkRequired: homeworkRequired,
-        arabicParentNotes: selectedNotes.join('\n'),
-        arabicTemplateMessage: customTemplateText,
-        arabicFullGeneratedReport: finalGeneratedText
-      });
-    }
-  };
-
-  const sendWhatsAppToStudentParent = (stStudent: Student) => {
-    const rawP = stStudent.parentPhone || stStudent.studentPhone || '';
-    const cleanPhone = rawP.replace(/[^0-9+]/g, '');
-    if (!cleanPhone) {
-      alert(`لا يوجد رقم هاتف مسجل لولي أمر الطالب ${stStudent.name}`);
+  const handleWhatsAppSend = async () => {
+    if (activeTab === 'bulk' && groupWhatsAppLink) {
+      const encodedText = encodeURIComponent(finalGeneratedText);
+      window.open(`${groupWhatsAppLink}?text=${encodedText}`, '_blank');
       return;
     }
-    const pName = stStudent.parentName || 'ولي الأمر المحترم';
-    const stAtt = getStudentAttendanceStatus(stStudent.id);
-    const stAttArabic = stAtt === 'present' ? 'حاضر ✅' : stAtt === 'late' ? 'متأخر ⚠️' : 'غائب ❌';
 
-    let msg = finalGeneratedText;
-    if (isBulkMode) {
-      msg = `السلام عليكم ${pName} 👋\nإليكم تقرير الحصة الجماعية الخاصة بالطالب/ة (${stStudent.name}):\n\n📌 حالة حضور الطالب: ${stAttArabic}\n\n${finalGeneratedText}`;
-    }
-
-    const encodedText = encodeURIComponent(msg);
-    window.open(`https://wa.me/${cleanPhone}?text=${encodedText}`, '_blank');
-    confetti({ particleCount: 35, spread: 40 });
+    const fallbackUrl = buildWhatsAppUrl(parentPhone, finalGeneratedText);
+    window.open(fallbackUrl, '_blank');
   };
 
   const handlePrint = () => {
-    window.print();
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      printWindow.document.write(`
+        <html>
+          <head>
+            <title>تقرير الطالب - DeutschLernen</title>
+            <style>
+              body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; direction: rtl; padding: 40px; line-height: 1.8; color: #333; }
+              .card { border: 1px solid #e2e8f0; padding: 30px; border-radius: 12px; background: #fff; max-width: 600px; margin: 0 auto; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
+              h2 { color: #2563eb; border-bottom: 2px solid #2563eb; padding-bottom: 10px; margin-top: 0; }
+              pre { white-space: pre-wrap; font-size: 15px; }
+            </style>
+          </head>
+          <body>
+            <div class="card">
+              <h2>تقرير ولي الأمر 📊</h2>
+              <pre>${finalGeneratedText}</pre>
+            </div>
+            <script>window.print();</script>
+          </body>
+        </html>
+      `);
+      printWindow.document.close();
+    }
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-900/65 backdrop-blur-xs flex items-end sm:items-center justify-center sm: pt-[max(24px,env(safe-area-inset-top,24px))] p-0 sm:p-4 pb-0" dir="rtl">
-      <div className="bg-surface border border-surface-border rounded-xl w-full max-w-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] animate-scale-up text-right font-sans">
+    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+      <div className={`bg-surface border border-surface-border w-full max-w-xl rounded-2xl shadow-xl flex flex-col overflow-hidden animate-fade-in ${language === 'ar' ? 'text-right' : 'text-left'}`} dir={language === 'ar' ? 'rtl' : 'ltr'}>
         
         {/* Header */}
-        <div className="bg-surface border-b border-slate-100 dark:border-surface-border p-4 sm:p-5 flex items-center justify-between text-text-main shrink-0">
-          <div className="flex items-center gap-3">
-            <div className="p-2.5 bg-primary-soft dark:bg-primary-soft text-primary dark:text-primary rounded-lg border border-primary-border dark:border-primary-border">
-              <MessageSquare className="w-6 h-6 text-primary dark:text-primary" />
-            </div>
-            <div>
-              <h2 className="text-sm sm:text-base font-black tracking-tight flex items-center gap-2">
-                <span>تقرير ولي الأمر (باللغة العربية)</span>
-                {isBulkMode && (
-                  <span className="text-[9px] bg-primary-soft dark:bg-primary-soft text-primary dark:text-primary border border-primary-border dark:border-primary-border font-black px-2 py-0.5 rounded-md">تقرير جماعي 👥</span>
-                )}
-              </h2>
-              <p className="text-xs text-text-muted font-bold mt-0.5">
-                {studentName} • {parentName} {!isBulkMode && parentPhone ? `(${parentPhone})` : ''}
-              </p>
-            </div>
+        <div className={`bg-gradient-to-l from-primary/10 to-transparent p-4 sm:p-5 border-b border-surface-border flex items-center justify-between shrink-0 ${language === 'ar' ? 'flex-row' : 'flex-row-reverse'}`}>
+          <div className="flex items-center gap-2">
+            <Sparkles className="w-5 h-5 text-primary" />
+            <h2 className="text-base font-black text-text-main">
+              {_t('مشاركة تقرير الحصة', 'Share Session Report', 'Unterrichtsbericht teilen')}
+            </h2>
           </div>
-
-          <button
+          <button 
+            type="button" 
             onClick={onClose}
-            className="p-1.5 text-text-muted/70 hover:text-slate-600 dark:hover:text-primary hover:bg-background dark:hover:bg-slate-800 rounded-lg transition-all cursor-pointer"
+            className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-text-muted transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        {/* Bulk / Individual Report Type Switcher Banner */}
-        {isGroupLesson && groupStudents.length > 0 && (
-          <div className="bg-surface-hover/40 px-4 py-2.5 border-b border-slate-100 dark:border-slate-850 flex flex-wrap items-center justify-between text-xs gap-2 shrink-0">
-            <span className="font-bold text-slate-800 dark:text-slate-200">وضع التقرير (Report Mode):</span>
-
-            <div className="flex items-center bg-slate-100 dark:bg-surface p-1 rounded-xl border border-surface-border gap-1">
+        {/* Modal Body */}
+        <div className="p-5 space-y-4 overflow-y-auto flex-1">
+          
+          {/* Group Toggle Tab (Only if multiple students in the group) */}
+          {isGroupLesson && (
+            <div className="grid grid-cols-2 gap-2 bg-slate-100/80 dark:bg-slate-900/40 p-1 rounded-xl border border-surface-border">
               <button
                 type="button"
                 onClick={() => {
-                  setIsBulkMode(true);
+                  setActiveTab('bulk');
                   setIsManualEdited(false);
                 }}
-                className={`px-3 py-1 rounded-lg font-bold transition-all cursor-pointer border ${
-                  isBulkMode
-                    ? 'bg-surface border-surface-border dark:bg-slate-800 dark:border-surface-border-soft text-primary dark:text-primary shadow-2xs'
-                    : 'border-transparent text-text-muted hover:text-slate-900 dark:hover:text-primary'
+                className={`py-2 px-3 rounded-lg text-xs font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                  activeTab === 'bulk'
+                    ? 'bg-white dark:bg-slate-800 text-primary shadow-xs'
+                    : 'text-text-muted hover:text-text-main'
                 }`}
               >
-                👥 تقرير جماعي للمجموعة ({groupStudents.length} طلاب)
+                <Users className="w-4 h-4 text-emerald-500" />
+                <span>{_t(`📊 تقرير مجمع للمجموعة (${groupStudents.length} طلاب)`, `📊 Bulk Group Report (${groupStudents.length} students)`, `📊 Sammelbericht für Gruppe (${groupStudents.length} Schüler)`)}</span>
               </button>
-
               <button
                 type="button"
                 onClick={() => {
+                  setActiveTab('individual');
                   setIsManualEdited(false);
-                  setIsBulkMode(false);
                 }}
-                className={`px-3 py-1 rounded-lg font-bold transition-all cursor-pointer border ${
-                  !isBulkMode
-                    ? 'bg-surface border-surface-border dark:bg-slate-800 dark:border-surface-border-soft text-primary dark:text-primary shadow-2xs'
-                    : 'border-transparent text-text-muted hover:text-slate-900 dark:hover:text-primary'
+                className={`py-2 px-3 rounded-lg text-xs font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                  activeTab === 'individual'
+                    ? 'bg-white dark:bg-slate-800 text-primary shadow-xs'
+                    : 'text-text-muted hover:text-text-main'
                 }`}
               >
-                👤 تقرير فردي
+                <User className="w-4 h-4 text-primary" />
+                <span>{_t('👤 تقرير فردي لكل طالب', '👤 Individual Student Report', '👤 Einzelner Schülerbericht')}</span>
               </button>
-            </div>
-
-            {!isBulkMode && groupStudents.length > 0 && (
-              <select
-                value={selectedStudentId}
-                onChange={(e) => {
-                  setSelectedStudentId(e.target.value);
-                  setIsManualEdited(false);
-                }}
-                className="bg-surface dark:bg-slate-800 font-bold px-3 py-1.5 rounded-lg border border-surface-border dark:border-surface-border-soft text-xs focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer"
-              >
-                {groupStudents.map(st => (
-                  <option key={st.id} value={st.id}>
-                    {st.name} ({st.parentName || 'ولي الأمر'})
-                  </option>
-                ))}
-              </select>
-            )}
-          </div>
-        )}
-
-        {/* Tab Selection */}
-        <div className="bg-surface-hover/40 p-1.5 flex items-center gap-1 border-b border-slate-100 dark:border-slate-850 text-xs font-bold shrink-0">
-          <button
-            onClick={() => setActiveTab('quick')}
-            className={`flex-1 py-2 rounded-lg transition-all cursor-pointer flex items-center justify-center gap-1.5 border ${
-              activeTab === 'quick'
-                ? 'bg-surface border-surface-border/50 dark:border-surface-border text-primary dark:text-primary shadow-2xs font-black'
-                : 'border-transparent text-text-muted hover:text-slate-900 dark:hover:text-primary font-bold'
-            }`}
-          >
-            <Sparkles className="w-4 h-4 text-primary dark:text-primary" />
-            <span>خيارات التقييم والإملاء</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('templates')}
-            className={`flex-1 py-2 rounded-lg transition-all cursor-pointer flex items-center justify-center gap-1.5 border ${
-              activeTab === 'templates'
-                ? 'bg-surface border-surface-border/50 dark:border-surface-border text-primary dark:text-primary shadow-2xs font-black'
-                : 'border-transparent text-text-muted hover:text-slate-900 dark:hover:text-primary font-bold'
-            }`}
-          >
-            <FileText className="w-4 h-4 text-primary dark:text-primary" />
-            <span>قوالب الرسائل الجاهزة</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('preview')}
-            className={`flex-1 py-2 rounded-lg transition-all cursor-pointer flex items-center justify-center gap-1.5 border ${
-              activeTab === 'preview'
-                ? 'bg-surface border-surface-border/50 dark:border-surface-border text-primary dark:text-primary shadow-2xs font-black'
-                : 'border-transparent text-text-muted hover:text-slate-900 dark:hover:text-primary font-bold'
-            }`}
-          >
-            <Edit3 className="w-4 h-4 text-primary dark:text-primary" />
-            <span>معاينة وتعديل التقرير</span>
-          </button>
-        </div>
-
-        {/* Content Body */}
-        <div className="p-4 sm:p-5 overflow-y-auto space-y-4 flex-1">
-
-          {/* TAB 1: QUICK SELECTIONS */}
-          {activeTab === 'quick' && (
-            <div className="space-y-4 text-xs">
-              
-              {/* Session Number & Package Counter Selector (Only shown if group/student uses package format e.g. 4, 8, 12) */}
-              {hasPackage && (
-                <div className="grid grid-cols-2 gap-2 bg-surface-hover/40 p-3.5 rounded-lg border border-surface-border/75 dark:border-surface-border">
-                  <div>
-                    <label className="text-[11px] font-bold text-slate-800 dark:text-slate-200 block mb-1">
-                      🔢 رقم الحصة الحالي:
-                    </label>
-                    <input
-                      type="number"
-                      min={1}
-                      max={totalSessions}
-                      value={sessionNum}
-                      onChange={(e) => {
-                        setSessionNum(Math.max(1, Number(e.target.value)));
-                        setIsManualEdited(false);
-                      }}
-                      className="w-full px-2.5 py-1.5 bg-surface border border-surface-border/80 dark:border-surface-border-soft rounded-lg text-xs font-bold text-text-main focus:outline-none focus:ring-1 focus:ring-primary"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-[11px] font-bold text-slate-800 dark:text-slate-200 block mb-1">
-                      📦 إجمالي حصص الباقة:
-                    </label>
-                    <select
-                      value={totalSessions}
-                      onChange={(e) => {
-                        setTotalSessions(Number(e.target.value));
-                        setIsManualEdited(false);
-                      }}
-                      className="w-full px-2.5 py-1.5 bg-surface border border-surface-border/80 dark:border-surface-border-soft rounded-lg text-xs font-bold text-text-main cursor-pointer focus:outline-none focus:ring-1 focus:ring-primary"
-                    >
-                      <option value={4}>4 حصص</option>
-                      <option value={8}>8 حصص</option>
-                      <option value={12}>12 حصة</option>
-                      <option value={16}>16 حصة</option>
-                      {![4, 8, 12, 16].includes(totalSessions) && (
-                        <option value={totalSessions}>{totalSessions} حصص</option>
-                      )}
-                    </select>
-                  </div>
-                </div>
-              )}
-
-              {/* Attendance Selection */}
-              <div className="space-y-2.5 bg-surface-hover/40 p-3.5 rounded-lg border border-surface-border/75 dark:border-surface-border">
-                <div className="flex items-center justify-between">
-                  <label className="font-bold text-slate-800 dark:text-slate-200 block">
-                    📌 حالة الحضور والغياب (Attendance):
-                  </label>
-                  {!isBulkMode && activeStudent && (
-                    <span className="text-[11px] font-extrabold text-primary dark:text-primary">
-                      الطالب: {activeStudent.name}
-                    </span>
-                  )}
-                </div>
-
-                {!isBulkMode && activeStudent ? (
-                  <div className="grid grid-cols-3 gap-2 text-xs">
-                    {(['present', 'late', 'absent'] as AttendanceStatus[]).map(attType => {
-                      const currentStAtt = getStudentAttendanceStatus(activeStudent.id);
-                      return (
-                        <button
-                          key={attType}
-                          type="button"
-                          onClick={() => {
-                            setStudentAttendance(prev => ({
-                              ...prev,
-                              [activeStudent.id]: attType
-                            }));
-                            setOverallAttendance(attType);
-                            setIsManualEdited(false);
-                          }}
-                          className={`py-2 rounded-lg font-bold border transition-all cursor-pointer ${
-                            currentStAtt === attType
-                              ? attType === 'present' ? 'bg-primary text-white border-primary-border shadow-2xs'
-                                : attType === 'late' ? 'bg-primary text-white border-primary-border shadow-2xs'
-                                : 'bg-primary text-white border-primary-border shadow-2xs'
-                              : 'bg-surface text-text-main border-surface-border/80 dark:border-slate-750'
-                          }`}
-                        >
-                          {attType === 'present' ? '✓ حاضر (Present)' : attType === 'late' ? '⚠️ متأخر (Late)' : '✕ غائب (Absent)'}
-                        </button>
-                      );
-                    })}
-                  </div>
-                ) : isBulkMode && groupStudents.length > 0 ? (
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[11px] text-slate-500 font-bold">تحديد الحضور لكل طالب في المجموعة:</span>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const updatedAtt: Record<string, AttendanceStatus> = {};
-                          groupStudents.forEach(st => { updatedAtt[st.id] = 'present'; });
-                          setStudentAttendance(updatedAtt);
-                          setOverallAttendance('present');
-                          setIsManualEdited(false);
-                        }}
-                        className="px-2.5 py-1 bg-slate-900 border border-slate-900 hover:bg-slate-800 text-white dark:bg-slate-100 dark:border-slate-100 dark:text-slate-900 rounded-md font-bold text-[10px] cursor-pointer shadow-2xs"
-                      >
-                        ✓ تحديد الجميع حاضر
-                      </button>
-                    </div>
-
-                    <div className="space-y-1.5 max-h-36 overflow-y-auto pr-1">
-                      {groupStudents.map(st => {
-                        const stAtt = getStudentAttendanceStatus(st.id);
-                        return (
-                          <div key={st.id} className="flex items-center justify-between bg-surface p-2 rounded-lg border border-slate-150 dark:border-surface-border text-xs">
-                            <span className="font-bold text-slate-800 dark:text-slate-200">{st.name}</span>
-                            <div className="flex items-center gap-1">
-                              {(['present', 'late', 'absent'] as AttendanceStatus[]).map(attType => (
-                                <button
-                                  key={attType}
-                                  type="button"
-                                  onClick={() => {
-                                    setStudentAttendance(prev => ({
-                                      ...prev,
-                                      [st.id]: attType
-                                    }));
-                                    setIsManualEdited(false);
-                                  }}
-                                  className={`px-2 py-0.5 rounded text-[10px] font-bold cursor-pointer border transition-all ${
-                                    stAtt === attType
-                                      ? attType === 'present' ? 'bg-primary text-white border-primary-border'
-                                        : attType === 'late' ? 'bg-primary text-white border-primary-border'
-                                        : 'bg-primary text-white border-primary-border'
-                                      : 'bg-surface-hover text-text-muted border-surface-border dark:border-surface-border-soft'
-                                  }`}
-                                >
-                                  {attType === 'present' ? 'Present' : attType === 'late' ? 'Late' : 'Absent'}
-                                </button>
-                              ))}
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-3 gap-2 text-xs">
-                    {(['present', 'late', 'absent'] as AttendanceStatus[]).map(attType => (
-                      <button
-                        key={attType}
-                        type="button"
-                        onClick={() => {
-                          setOverallAttendance(attType);
-                          setIsManualEdited(false);
-                        }}
-                        className={`py-2 rounded-lg font-bold border transition-all cursor-pointer ${
-                          overallAttendance === attType
-                            ? attType === 'present' ? 'bg-primary text-white border-primary-border shadow-2xs'
-                              : attType === 'late' ? 'bg-primary text-white border-primary-border shadow-2xs'
-                              : 'bg-primary text-white border-primary-border shadow-2xs'
-                            : 'bg-surface text-text-main border-surface-border/80 dark:border-slate-750'
-                        }`}
-                      >
-                        {attType === 'present' ? '✓ حاضر (Present)' : attType === 'late' ? '⚠️ متأخر (Late)' : '✕ غائب (Absent)'}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Performance Selection */}
-              <div className="space-y-1.5">
-                <label className="font-bold text-slate-800 dark:text-slate-200 block">
-                  🌟 أداء الطالب في الحصة:
-                </label>
-                <div className="flex flex-wrap gap-1.5">
-                  {ARABIC_PERFORMANCE_OPTIONS.map(opt => (
-                    <button
-                      key={opt}
-                      type="button"
-                      onClick={() => {
-                        setPerformance(opt);
-                        setIsManualEdited(false);
-                      }}
-                      className={`px-3 py-1.5 rounded-lg font-bold border transition-all cursor-pointer text-[11px] ${
-                        performance === opt
-                          ? 'bg-slate-900 border-slate-900 text-white dark:bg-slate-100 dark:border-slate-100 dark:text-slate-900 shadow-2xs font-black'
-                          : 'bg-surface-hover border-surface-border/60 dark:border-surface-border-soft/60 text-text-main hover:bg-slate-100/50'
-                      }`}
-                    >
-                      {opt}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Homework Status Selection */}
-              <div className="space-y-1.5 pt-3.5 border-t border-slate-100 dark:border-surface-border">
-                <label className="font-bold text-slate-800 dark:text-slate-200 block">
-                  📖 وضع الواجب الحالي:
-                </label>
-                <div className="flex flex-wrap gap-1.5">
-                  {ARABIC_HOMEWORK_OPTIONS.map(opt => (
-                    <button
-                      key={opt}
-                      type="button"
-                      onClick={() => {
-                        setHomeworkOption(opt);
-                        setIsManualEdited(false);
-                      }}
-                      className={`px-3 py-1.5 rounded-lg font-bold border transition-all cursor-pointer text-[11px] ${
-                        homeworkOption === opt
-                          ? 'bg-slate-900 border-slate-900 text-white dark:bg-slate-100 dark:border-slate-100 dark:text-slate-900 shadow-2xs font-black'
-                          : 'bg-surface-hover border-surface-border/60 dark:border-surface-border-soft/60 text-text-main hover:bg-slate-100/50'
-                      }`}
-                    >
-                      {opt}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Dictation & Exam Score */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-3.5 border-t border-slate-100 dark:border-surface-border">
-                {/* Dictation score */}
-                <div className="space-y-1.5">
-                  <label className="font-bold text-slate-800 dark:text-slate-200 block">
-                    ✍️ درجة الإملاء (Dictation):
-                  </label>
-                  <div className="flex items-center gap-1 overflow-x-auto pb-1 no-scrollbar">
-                    {['10 / 10', '9 / 10', '8 / 10', '7 / 10', '5 / 10'].map(sc => (
-                      <button
-                        key={sc}
-                        type="button"
-                        onClick={() => {
-                          setDictationScore(sc);
-                          setIsManualEdited(false);
-                        }}
-                        className={`px-2 py-0.5 rounded border font-mono font-bold text-[10px] cursor-pointer transition-colors ${
-                          dictationScore === sc
-                            ? 'bg-slate-900 border-slate-900 text-white dark:bg-slate-100 dark:border-slate-100 dark:text-slate-900'
-                            : 'bg-surface-hover border-surface-border/60 dark:border-surface-border-soft/60 text-text-main'
-                        }`}
-                      >
-                        {sc}
-                      </button>
-                    ))}
-                  </div>
-                  <input
-                    type="text"
-                    value={dictationScore}
-                    onChange={(e) => {
-                      setDictationScore(e.target.value);
-                      setIsManualEdited(false);
-                    }}
-                    placeholder="مثال: 9 / 10"
-                    className="w-full px-3 py-1.5 bg-surface-hover border border-surface-border/80 dark:border-surface-border-soft rounded-lg font-mono font-bold focus:outline-none focus:ring-1 focus:ring-primary text-xs"
-                  />
-                </div>
-
-                {/* Exam score */}
-                <div className="space-y-1.5">
-                  <label className="font-bold text-slate-800 dark:text-slate-200 block">
-                    📝 درجة الاختبار / التقييم:
-                  </label>
-                  <div className="flex items-center gap-1 overflow-x-auto pb-1 no-scrollbar">
-                    {['10 / 10', '18 / 20', '20 / 20', '45 / 50', '50 / 50'].map(sc => (
-                      <button
-                        key={sc}
-                        type="button"
-                        onClick={() => {
-                          setExamScore(sc);
-                          setIsManualEdited(false);
-                        }}
-                        className={`px-2 py-0.5 rounded border font-mono font-bold text-[10px] cursor-pointer transition-colors ${
-                          examScore === sc
-                            ? 'bg-slate-900 border-slate-900 text-white dark:bg-slate-100 dark:border-slate-100 dark:text-slate-900'
-                            : 'bg-surface-hover border-surface-border/60 dark:border-surface-border-soft/60 text-text-main'
-                        }`}
-                      >
-                        {sc}
-                      </button>
-                    ))}
-                  </div>
-                  <input
-                    type="text"
-                    value={examScore}
-                    onChange={(e) => {
-                      setExamScore(e.target.value);
-                      setIsManualEdited(false);
-                    }}
-                    placeholder="مثال: 18 / 20"
-                    className="w-full px-3 py-1.5 bg-surface-hover border border-surface-border/80 dark:border-surface-border-soft rounded-lg font-mono font-bold focus:outline-none focus:ring-1 focus:ring-primary text-xs"
-                  />
-                </div>
-              </div>
-
-              {/* Homework Required */}
-              <div className="space-y-1.5 pt-3.5 border-t border-slate-100 dark:border-surface-border">
-                <label className="font-bold text-slate-800 dark:text-slate-200 block">
-                  📚 الواجب المطلوب للحصة القادمة (Free Text):
-                </label>
-                <textarea
-                  rows={2}
-                  value={homeworkRequired}
-                  onChange={(e) => {
-                    setHomeworkRequired(e.target.value);
-                    setIsManualEdited(false);
-                  }}
-                  placeholder="أدخل تفاصيل الواجب هنا..."
-                  className="w-full p-2.5 bg-surface-hover border border-surface-border dark:border-surface-border-soft rounded-lg font-medium focus:outline-none focus:ring-1 focus:ring-primary text-xs resize-none"
-                />
-              </div>
-
-              {/* Quick Parent Notes */}
-              <div className="space-y-1.5 pt-3.5 border-t border-slate-100 dark:border-surface-border">
-                <label className="font-bold text-slate-800 dark:text-slate-200 block">
-                  💬 ملاحظات سريعة لولي الأمر (يمكنك اختيار أكثر من واحدة):
-                </label>
-                <div className="flex flex-wrap gap-1.5">
-                  {ARABIC_QUICK_NOTES.map(note => {
-                    const isSelected = selectedNotes.includes(note);
-                    return (
-                      <button
-                        key={note}
-                        type="button"
-                        onClick={() => {
-                          toggleQuickNote(note);
-                          setIsManualEdited(false);
-                        }}
-                        className={`px-2.5 py-1.5 rounded-lg border font-bold transition-all text-[11px] cursor-pointer flex items-center gap-1 ${
-                          isSelected
-                            ? 'bg-slate-900 border-slate-900 text-white dark:bg-slate-100 dark:border-slate-100 dark:text-slate-900'
-                            : 'bg-surface-hover border-surface-border/60 dark:border-surface-border-soft/60 text-slate-750 dark:text-slate-300 hover:bg-slate-100/50'
-                        }`}
-                      >
-                        {isSelected && <Check className="w-3 h-3 text-current" />}
-                        <span>{note}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
             </div>
           )}
 
-          {/* TAB 2: READY-MADE TEMPLATES */}
-          {activeTab === 'templates' && (
-            <div className="space-y-3 text-xs">
-              <label className="font-bold text-slate-800 dark:text-slate-200 block">
-                اختر القالب المناسب لحالة الطالب:
+          {/* Student Selection List (For individual reports) */}
+          {activeTab === 'individual' && groupStudents.length > 0 && (
+            <div className="space-y-2">
+              <label className="text-xs font-black text-text-main block">
+                {_t('👥 اختر طالب لمعاينة تقريره الفردي:', '👥 Select a student to preview individual report:', '👥 Wählen Sie einen Schüler für die Vorschau aus:')}
               </label>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                {ARABIC_MESSAGE_TEMPLATES.map(tmpl => {
-                  const isSelected = selectedTemplateId === tmpl.id;
+              <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto p-1 bg-surface-hover/50 rounded-xl border border-surface-border/50">
+                {groupStudents.map(st => {
+                  const isSelected = selectedStudentId === st.id;
                   return (
-                    <div
-                      key={tmpl.id}
+                    <button
+                      key={st.id}
+                      type="button"
                       onClick={() => {
-                        handleSelectTemplate(tmpl);
+                        setSelectedStudentId(st.id);
                         setIsManualEdited(false);
                       }}
-                      className={`p-3 rounded-lg border transition-all cursor-pointer space-y-1.5 ${
+                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer border ${
                         isSelected
-                          ? 'bg-primary-soft dark:bg-primary-soft border-primary-border ring-2 ring-primary/20 shadow-2xs'
-                          : 'bg-background/60 dark:bg-slate-800/40 border-surface-border dark:border-slate-750 hover:border-slate-300'
+                          ? 'bg-primary border-primary text-white shadow-xs'
+                          : 'bg-surface border-surface-border text-text-muted hover:text-text-main hover:bg-slate-50'
                       }`}
                     >
-                      <div className="flex items-center justify-between">
-                        <span className="font-black text-text-main">
-                          {tmpl.title}
-                        </span>
-                        <span className="text-[9px] font-bold px-2 py-0.5 rounded bg-surface border border-surface-border dark:border-surface-border-soft">
-                          {tmpl.badge}
-                        </span>
-                      </div>
-                      <p className="text-[11px] text-slate-600 dark:text-slate-300 line-clamp-3 leading-relaxed">
-                        {tmpl.text}
-                      </p>
-                    </div>
+                      <User className="w-3.5 h-3.5" />
+                      <span>{st.name}</span>
+                    </button>
                   );
                 })}
               </div>
-
-              {/* Edit Selected Template text */}
-              <div className="pt-3 border-t border-slate-100 dark:border-surface-border space-y-1.5">
-                <label className="font-bold text-slate-800 dark:text-slate-200 block">
-                  نص الرسالة الجاهزة المحددة (يمكن تعديلها مباشرة):
-                </label>
-                <textarea
-                  rows={4}
-                  value={customTemplateText}
-                  onChange={(e) => {
-                    setSelectedTemplateId('custom');
-                    setCustomTemplateText(e.target.value);
-                    setIsManualEdited(false);
-                  }}
-                  className="w-full p-3 bg-surface-hover border border-surface-border/80 dark:border-surface-border-soft rounded-lg font-medium focus:outline-none focus:ring-1 focus:ring-primary text-xs leading-relaxed resize-none"
-                />
-              </div>
             </div>
           )}
 
-          {/* TAB 3: FULL GENERATED REPORT PREVIEW & EDIT */}
-          {activeTab === 'preview' && (
-            <div className={`space-y-3.5 text-xs ${activeTab !== 'preview' ? 'mt-4 pt-4 border-t border-surface-border' : ''}`}>
-              <div className="flex items-center justify-between">
-                <label className="font-black text-text-main flex items-center gap-1.5">
-                  <FileText className="w-4 h-4 text-primary dark:text-primary" />
-                  <span>التقرير النهائي الجاهز للإرسال لولي الأمر:</span>
-                </label>
-
-                <div className="flex items-center gap-2">
-                  {isManualEdited && (
-                    <span className="text-[9px] bg-primary-soft dark:bg-primary-soft text-primary dark:text-primary border border-primary-border dark:border-primary-border font-black px-2 py-0.5 rounded-md">
-                      تم التعديل يدوياً
-                    </span>
-                  )}
-                  <button
-                    type="button"
-                    onClick={handleCopyText}
-                    className="text-xs font-bold text-primary dark:text-primary hover:underline flex items-center gap-1 cursor-pointer"
-                  >
-                    {copied ? <Check className="w-3.5 h-3.5 text-primary" /> : <Copy className="w-3.5 h-3.5" />}
-                    <span>{copied ? 'تم النسخ!' : 'نسخ التقرير'}</span>
-                  </button>
-                </div>
+          {/* Report Metadata */}
+          {activeTab === 'individual' ? (
+            <div className="grid grid-cols-2 gap-3 bg-primary-soft/40 p-3.5 rounded-xl border border-primary-border/40 text-xs">
+              <div>
+                <span className="text-text-muted font-bold block mb-1">{_t('👤 الطالب:', '👤 Student:', '👤 Schüler:')}</span>
+                <span className="font-extrabold text-text-main text-[13px]">
+                  {activeStudent?.name || lesson.studentName || _t('غير محدد', 'Not specified', 'Nicht angegeben')}
+                </span>
               </div>
-
-              <textarea
-                rows={9}
-                value={finalGeneratedText}
-                onChange={(e) => {
-                  setFinalGeneratedText(e.target.value);
-                  setIsManualEdited(true);
-                }}
-                className="w-full bg-surface-hover/90 border border-surface-border/80 dark:border-surface-border-soft rounded-lg p-3.5 text-xs font-mono text-text-main leading-relaxed focus:outline-none focus:ring-1 focus:ring-primary resize-y"
-              />
-
-              {/* Bulk Quick Send List for Group Parents */}
-              {isBulkMode && groupStudents.length > 0 && (
-                <div className="bg-primary-soft dark:bg-primary-soft border border-primary-border dark:border-primary-border p-3.5 rounded-lg space-y-2.5">
-                  <div className="flex items-center justify-between">
-                    <span className="font-black text-primary dark:text-primary text-xs flex items-center gap-1.5">
-                      <Send className="w-4 h-4 text-primary" />
-                      <span>قائمة إرسال الواتساب السريع لجميع أولياء أمور المجموعة ({groupStudents.length} طلاب):</span>
-                    </span>
-                  </div>
-
-                  <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
-                    {groupStudents.map(st => {
-                      const stPhone = st.parentPhone || st.studentPhone || '';
-                      const stAtt = lesson.report?.studentAttendance?.[st.id] || lesson.report?.attendanceStatus || 'present';
-                      const stAttBadge = stAtt === 'present' ? 'حاضر ✅' : stAtt === 'late' ? 'متأخر ⚠️' : 'غائب ❌';
-
-                      return (
-                        <div key={st.id} className="flex items-center justify-between bg-surface p-2.5 rounded-lg border border-primary-border dark:border-surface-border text-xs">
-                          <div className="flex items-center gap-2">
-                            <span className="font-bold text-slate-800 dark:text-slate-200">{st.name}</span>
-                            <span className="text-[10px] text-slate-500 font-medium">({st.parentName || 'ولي الأمر'}: {stPhone || 'لا يوجد رقم'})</span>
-                            <span className="text-[10px] bg-surface-hover font-bold px-1.5 py-0.5 rounded">{stAttBadge}</span>
-                          </div>
-
-                          <button
-                            type="button"
-                            onClick={() => sendWhatsAppToStudentParent(st)}
-                            disabled={!stPhone}
-                            className={`px-2.5 py-1 rounded text-[11px] font-bold cursor-pointer border transition-all flex items-center gap-1 ${
-                              stPhone
-                                ? 'bg-slate-900 border-slate-900 text-white hover:bg-slate-800 dark:bg-slate-100 dark:border-slate-100 dark:text-slate-900 dark:hover:bg-slate-200 shadow-2xs'
-                                : 'bg-slate-100 border-slate-100 dark:bg-slate-800 dark:border-surface-border text-text-muted/70 cursor-not-allowed'
-                            }`}
-                          >
-                            <Send className="w-3 h-3" />
-                            <span>إرسال لـ {st.parentName || st.name.split(' ')[0]} 📱</span>
-                          </button>
-                        </div>
-                      );
-                    })}
-                  </div>
+              <div>
+                <span className="text-text-muted font-bold block mb-1">{_t('📱 رقم ولي الأمر:', '📱 Parent Phone:', '📱 Eltern-Telefon:')}</span>
+                <span className="font-extrabold text-text-main text-[13px]">
+                  {parentPhone || _t('غير مسجل', 'Not registered', 'Nicht registriert')}
+                </span>
+              </div>
+            </div>
+          ) : (
+            <div className="p-3.5 bg-emerald-50/50 dark:bg-emerald-950/10 border border-emerald-100 dark:border-emerald-900/40 rounded-xl space-y-2 text-xs">
+              <div className="flex items-center justify-between">
+                <div>
+                  <span className="text-text-muted font-bold block mb-0.5">{_t('👥 مجموعة:', '👥 Group:', '👥 Gruppe:')}</span>
+                  <span className="font-black text-emerald-700 dark:text-emerald-400 text-sm">
+                    {associatedGroup?.name || _t('مجموعة اللغة الألمانية', 'German Group', 'Deutschgruppe')}
+                  </span>
                 </div>
+                {groupWhatsAppLink ? (
+                  <span className="bg-emerald-100 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-300 px-2 py-1 rounded-md text-[10px] font-black flex items-center gap-1">
+                    <Link2 className="w-3 h-3" />
+                    <span>{_t('جروب الواتساب متصل ✅', 'WhatsApp Group Connected ✅', 'WhatsApp-Gruppe verbunden ✅')}</span>
+                  </span>
+                ) : (
+                  <span className="bg-amber-100 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 px-2 py-1 rounded-md text-[10px] font-black">
+                    {_t('⚠️ لم يتم ربط رابط الجروب بعد', '⚠️ Group link not linked yet', '⚠️ Gruppenlink noch nicht verknüpft')}
+                  </span>
+                )}
+              </div>
+              {!groupWhatsAppLink && (
+                <p className="text-[10px] text-text-muted leading-normal font-bold">
+                  {_t(
+                    'نصيحة: يمكنك تعديل المجموعة لإدخال "رابط جروب الواتساب" الخاص بأولياء الأمور لتتمكن من إرسال هذا التقرير المجمع للجروب بنقرة واحدة!',
+                    'Tip: You can edit the group to enter the parents\' "WhatsApp Group Link" to send this bulk report in one click!',
+                    'Tipp: Sie können die Gruppe bearbeiten, um den "WhatsApp-Gruppenlink" der Eltern einzugeben und diesen Sammelbericht mit einem Klick zu senden!'
+                  )}
+                </p>
               )}
             </div>
           )}
 
+          {/* Preview & Editor Textarea */}
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-black text-text-main flex items-center gap-1.5">
+                <MessageSquare className="w-4 h-4 text-primary" />
+                <span>{_t('معاينة وتعديل نص الرسالة:', 'Preview & Edit Message:', 'Nachrichtenvorschau & Bearbeitung:')}</span>
+              </label>
+              <button
+                type="button"
+                onClick={handleCopyText}
+                className="text-xs font-bold text-primary hover:underline flex items-center gap-1 cursor-pointer"
+              >
+                {copied ? <Check className="w-3.5 h-3.5 text-primary" /> : <Copy className="w-3.5 h-3.5" />}
+                <span>{copied ? _t('تم النسخ!', 'Copied!', 'Kopiert!') : _t('نسخ النص', 'Copy Text', 'Text kopieren')}</span>
+              </button>
+            </div>
+
+            <textarea
+              rows={11}
+              value={finalGeneratedText}
+              onChange={(e) => {
+                setFinalGeneratedText(e.target.value);
+                setIsManualEdited(true);
+              }}
+              className="w-full bg-surface-hover/80 border border-surface-border rounded-xl p-4 text-xs font-semibold leading-relaxed text-text-main focus:outline-none focus:ring-2 focus:ring-primary/10 resize-none"
+            />
+          </div>
+
         </div>
 
-        {/* Action Footer */}
-        <div className="p-4 bg-surface-hover/80 border-t border-surface-border/80 dark:border-surface-border flex flex-wrap items-center justify-between gap-2 shrink-0">
+        {/* Footer Actions */}
+        <div className="p-4 bg-surface border-t border-surface-border flex flex-wrap items-center justify-between gap-3 shrink-0">
           <div className="flex items-center gap-2">
-            <button
-              onClick={handleWhatsAppSend}
-              className="bg-primary hover:bg-primary-hover text-white font-bold text-xs py-2 px-3 rounded-lg transition-all flex items-center gap-2 cursor-pointer shadow-2xs"
-            >
-              <Send className="w-3.5 h-3.5" />
-              <span>إرسال عبر واتساب (WhatsApp)</span>
-            </button>
+            {activeTab === 'bulk' && groupWhatsAppLink ? (
+              <button
+                type="button"
+                onClick={handleWhatsAppSend}
+                className="bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-black text-xs py-2.5 px-4 rounded-xl transition-all flex items-center gap-1.5 cursor-pointer shadow-sm"
+              >
+                <Send className="w-4 h-4" />
+                <span>{_t('إرسال لجروب الواتساب', 'Send to WhatsApp Group', 'An WhatsApp-Gruppe senden')}</span>
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={handleWhatsAppSend}
+                className="bg-primary hover:bg-primary-hover active:scale-95 text-white font-black text-xs py-2.5 px-4 rounded-xl transition-all flex items-center gap-1.5 cursor-pointer shadow-sm"
+              >
+                <Send className="w-4 h-4" />
+                <span>{_t('إرسال عبر واتساب', 'Send via WhatsApp', 'Über WhatsApp senden')}</span>
+              </button>
+            )}
 
             <button
+              type="button"
               onClick={handlePrint}
-              className="bg-slate-200 border border-slate-250 dark:bg-slate-800 dark:border-surface-border-soft hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-bold text-xs py-2 px-3 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer"
+              className="bg-slate-100 hover:bg-slate-200 text-slate-800 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700 font-bold text-xs py-2.5 px-3 rounded-xl transition-all flex items-center gap-1.5 cursor-pointer border border-surface-border"
             >
-              <Printer className="w-3.5 h-3.5" />
-              <span>طباعة</span>
+              <Printer className="w-4 h-4" />
+              <span>{_t('طباعة', 'Print', 'Drucken')}</span>
             </button>
           </div>
 
           <div className="flex items-center gap-2">
-            <a
-              href={`tel:${parentPhone}`}
-              className="bg-primary hover:bg-primary-hover text-white font-bold text-xs py-2 px-3 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer active:scale-95 hover:shadow-lg hover:shadow-primary/30"
-            >
-              <Phone className="w-3.5 h-3.5" />
-              <span>اتصال بولي الأمر</span>
-            </a>
+            {activeTab === 'individual' && parentPhone && (
+              <a
+                href={`tel:${parentPhone}`}
+                className="bg-slate-100 hover:bg-slate-200 text-slate-800 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700 font-bold text-xs py-2.5 px-3.5 rounded-xl transition-all flex items-center gap-1.5 cursor-pointer border border-surface-border"
+              >
+                <Phone className="w-4 h-4 text-primary" />
+                <span>{_t('اتصال هاتفى', 'Phone Call', 'Telefonanruf')}</span>
+              </a>
+            )}
 
             <button
+              type="button"
               onClick={() => {
-                if (onSaveReport) {
-                  onSaveReport(finalGeneratedText, {
-                    arabicPerformance: performance,
-                    arabicHomeworkOption: homeworkOption,
-                    dictationScore,
-                    arabicExamScore: examScore,
-                    arabicHomeworkRequired: homeworkRequired,
-                    arabicParentNotes: selectedNotes.join('\n'),
-                    arabicTemplateMessage: customTemplateText,
-                    arabicFullGeneratedReport: finalGeneratedText
-                  });
+                if (onGoToHomeScreen) {
+                  onGoToHomeScreen();
+                } else {
+                  if (onSaveReport) {
+                    onSaveReport(finalGeneratedText);
+                  }
+                  onClose();
                 }
-                onClose();
               }}
-              className="bg-slate-900 border border-slate-900 hover:bg-slate-800 text-white dark:bg-slate-100 dark:border-slate-100 dark:hover:bg-slate-200 dark:text-slate-900 font-black text-xs py-2 px-4 rounded-lg transition-all cursor-pointer shadow-2xs"
+              className="bg-red-600 hover:bg-red-700 active:scale-95 text-white font-black text-xs py-3 px-6 rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-md shadow-red-600/20"
             >
-              حفظ وإغلاق
+              <Home className="w-4 h-4" />
+              <span>{_t('الرئيسية', 'Go to Homescreen', 'Startseite')}</span>
             </button>
           </div>
         </div>

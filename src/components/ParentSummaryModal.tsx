@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { Lesson, Student, TeacherProfile } from '../types';
 import { useApp } from '../context/AppContext';
-import { X, Copy, Check, MessageSquare, Phone, Send, Share2, Sparkles } from 'lucide-react';
+import { X, Copy, Check, MessageSquare, Phone, Send, Share2, Sparkles, Home } from 'lucide-react';
 import { ArabicParentReportModal } from './ArabicParentReportModal';
+import { buildWhatsAppUrl } from '../utils/phoneUtils';
 import confetti from 'canvas-confetti';
 
 interface ParentSummaryModalProps {
@@ -10,13 +11,15 @@ interface ParentSummaryModalProps {
   student?: Student;
   profile: TeacherProfile;
   onClose: () => void;
+  onGoToHomeScreen?: () => void;
 }
 
 export const ParentSummaryModal: React.FC<ParentSummaryModalProps> = ({
   lesson,
   student,
   profile,
-  onClose
+  onClose,
+  onGoToHomeScreen
 }) => {
   const { students } = useApp();
   const [copied, setCopied] = useState(false);
@@ -47,7 +50,6 @@ Hier ist der Unterrichtsbericht für ${lesson.studentName || lesson.title} vom $
 📊 Bewertung:
   • Quiz: ${report?.quizScore ?? 'N/A'}/100
   • Mitarbeit: ${report?.participationScore ?? 'N/A'}/100
-💳 Zahlungsstatus: ${report?.paymentStatus === 'paid' ? 'Bezahlt (Paid) ✅' : 'Ausstehend (Pending) ⚠️'}
 
 📝 Anmerkung der Lehrkraft:
 "${report?.teacherNotes || 'Sehr gute Leistung und aktive Teilnahme im Unterricht.'}"
@@ -66,13 +68,8 @@ AGS19 🇩🇪`;
   };
 
   const handleWhatsAppSend = () => {
-    const encodedText = encodeURIComponent(summaryText);
-    const cleanPhone = parentPhone.replace(/[^0-9+]/g, '');
-    if (cleanPhone) {
-      window.open(`https://wa.me/${cleanPhone}?text=${encodedText}`, '_blank');
-    } else {
-      window.open(`https://wa.me/?text=${encodedText}`, '_blank');
-    }
+    const url = buildWhatsAppUrl(parentPhone, summaryText);
+    window.open(url, '_blank');
     confetti({ particleCount: 50, spread: 40 });
   };
 
@@ -161,10 +158,17 @@ AGS19 🇩🇪`;
         {/* Footer */}
         <div className="p-4 bg-surface-hover/50 border-t border-slate-100 dark:border-surface-border flex justify-end">
           <button
-            onClick={onClose}
-            className="px-5 py-2 rounded-xl bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 text-slate-800 dark:text-slate-200 font-bold text-xs cursor-pointer"
+            onClick={() => {
+              if (onGoToHomeScreen) {
+                onGoToHomeScreen();
+              } else {
+                onClose();
+              }
+            }}
+            className="bg-red-600 hover:bg-red-700 active:scale-95 text-white font-black text-xs py-3 px-6 rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-md shadow-red-600/20"
           >
-            Schließen (Close)
+            <Home className="w-4 h-4" />
+            <span>الرئيسية (Go to Homescreen)</span>
           </button>
         </div>
       </div>

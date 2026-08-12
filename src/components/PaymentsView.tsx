@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { useApp } from '../context/AppContext';
 import { PaymentRecord, Student, Group } from '../types';
 import { getStudentCyclePricing, calculateDuePaymentCycles, DuePaymentCycle } from '../utils/paymentUtils';
+import { buildWhatsAppUrl } from '../utils/phoneUtils';
 import { 
   DollarSign, CheckCircle2, Clock, Send, Search, 
   Check, X, Sparkles, History, Calendar, AlertCircle, TrendingUp, ChevronRight
@@ -102,11 +103,17 @@ export const PaymentsView: React.FC = () => {
   const inProgressCycles = useMemo(() => {
     const list: DuePaymentCycle[] = [];
 
-    // Map ALL billed lesson IDs (both paid and unpaid) for fast lookup
-    const billedLessonIds = new Set<string>();
+    // Map studentId -> Set of billed lesson IDs for fast lookup
+    const studentBilledLessons = new Map<string, Set<string>>();
     payments.forEach(p => {
       if (p.lessonIds && p.lessonIds.length > 0) {
-        p.lessonIds.forEach(id => billedLessonIds.add(id));
+        const stId = p.studentId;
+        if (stId) {
+          if (!studentBilledLessons.has(stId)) {
+            studentBilledLessons.set(stId, new Set<string>());
+          }
+          p.lessonIds.forEach(id => studentBilledLessons.get(stId)!.add(id));
+        }
       }
     });
 
@@ -116,6 +123,7 @@ export const PaymentsView: React.FC = () => {
 
       // Determine cycle length (N) and package price (P) using canonical pricing utility
       const { cycleLength, amountDue } = getStudentCyclePricing(st, grp);
+      const billedIds = studentBilledLessons.get(st.id) || new Set<string>();
 
       // Collect all completed attended lessons for this student that have NOT been billed yet (neither paid nor unpaid)
       const stCompletedLessons = lessons.filter(l => {
@@ -129,7 +137,7 @@ export const PaymentsView: React.FC = () => {
         if (att === 'absent') return false;
 
         // Check if this lesson ID has already been billed
-        if (billedLessonIds.has(l.id)) return false;
+        if (billedIds.has(l.id)) return false;
 
         return true;
       });
@@ -139,12 +147,26 @@ export const PaymentsView: React.FC = () => {
 
       const hasUnpaidRec = payments.some(p => p.studentId === st.id && p.status !== 'paid');
 
+      // Determine if we need to apply starting session number offset
+      const hasPaidPayments = payments.some(p => p.studentId === st.id && p.status === 'paid');
+      const startSess = grp?.startingSessionNumber || 1;
+      const virtualOffset = !hasPaidPayments && startSess > 1 ? (startSess - 1) : 0;
+
+      const totalCompletedCount = stCompletedLessons.length + virtualOffset;
+
       // If they have completed some lessons but less than cycle length, and they do NOT have an unpaid record already
-      if (stCompletedLessons.length > 0 && stCompletedLessons.length < cycleLength && !hasUnpaidRec) {
-        const lessonDates = stCompletedLessons.map(l => formatDateDisplay(l.date));
+      if (totalCompletedCount > 0 && totalCompletedCount < cycleLength && !hasUnpaidRec) {
+        const lessonDates: string[] = [];
+        for (let i = 1; i <= virtualOffset; i++) {
+          lessonDates.push(`Offline (Session ${i}/${cycleLength})`);
+        }
+        stCompletedLessons.forEach(l => {
+          lessonDates.push(`${formatDateDisplay(l.date)} (Session ${l.sessionNumber || 1}/${cycleLength})`);
+        });
+
         const lessonIds = stCompletedLessons.map(l => l.id);
 
-        // Prorated calculations
+        // Prorated calculations based on actual completed lessons in the app
         const pricePerSession = amountDue / cycleLength;
         const proratedAmount = Math.round(pricePerSession * stCompletedLessons.length);
 
@@ -287,12 +309,8 @@ ${datesFormatted}
   };
 
   const handleOpenWhatsApp = (phone: string, msg: string) => {
-    const cleanPhone = phone.replace(/[^0-9]/g, '');
-    if (cleanPhone) {
-      window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(msg)}`, '_blank');
-    } else {
-      handleCopyMessage(msg);
-    }
+    const url = buildWhatsAppUrl(phone, msg);
+    window.open(url, '_blank');
   };
 
   return (

@@ -4,13 +4,15 @@ import { AppLanguage } from '../types';
 import { 
   Settings, Search, User, Globe, Moon, Sun, Clock, DollarSign, Check, Camera, CheckCircle2,
   HardDrive, Download, Upload, Trash2, AlertTriangle, MessageSquare, ChevronRight,
-  ArrowLeft, ArrowRight, Calendar, ShieldAlert, Info, Copy, Save, Phone, ExternalLink,
+  ArrowLeft, ArrowRight, Calendar, ShieldAlert, ShieldCheck, Info, Copy, Save, Phone, ExternalLink,
   BookOpen, FileText, Bell, CheckSquare, XCircle, Award, Sparkles, Star, Plus, Pencil, RotateCcw, Heart
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { NotificationSettingsSection } from './NotificationSettingsSection';
 import { SmartBackupCenter } from './SmartBackupCenter';
+import { DataHealthCenterModal } from './DataHealthCenterModal';
 import { DEFAULT_OFFLINE_AVATAR } from '../data/avatarPresets';
+import { AvatarImage } from './AvatarImage';
 
 type SettingsCategory = 
   | 'language'
@@ -95,6 +97,7 @@ export const SettingsView: React.FC = () => {
   const [savedSuccessToast, setSavedSuccessToast] = useState(false);
   const [restoreStatusMsg, setRestoreStatusMsg] = useState<string | null>(null);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
+  const [showDataHealthCenterModal, setShowDataHealthCenterModal] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -135,44 +138,6 @@ export const SettingsView: React.FC = () => {
         }
       };
       reader.readAsText(file);
-    }
-  };
-
-  const handleTeacherAvatarUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      const reader = new FileReader();
-      reader.onload = async (event) => {
-        if (event.target?.result) {
-          const img = new Image();
-          img.onload = () => {
-            const canvas = document.createElement('canvas');
-            let width = img.width;
-            let height = img.height;
-            const max_size = 300;
-            if (width > height) {
-              if (width > max_size) {
-                height *= max_size / width;
-                width = max_size;
-              }
-            } else {
-              if (height > max_size) {
-                width *= max_size / height;
-                height = max_size;
-              }
-            }
-            canvas.width = width;
-            canvas.height = height;
-            const ctx = canvas.getContext('2d');
-            ctx?.drawImage(img, 0, 0, width, height);
-            const dataUrl = canvas.toDataURL('image/jpeg', 0.6);
-            updateProfile({ avatarUrl: dataUrl });
-            confetti({ particleCount: 40, spread: 40 });
-          };
-          img.src = event.target.result as string;
-        }
-      };
-      reader.readAsDataURL(file);
     }
   };
 
@@ -644,19 +609,11 @@ export const SettingsView: React.FC = () => {
           <div className="bg-surface border border-surface-border/90 dark:border-surface-border rounded-xl p-5 shadow-2xs space-y-4">
             {/* Avatar Header */}
             <div className="flex items-center gap-4 pb-4 border-b border-slate-100 dark:border-surface-border">
-              <div className="relative shrink-0 group">
-                <img
-                  src={profile.avatarUrl || DEFAULT_OFFLINE_AVATAR}
-                  onError={(e) => { e.currentTarget.src = DEFAULT_OFFLINE_AVATAR; }}
-                  alt={profile.displayName}
-                  className="w-16 h-16 rounded-lg object-cover ring-2 ring-primary/30 shadow-md"
+              <div className="relative shrink-0">
+                <AvatarImage
+                  name={profile.displayName}
+                  className="w-16 h-16 rounded-xl font-black text-xl ring-2 ring-primary/30 shadow-md"
                 />
-                <label 
-                  className="absolute -bottom-1 -right-1 p-1.5 bg-primary hover:bg-primary-hover text-white rounded-xl shadow-md cursor-pointer transition-transform hover:scale-110 flex items-center justify-center active:scale-95 hover:shadow-lg hover:shadow-primary/30 transition-all"
-                >
-                  <Camera className="w-3.5 h-3.5" />
-                  <input type="file" accept="image/*" onChange={handleTeacherAvatarUpload} className="hidden" />
-                </label>
               </div>
 
               <div className="space-y-1 flex-1 min-w-0">
@@ -1446,6 +1403,32 @@ export const SettingsView: React.FC = () => {
           {/* Dedicated Smart Backup Center */}
           <SmartBackupCenter onBack={() => setActiveCategory(null)} />
 
+          {/* Smart Data Validation Audit & Health Report Button */}
+          <div className="bg-surface border border-surface-border rounded-2xl p-5 space-y-3.5 shadow-2xs">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 bg-primary-soft text-primary rounded-xl shrink-0">
+                <ShieldCheck className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-xs font-black uppercase tracking-wider text-text-main">
+                  {_t('التدقيق الذكي وصحة البيانات', 'Smart Data Validation & Health Audit')}
+                </h3>
+                <p className="text-xs text-text-muted mt-0.5 leading-relaxed">
+                  {_t('فحص اتساق السجلات، الكشف عن الأخطاء المحتملة في العلاقات المالية والطلابية، وحساب مؤشر الصحة.', 'Inspect record consistency, detect potential relationship or financial anomalies, and view data health score.')}
+                </p>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setShowDataHealthCenterModal(true)}
+              className="w-full bg-surface-hover hover:bg-surface-border/50 text-text-main border border-surface-border font-bold text-xs py-3 px-4 rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer"
+            >
+              <ShieldCheck className="w-4 h-4 text-primary" />
+              <span>{_t('فتح تقرير التدقيق وصحة البيانات', 'Open Data Audit & Health Report')}</span>
+            </button>
+          </div>
+
           {/* Danger Zone Section */}
           <div className="bg-primary-soft dark:bg-primary-soft border-2 border-primary-border dark:border-primary-border rounded-2xl p-5 space-y-3.5 shadow-2xs">
             <div className="flex items-center gap-3">
@@ -1617,6 +1600,13 @@ export const SettingsView: React.FC = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* ==========================================
+          SMART DATA VALIDATION AUDIT MODAL
+      ========================================== */}
+      {showDataHealthCenterModal && (
+        <DataHealthCenterModal onClose={() => setShowDataHealthCenterModal(false)} />
       )}
           </div>
         )}

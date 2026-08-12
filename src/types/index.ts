@@ -93,6 +93,7 @@ export interface Group {
   color: string;
   lessonDurationMinutes?: number; // Default 60 mins
   status?: 'active' | 'archived';
+  whatsAppGroupLink?: string;
 }
 
 export interface StudentDocument {
@@ -162,6 +163,10 @@ export interface LessonReport {
   arabicParentNotes?: string;
   arabicTemplateMessage?: string;
   arabicFullGeneratedReport?: string;
+  studentHomeworkDone?: Record<string, 'yes' | 'no'>;
+  studentDictationGrade?: Record<string, number>;
+  studentExamGrade?: Record<string, number>;
+  studentNotes?: Record<string, string>;
   savedAt?: string;
   scores?: any;
 }

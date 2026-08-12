@@ -7,7 +7,9 @@ import { GroupProfileModal } from './GroupProfileModal';
 import { DeleteConfirmModal } from './DeleteConfirmModal';
 import { AiImportModal } from './AiImportModal';
 import { formatGroupScheduleDisplay, getDayNumber } from '../utils/scheduleUtils';
+import { buildWhatsAppUrl } from '../utils/phoneUtils';
 import { DEFAULT_OFFLINE_AVATAR } from '../data/avatarPresets';
+import { AvatarImage } from './AvatarImage';
 
 export const StudentsView: React.FC = () => {
   const { 
@@ -66,6 +68,50 @@ export const StudentsView: React.FC = () => {
   const activeGroups = groups.filter(g => g.status !== 'archived');
   const archivedGroups = groups.filter(g => g.status === 'archived');
 
+  const [studentSortBy, setStudentSortBy] = useState<'name' | 'attendance' | 'homework' | 'dictation' | 'exam'>('name');
+
+  const getStudentStats = (student: Student) => {
+    // completed lessons where student is part of the group, or is the individual student
+    const studentLessons = lessons.filter(l => 
+      l.status === 'completed' && l.report && 
+      (l.groupId === student.groupId || l.studentId === student.id || l.studentName?.trim().toLowerCase() === student.name.trim().toLowerCase())
+    );
+
+    const totalLessons = studentLessons.length;
+    if (totalLessons === 0) {
+      return { attendanceRate: 0, homeworkRate: 0, avgDictation: 0, avgExam: 0 };
+    }
+
+    // Attendance rate
+    const presentCount = studentLessons.filter(l => {
+      const att = l.report?.studentAttendance?.[student.id] || l.report?.attendanceStatus || 'present';
+      return att === 'present' || att === 'late';
+    }).length;
+    const attendanceRate = (presentCount / totalLessons) * 100;
+
+    // Homework completion rate
+    const homeworkDoneCount = studentLessons.filter(l => l.report?.studentHomeworkDone?.[student.id] === 'yes').length;
+    const homeworkRate = (homeworkDoneCount / totalLessons) * 100;
+
+    // Avg Dictation score
+    const dictationGrades = studentLessons
+      .map(l => l.report?.studentDictationGrade?.[student.id])
+      .filter(g => g !== undefined) as number[];
+    const avgDictation = dictationGrades.length > 0 
+      ? dictationGrades.reduce((sum, g) => sum + g, 0) / dictationGrades.length 
+      : 0;
+
+    // Avg Exam score
+    const examGrades = studentLessons
+      .map(l => l.report?.studentExamGrade?.[student.id])
+      .filter(g => g !== undefined) as number[];
+    const avgExam = examGrades.length > 0 
+      ? examGrades.reduce((sum, g) => sum + g, 0) / examGrades.length 
+      : 0;
+
+    return { attendanceRate, homeworkRate, avgDictation, avgExam };
+  };
+
   const filteredStudents = activeStudents.filter(s => {
     const studentGroup = groups.find(g => g.id === s.groupId);
     const term = searchTerm.toLowerCase();
@@ -78,6 +124,28 @@ export const StudentsView: React.FC = () => {
                           (studentGroup && studentGroup.name.toLowerCase().includes(term));
     const matchesGrade = selectedGrade === 'all' || s.grade === selectedGrade;
     return matchesSearch && matchesGrade;
+  });
+
+  const sortedStudents = [...filteredStudents].sort((a, b) => {
+    if (studentSortBy === 'name') {
+      return a.name.localeCompare(b.name);
+    }
+    const statsA = getStudentStats(a);
+    const statsB = getStudentStats(b);
+
+    if (studentSortBy === 'attendance') {
+      return statsB.attendanceRate - statsA.attendanceRate;
+    }
+    if (studentSortBy === 'homework') {
+      return statsB.homeworkRate - statsA.homeworkRate;
+    }
+    if (studentSortBy === 'dictation') {
+      return statsB.avgDictation - statsA.avgDictation;
+    }
+    if (studentSortBy === 'exam') {
+      return statsB.avgExam - statsA.avgExam;
+    }
+    return 0;
   });
 
   const filteredGroups = activeGroups.filter(g => {
@@ -176,8 +244,8 @@ export const StudentsView: React.FC = () => {
       </div>
 
       {/* Search & Grade Filter Bar */}
-      <div className="flex items-center gap-2">
-        <div className="relative flex-1">
+      <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+        <div className="relative flex-1 w-full">
           <Search className="w-4 h-4 absolute left-3 top-3 text-text-muted/70" />
           <input
             type="text"
@@ -196,30 +264,47 @@ export const StudentsView: React.FC = () => {
           )}
         </div>
 
-        <select
-          value={selectedGrade}
-          onChange={(e) => setSelectedGrade(e.target.value)}
-          className="px-3 py-2 bg-surface border border-surface-border rounded-xl text-xs font-bold text-text-main focus:outline-none focus:ring-2 focus:ring-primary cursor-pointer"
-        >
-          <option value="all">{t('students_all_grades')}</option>
-          {Array.from({ length: 12 }, (_, i) => `Grade ${i + 1}`).map(g => (
-            <option key={g} value={g}>{g}</option>
-          ))}
-        </select>
-
-        {(searchTerm || selectedGrade !== 'all' || selectedGroupDay !== 'all') && (
-          <button
-            onClick={() => {
-              setSearchTerm('');
-              setSelectedGrade('all');
-              setSelectedGroupDay('all');
-            }}
-            className="px-2.5 py-2 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-text-main rounded-xl text-xs font-bold transition-all cursor-pointer shrink-0"
-            title={t('students_reset_filters')}
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          <select
+            value={selectedGrade}
+            onChange={(e) => setSelectedGrade(e.target.value)}
+            className="flex-1 sm:flex-initial px-3 py-2 bg-surface border border-surface-border rounded-xl text-xs font-bold text-text-main focus:outline-none focus:ring-2 focus:ring-primary cursor-pointer"
           >
-            {t('students_reset_filters')}
-          </button>
-        )}
+            <option value="all">{t('students_all_grades')}</option>
+            {Array.from({ length: 12 }, (_, i) => `Grade ${i + 1}`).map(g => (
+              <option key={g} value={g}>{g}</option>
+            ))}
+          </select>
+
+          {activeSegment === 'students' && (
+            <select
+              value={studentSortBy}
+              onChange={(e) => setStudentSortBy(e.target.value as any)}
+              className="flex-1 sm:flex-initial px-3 py-2 bg-surface border border-surface-border rounded-xl text-xs font-bold text-text-main focus:outline-none focus:ring-2 focus:ring-primary cursor-pointer"
+            >
+              <option value="name">ترتيب: أبجدي (Name)</option>
+              <option value="attendance">ترتيب: نسبة الحضور (Attendance)</option>
+              <option value="homework">ترتيب: أداء الواجب (Homework)</option>
+              <option value="dictation">ترتيب: درجات الإملاء (Dictation)</option>
+              <option value="exam">ترتيب: درجات الاختبارات (Exams)</option>
+            </select>
+          )}
+
+          {(searchTerm || selectedGrade !== 'all' || selectedGroupDay !== 'all') && (
+            <button
+              onClick={() => {
+                setSearchTerm('');
+                setSelectedGrade('all');
+                setSelectedGroupDay('all');
+                setStudentSortBy('name');
+              }}
+              className="px-2.5 py-2 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-text-main rounded-xl text-xs font-bold transition-all cursor-pointer shrink-0"
+              title={t('students_reset_filters')}
+            >
+              {t('students_reset_filters')}
+            </button>
+          )}
+        </div>
       </div>
 
       {/* DAILY FILTER FOR GROUPS */}
@@ -247,7 +332,7 @@ export const StudentsView: React.FC = () => {
       {/* STUDENTS LIST SEGMENT */}
       {activeSegment === 'students' && (
         <div className="space-y-2.5">
-          {filteredStudents.length === 0 ? (
+          {sortedStudents.length === 0 ? (
             <div className="bg-surface border border-surface-border rounded-lg p-5 text-center space-y-2">
               <p className="text-sm font-bold text-text-main">
                 {_t('لا يوجد طلاب حتى الآن', 'No students yet.', 'Noch keine Schüler vorhanden')}
@@ -265,7 +350,7 @@ export const StudentsView: React.FC = () => {
               </button>
             </div>
           ) : (
-            filteredStudents.map((student, idx) => {
+            sortedStudents.map((student, idx) => {
               const studentGroup = groups.find(g => g.id === student.groupId);
               const cleanParentPhone = student.parentPhone.replace(/[^0-9+]/g, '');
 
@@ -279,11 +364,9 @@ export const StudentsView: React.FC = () => {
                   }}
                 >
                   <div className="flex items-center gap-3.5 min-w-0">
-                    <img
-                      src={student.avatarUrl || DEFAULT_OFFLINE_AVATAR}
-                      onError={(e) => { e.currentTarget.src = DEFAULT_OFFLINE_AVATAR; }}
-                      alt={student.name}
-                      className="w-11 h-11 rounded-lg border border-slate-100 dark:border-surface-border object-cover shrink-0"
+                    <AvatarImage
+                      name={student.name}
+                      className="w-11 h-11 rounded-xl text-sm font-black border border-slate-100 dark:border-surface-border shrink-0"
                     />
 
                     <div className="min-w-0 space-y-0.5">
@@ -326,7 +409,7 @@ export const StudentsView: React.FC = () => {
                         <>
                           <div className="fixed inset-0 z-20" onClick={() => setActiveMenuId(null)} />
                           
-                          <div className="absolute right-0 mt-1 w-52 bg-surface border border-surface-border/80 dark:border-surface-border/80 rounded-xl shadow-xl z-30 py-1.5 animate-scale-up text-left rtl:text-right">
+                          <div className="absolute ltr:right-0 ltr:left-auto rtl:left-0 rtl:right-auto mt-1 w-52 bg-surface border border-surface-border/80 dark:border-surface-border/80 rounded-xl shadow-xl z-30 py-1.5 animate-scale-up text-left rtl:text-right">
                             {/* View Profile link */}
                             <button
                               type="button"
@@ -387,7 +470,7 @@ export const StudentsView: React.FC = () => {
 
                             {/* Send WhatsApp message */}
                             <a
-                              href={`https://wa.me/${cleanParentPhone}`}
+                              href={buildWhatsAppUrl(student.parentPhone)}
                               target="_blank"
                               rel="noreferrer"
                               onClick={() => setActiveMenuId(null)}
@@ -522,7 +605,7 @@ export const StudentsView: React.FC = () => {
                       <>
                         <div className="fixed inset-0 z-20" onClick={() => setActiveMenuId(null)} />
                         
-                        <div className="absolute right-0 mt-1 w-48 bg-surface border border-surface-border/80 dark:border-surface-border/80 rounded-xl shadow-xl z-30 py-1.5 animate-scale-up text-left rtl:text-right">
+                        <div className="absolute ltr:right-0 ltr:left-auto rtl:left-0 rtl:right-auto mt-1 w-48 bg-surface border border-surface-border/80 dark:border-surface-border/80 rounded-xl shadow-xl z-30 py-1.5 animate-scale-up text-left rtl:text-right">
                           <button
                             type="button"
                             onClick={() => {
@@ -592,10 +675,9 @@ export const StudentsView: React.FC = () => {
                   className="bg-surface border border-surface-border/90 dark:border-surface-border rounded-lg p-3.5 flex items-center justify-between gap-3 opacity-80 hover:opacity-100 transition-all"
                 >
                   <div className="flex items-center gap-3">
-                    <img
-                      src={student.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=150'}
-                      alt={student.name}
-                      className="w-10 h-10 rounded-xl object-cover grayscale"
+                    <AvatarImage
+                      name={student.name}
+                      className="w-10 h-10 rounded-xl font-black text-xs opacity-70"
                     />
                     <div>
                       <div className="flex items-center gap-2">

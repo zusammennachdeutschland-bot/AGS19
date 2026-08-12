@@ -26,6 +26,7 @@ export const GroupProfileModal: React.FC<GroupProfileModalProps> = ({ group, onC
   const [meetLink, setMeetLink] = useState(group.meetLink || profile.defaultMeetLink);
   const [address, setAddress] = useState(group.address || 'Hauptstraße 45, Cairo');
   const [lessonDurationMinutes, setLessonDurationMinutes] = useState(group.lessonDurationMinutes || 60);
+  const [whatsAppGroupLink, setWhatsAppGroupLink] = useState(group.whatsAppGroupLink || '');
   const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
 
   const groupStudents = students.filter(s => s.groupId === group.id);
@@ -68,7 +69,8 @@ export const GroupProfileModal: React.FC<GroupProfileModalProps> = ({ group, onC
       zoomLink: type === 'online' ? zoomLink : undefined,
       meetLink: type === 'online' ? meetLink : undefined,
       address: type === 'offline' ? address : undefined,
-      lessonDurationMinutes: Number(lessonDurationMinutes)
+      lessonDurationMinutes: Number(lessonDurationMinutes),
+      whatsAppGroupLink: whatsAppGroupLink.trim()
     };
 
     updateGroup(group.id, updatedGroupData);
@@ -315,6 +317,24 @@ export const GroupProfileModal: React.FC<GroupProfileModalProps> = ({ group, onC
               />
             </div>
           )}
+
+          {/* WhatsApp Group Link */}
+          <div className="space-y-1.5 p-3.5 bg-emerald-50/50 dark:bg-emerald-950/10 border border-emerald-100 dark:border-emerald-950/30 rounded-xl">
+            <label className="text-xs font-black text-emerald-700 dark:text-emerald-400 flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              <span>رابط مجموعة الواتساب للمجموعة (WhatsApp Group Link)</span>
+            </label>
+            <input
+              type="url"
+              value={whatsAppGroupLink}
+              onChange={(e) => setWhatsAppGroupLink(e.target.value)}
+              placeholder="https://chat.whatsapp.com/..."
+              className="w-full px-3 py-2 bg-surface border border-emerald-200 focus:border-emerald-500 dark:border-emerald-900/60 rounded-xl text-xs font-mono focus:outline-none focus:ring-1 focus:ring-emerald-500 text-emerald-800 dark:text-emerald-200"
+            />
+            <p className="text-[10px] text-emerald-600/80 dark:text-emerald-400/80 font-bold">
+              يستخدم لإرسال التقارير المجمعة لكل أولياء الأمور بنقرة واحدة داخل الجروب.
+            </p>
+          </div>
 
           {/* Students in group */}
           <div className="space-y-2 pt-2 border-t border-slate-100 dark:border-surface-border">

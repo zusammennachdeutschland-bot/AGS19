@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { useApp } from '../context/AppContext';
 import { Clock, Calendar, ChevronRight, CheckCircle2 } from 'lucide-react';
 import { getFreePeriodsForDate, getBookableSlots, formatTimeDisplay } from '../utils/timeUtils';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'motion/react';
 
 type FilterType = 'today' | 'tomorrow' | 'this_week' | 'specific_day';
 type DisplayMode = 'periods' | 'slots';

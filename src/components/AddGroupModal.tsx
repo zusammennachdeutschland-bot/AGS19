@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { PREDEFINED_GRADES } from '../data/initialData';
 import { GradeLevel, LessonType, PaymentCycle } from '../types';
+import { CARTOON_AVATARS } from '../data/avatarPresets';
 import { X, Users, Video, MapPin, DollarSign, Calendar, Bot, Sparkles } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { AiImportModal } from './AiImportModal';
@@ -11,7 +12,7 @@ interface AddGroupModalProps {
 }
 
 export const AddGroupModal: React.FC<AddGroupModalProps> = ({ onClose }) => {
-  const { addGroup, generateGroupScheduleLessons, profile, language, t } = useApp();
+  const { addGroup, addStudent, generateGroupScheduleLessons, profile, language, t } = useApp();
 
   // Helper for inline translations
   const _t = (ar: string, en: string, de?: string) => {
@@ -38,6 +39,15 @@ export const AddGroupModal: React.FC<AddGroupModalProps> = ({ onClose }) => {
   const [address, setAddress] = useState('Hauptstraße 45, Modern Education Center, Cairo');
   const [color, setColor] = useState('#3B82F6');
   const [lessonDurationMinutes, setLessonDurationMinutes] = useState(60);
+  const [whatsAppGroupLink, setWhatsAppGroupLink] = useState('');
+
+  // 1-to-1 Student Creation Option States
+  const [createStudentWithGroup, setCreateStudentWithGroup] = useState(false);
+  const [studentName, setStudentName] = useState('');
+  const [studentParentName, setStudentParentName] = useState('');
+  const [studentParentPhone, setStudentParentPhone] = useState('');
+  const [studentGrade, setStudentGrade] = useState<GradeLevel>('Grade 9');
+  const [studentNotes, setStudentNotes] = useState('');
 
   const toggleScheduleDay = (day: string) => {
     setScheduleDays(prev => {
@@ -55,6 +65,10 @@ export const AddGroupModal: React.FC<AddGroupModalProps> = ({ onClose }) => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name) return;
+    if (createStudentWithGroup && !studentName.trim()) {
+      alert(_t('يرجى إدخال اسم الطالب', 'Please enter student name', 'Bitte Schülernamen eingeben'));
+      return;
+    }
 
     const calcMonthlyPrice = paymentCycle === 'per_lesson' 
       ? Number(pricePerSession) * (sessionCount || 8)
@@ -84,8 +98,20 @@ export const AddGroupModal: React.FC<AddGroupModalProps> = ({ onClose }) => {
       address: type === 'offline' ? address : undefined,
       coordinates: type === 'offline' ? { lat: 30.0444, lng: 31.2357 } : undefined,
       color,
-      lessonDurationMinutes: Number(lessonDurationMinutes)
+      lessonDurationMinutes: Number(lessonDurationMinutes),
+      whatsAppGroupLink: whatsAppGroupLink.trim()
     });
+
+    if (createStudentWithGroup && studentName.trim()) {
+      addStudent({
+        name: studentName.trim(),
+        groupId: createdGroup.id,
+        grade: studentGrade || grade,
+        parentName: studentParentName.trim(),
+        parentPhone: studentParentPhone.trim(),
+        notes: studentNotes.trim()
+      });
+    }
 
     if (autoAddCalendar && scheduleDays.length > 0) {
       generateGroupScheduleLessons(createdGroup.id, scheduleDays, scheduleTime, 4, dayTimes, createdGroup);
@@ -96,8 +122,14 @@ export const AddGroupModal: React.FC<AddGroupModalProps> = ({ onClose }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-end sm:items-center justify-center pt-[max(24px,env(safe-area-inset-top,24px))] p-0 sm:p-4 pb-0">
-      <div className="bg-surface border border-surface-border rounded-t-[28px] sm:rounded-xl pb-safe-bottom sm:pb-0 mb-0 w-full max-w-md shadow-2xl overflow-hidden animate-scale-up">
+    <div 
+      onClick={onClose} 
+      className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-end sm:items-center justify-center pt-[max(24px,env(safe-area-inset-top,24px))] p-0 sm:p-4 pb-0"
+    >
+      <div 
+        onClick={(e) => e.stopPropagation()} 
+        className="bg-surface border border-surface-border rounded-t-[28px] sm:rounded-xl pb-safe-bottom sm:pb-0 mb-0 w-full max-w-md shadow-2xl overflow-hidden animate-scale-up"
+      >
         <div className="w-12 h-1.5 bg-slate-200 dark:bg-slate-800 rounded-full mx-auto mt-3 mb-1 sm:hidden shrink-0" />
         {/* Header */}
         <div className="bg-gradient-to-r from-primary to-primary-hover p-5 text-white flex items-center justify-between">
@@ -467,12 +499,130 @@ export const AddGroupModal: React.FC<AddGroupModalProps> = ({ onClose }) => {
             </div>
           )}
 
+          {/* WhatsApp Group Link */}
+          <div className="space-y-1.5 p-3.5 bg-emerald-50/50 dark:bg-emerald-950/10 border border-emerald-100 dark:border-emerald-950/30 rounded-xl">
+            <label className="text-xs font-black text-emerald-700 dark:text-emerald-400 flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              <span>{_t('رابط مجموعة الواتساب (للمجموعات)', 'WhatsApp Group Link (For Multi-student Groups)', 'WhatsApp-Gruppenlink')}</span>
+            </label>
+            <input
+              type="url"
+              value={whatsAppGroupLink}
+              onChange={(e) => setWhatsAppGroupLink(e.target.value)}
+              placeholder="https://chat.whatsapp.com/..."
+              className="w-full px-3 py-2 bg-surface border border-emerald-200 focus:border-emerald-500 dark:border-emerald-900/60 rounded-xl text-xs font-mono focus:outline-none focus:ring-1 focus:ring-emerald-500 text-emerald-800 dark:text-emerald-200"
+            />
+            <p className="text-[10px] text-emerald-600/80 dark:text-emerald-400/80 font-bold">
+              {_t('يستخدم لإرسال التقارير المجمعة لكل أولياء الأمور بنقرة واحدة.', 'Used to send bulk reports to all parents with one click.', 'Wird verwendet, um Berichte an alle Eltern mit einem Klick zu senden.')}
+            </p>
+          </div>
+
+          {/* One-to-One Student Creation Toggle & Section */}
+          <div className="pt-3 border-t border-surface-border space-y-3">
+            <label className="flex items-center gap-2.5 p-3.5 bg-primary-soft/40 dark:bg-primary-soft/20 border border-primary-border/60 rounded-xl cursor-pointer hover:bg-primary-soft/60 transition-all">
+              <input
+                type="checkbox"
+                checked={createStudentWithGroup}
+                onChange={(e) => setCreateStudentWithGroup(e.target.checked)}
+                className="w-4 h-4 text-primary rounded border-surface-border focus:ring-primary accent-primary cursor-pointer"
+              />
+              <div className="flex items-center gap-2">
+                <Users className="w-4 h-4 text-primary" />
+                <span className="text-xs font-bold text-text-main">
+                  {_t('إنشاء طالب مع هذه المجموعة (درس خصوصي 1 لـ 1)', 'Create a Student for This Group / Private Student (1-to-1)', 'Schüler für diese Gruppe erstellen (Privatunterricht 1:1)')}
+                </span>
+              </div>
+            </label>
+
+            {createStudentWithGroup && (
+              <div className="p-4 bg-surface-hover/60 border border-surface-border rounded-xl space-y-3 animate-fade-in">
+                <h4 className="text-xs font-black text-primary flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5" />
+                  <span>{_t('بيانات الطالب الأولية', 'Initial Student Information', 'Schülerinformationen')}</span>
+                </h4>
+
+                {/* Student Name */}
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-text-main">
+                    {_t('اسم الطالب *', 'Student Name *', 'Schüler Name *')}
+                  </label>
+                  <input
+                    type="text"
+                    value={studentName}
+                    onChange={(e) => setStudentName(e.target.value)}
+                    placeholder={_t('مثال: أحمد علي', 'e.g. Ahmed Ali', 'z. B. Ahmed Ali')}
+                    className="w-full px-3 py-2 bg-surface border border-surface-border rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-primary"
+                  />
+                </div>
+
+                {/* Parent Name */}
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-text-main">
+                    {_t('اسم ولي الأمر', 'Parent Name', 'Name des Erziehungsberechtigten')}
+                  </label>
+                  <input
+                    type="text"
+                    value={studentParentName}
+                    onChange={(e) => setStudentParentName(e.target.value)}
+                    placeholder={_t('مثال: علي محمود', 'e.g. Ali Mahmoud', 'z. B. Ali Mahmoud')}
+                    className="w-full px-3 py-2 bg-surface border border-surface-border rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-primary"
+                  />
+                </div>
+
+                {/* Parent Phone */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-text-main">
+                      {_t('هاتف ولي الأمر', 'Parent Phone', 'Telefon Eltern')}
+                    </label>
+                    <input
+                      type="tel"
+                      value={studentParentPhone}
+                      onChange={(e) => setStudentParentPhone(e.target.value)}
+                      placeholder="+20 123 456 789"
+                      className="w-full px-3 py-2 bg-surface border border-surface-border rounded-xl text-xs font-mono"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-text-main">
+                      {_t('المرحلة الدراسية', 'Grade', 'Klassenstufe')}
+                    </label>
+                    <select
+                      value={studentGrade}
+                      onChange={(e) => setStudentGrade(e.target.value as GradeLevel)}
+                      className="w-full px-3 py-2 bg-surface border border-surface-border rounded-xl text-xs font-bold"
+                    >
+                      {PREDEFINED_GRADES.map(g => (
+                        <option key={g} value={g}>{g}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                {/* Notes */}
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-text-main">
+                    {_t('ملاحظات الطالب', 'Student Notes', 'Notizen')}
+                  </label>
+                  <textarea
+                    rows={2}
+                    value={studentNotes}
+                    onChange={(e) => setStudentNotes(e.target.value)}
+                    placeholder={_t('ملاحظات إضافية حول الطالب...', 'Additional student notes...', 'Besondere Schwerpunkte...')}
+                    className="w-full px-3 py-2 bg-surface border border-surface-border rounded-xl text-xs"
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+
           {/* Submit */}
           <button
             type="submit"
             className="w-full bg-primary hover:bg-primary-hover active:scale-95 text-white font-bold text-xs py-3 rounded-lg shadow-md transition-all cursor-pointer"
           >
-            Gruppe Speichern (Save Group)
+            {_t('حفظ المجموعة والطالب معاً', 'Save Group & Student Together', 'Gruppe & Schüler gemeinsam speichern')}
           </button>
         </form>
       </div>

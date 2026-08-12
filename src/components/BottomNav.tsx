@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
-import { Home, Calendar, Users, MoreHorizontal, Wallet, BarChart2, Settings, Zap, History, Play, Clock, Smartphone } from 'lucide-react';
+import { Home, Calendar, Users, MoreHorizontal, Wallet, BarChart2, Settings, Zap, History, Play, Clock } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 export const BottomNav: React.FC = () => {
@@ -9,18 +9,20 @@ export const BottomNav: React.FC = () => {
     setActiveTab, 
     setIsAddQuickLessonModalOpen, 
     setIsStartLessonNowModalOpen, 
-    t 
+    t,
+    language
   } = useApp();
   
   const [showMoreMenu, setShowMoreMenu] = useState(false);
   const [showQuickMenu, setShowQuickMenu] = useState(false);
 
+  const isRtl = language === 'ar' || (typeof document !== 'undefined' && document.documentElement.dir === 'rtl');
+
   // Helper to determine if "More" sub-tabs are active
   const isHistoryActive = activeTab === 'history';
   const isReportsActive = activeTab === 'reports';
   const isSettingsActive = activeTab === 'settings';
-  const isWidgetsActive = activeTab === 'widgets';
-  const isMoreTabActive = isHistoryActive || isReportsActive || isSettingsActive || isWidgetsActive;
+  const isMoreTabActive = isHistoryActive || isReportsActive || isSettingsActive;
 
   // Define primary tabs
   const leftTabs = [
@@ -38,7 +40,6 @@ export const BottomNav: React.FC = () => {
     if (isHistoryActive) return { label: t('nav_history') || 'Sitzungen', icon: History, colorClass: 'text-primary' };
     if (isReportsActive) return { label: t('nav_reports') || 'Berichte', icon: BarChart2, colorClass: 'text-primary' };
     if (isSettingsActive) return { label: t('nav_settings') || 'Einstellungen', icon: Settings, colorClass: 'text-primary' };
-    if (isWidgetsActive) return { label: 'Widgets', icon: Smartphone, colorClass: 'text-primary' };
     return { label: t('nav_more') || 'Mehr', icon: MoreHorizontal, colorClass: 'text-text-muted/70' };
   };
 
@@ -138,22 +139,22 @@ export const BottomNav: React.FC = () => {
                   animate={{ opacity: 1, scale: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.9, y: 15 }}
                   transition={{ type: 'spring', stiffness: 450, damping: 25 }}
-                  className="absolute bottom-16 w-56 bg-surface/95 dark:bg-background/95 backdrop-blur-xl border border-surface-border/40 dark:border-surface-border/60 rounded-[20px] shadow-xl p-1.5 space-y-1 z-50 pointer-events-auto"
+                  className="absolute bottom-16 left-1/2 -translate-x-1/2 w-60 bg-surface/95 dark:bg-background/95 backdrop-blur-xl border border-surface-border/40 dark:border-surface-border/60 rounded-[20px] shadow-xl p-1.5 space-y-1 z-50 pointer-events-auto origin-bottom"
                 >
                   <button
                     onClick={() => {
                       setIsAddQuickLessonModalOpen(true);
                       setShowQuickMenu(false);
                     }}
-                    className="w-full text-left flex items-start gap-2.5 px-3 py-2.5 rounded-xl hover:bg-background dark:hover:bg-slate-900 transition-colors cursor-pointer"
+                    className="w-full text-start flex items-start gap-2.5 px-3 py-2.5 rounded-xl hover:bg-background dark:hover:bg-slate-900 transition-colors cursor-pointer"
                   >
                     <Zap className="w-4 h-4 text-primary mt-0.5 shrink-0" />
-                    <div>
+                    <div className="min-w-0">
                       <span className="block text-xs font-black text-slate-900 dark:text-slate-100">
                         {t('quick_lesson_modal_title') || 'Schnell-Eintrag'}
                       </span>
-                      <span className="block text-[9px] text-text-muted/70 font-medium">
-                        Schnell eine Lektion planen
+                      <span className="block text-[9px] text-text-muted/70 font-medium truncate">
+                        {language === 'ar' ? 'جدولة حصة بسرعة' : 'Schnell eine Lektion planen'}
                       </span>
                     </div>
                   </button>
@@ -163,15 +164,15 @@ export const BottomNav: React.FC = () => {
                       setIsStartLessonNowModalOpen(true);
                       setShowQuickMenu(false);
                     }}
-                    className="w-full text-left flex items-start gap-2.5 px-3 py-2.5 rounded-xl hover:bg-background dark:hover:bg-slate-900 transition-colors cursor-pointer"
+                    className="w-full text-start flex items-start gap-2.5 px-3 py-2.5 rounded-xl hover:bg-background dark:hover:bg-slate-900 transition-colors cursor-pointer"
                   >
                     <Play className="w-4 h-4 text-violet-500 mt-0.5 shrink-0 fill-violet-500/15" />
-                    <div>
+                    <div className="min-w-0">
                       <span className="block text-xs font-black text-slate-900 dark:text-slate-100">
                         {t('sofort_title') || 'Start Lesson Now (Anytime)'}
                       </span>
-                      <span className="block text-[9px] text-text-muted/70 font-medium">
-                        Sofort eine Live-Stoppuhr starten
+                      <span className="block text-[9px] text-text-muted/70 font-medium truncate">
+                        {language === 'ar' ? 'تشغيل مؤقت فوري للحصة' : 'Sofort eine Live-Stoppuhr starten'}
                       </span>
                     </div>
                   </button>
@@ -285,63 +286,52 @@ export const BottomNav: React.FC = () => {
                     animate={{ opacity: 1, scale: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.9, y: 15 }}
                     transition={{ type: 'spring', stiffness: 450, damping: 25 }}
-                    className="absolute bottom-14 right-0 w-44 bg-surface/95 dark:bg-background/95 backdrop-blur-xl border border-surface-border/40 dark:border-surface-border/60 rounded-[20px] shadow-xl p-1.5 space-y-1.5 z-50 origin-bottom-right"
+                    className={`absolute bottom-14 ${isRtl ? 'left-0 origin-bottom-left' : 'right-0 origin-bottom-right'} w-48 sm:w-52 bg-surface/95 dark:bg-background/95 backdrop-blur-xl border border-surface-border/40 dark:border-surface-border/60 rounded-[20px] shadow-xl p-1.5 space-y-1.5 z-50`}
                   >
                     <button
-                      onClick={() => handleTabClick('widgets')}
-                      className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-bold transition-colors cursor-pointer ${
-                        activeTab === 'widgets'
-                          ? 'bg-primary-soft text-primary dark:bg-primary-soft dark:text-primary'
-                          : 'hover:bg-background dark:hover:bg-slate-900 text-text-main'
-                      }`}
-                    >
-                      <Smartphone className="w-4 h-4 text-primary" />
-                      <span>Android Widgets</span>
-                    </button>
-                    <button
                       onClick={() => handleTabClick('freeTime')}
-                      className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-bold transition-colors cursor-pointer ${
+                      className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-bold transition-colors cursor-pointer text-start ${
                         activeTab === 'freeTime'
                           ? 'bg-primary-soft text-primary dark:bg-primary-soft dark:text-primary'
                           : 'hover:bg-background dark:hover:bg-slate-900 text-text-main'
                       }`}
                     >
-                      <Clock className="w-4 h-4 text-primary" />
+                      <Clock className="w-4 h-4 text-primary shrink-0" />
                       <span>{t('nav_free_time') || 'Free Time'}</span>
                     </button>
                     <button
                       onClick={() => handleTabClick('history')}
-                      className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-bold transition-colors cursor-pointer ${
+                      className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-bold transition-colors cursor-pointer text-start ${
                         activeTab === 'history'
                           ? 'bg-primary-soft text-primary dark:bg-primary-soft dark:text-primary'
                           : 'hover:bg-background dark:hover:bg-slate-900 text-text-main'
                       }`}
                     >
-                      <History className="w-4 h-4 text-primary" />
+                      <History className="w-4 h-4 text-primary shrink-0" />
                       <span>{t('nav_history') || 'Sitzungen'}</span>
                     </button>
 
                     <button
                       onClick={() => handleTabClick('reports')}
-                      className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-bold transition-colors cursor-pointer ${
+                      className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-bold transition-colors cursor-pointer text-start ${
                         activeTab === 'reports'
                           ? 'bg-primary-soft text-primary dark:bg-primary-soft dark:text-primary'
                           : 'hover:bg-background dark:hover:bg-slate-900 text-text-main'
                       }`}
                     >
-                      <BarChart2 className="w-4 h-4 text-primary" />
+                      <BarChart2 className="w-4 h-4 text-primary shrink-0" />
                       <span>{t('nav_reports') || 'Berichte'}</span>
                     </button>
 
                     <button
                       onClick={() => handleTabClick('settings')}
-                      className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-bold transition-colors cursor-pointer ${
+                      className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-bold transition-colors cursor-pointer text-start ${
                         activeTab === 'settings'
                           ? 'bg-primary-soft text-primary dark:bg-primary-soft dark:text-primary'
                           : 'hover:bg-background dark:hover:bg-slate-900 text-text-main'
                       }`}
                     >
-                      <Settings className="w-4 h-4 text-primary" />
+                      <Settings className="w-4 h-4 text-primary shrink-0" />
                       <span>{t('nav_settings') || 'Einstellungen'}</span>
                     </button>
                   </motion.div>

@@ -115,7 +115,9 @@ export const AiImportModal: React.FC<AiImportModalProps> = ({
     });
 
     // 3. Auto-generate schedule lessons with independent day times
-    generateGroupScheduleLessons(newGroup.id, group.days, group.time, 4, group.dayTimes, newGroup);
+    setTimeout(() => {
+      generateGroupScheduleLessons(newGroup.id, group.days, group.time, 4, group.dayTimes, newGroup);
+    }, 250);
 
     setImportedGroup(newGroup);
     setImportedCount(students.length);
@@ -135,8 +137,14 @@ export const AiImportModal: React.FC<AiImportModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-xs flex items-end sm:items-center justify-center sm: pt-[max(24px,env(safe-area-inset-top,24px))] overflow-y-auto font-sans p-0 sm:p-4 pb-0">
-      <div className="bg-surface border border-surface-border rounded-t-[28px] sm:rounded-2xl pb-safe-bottom sm:pb-0 mb-0 w-full max-w-2xl shadow-2xl overflow-hidden animate-scale-up flex flex-col max-h-[90vh]">
+    <div 
+      onClick={handleClose} 
+      className="fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-xs flex items-end sm:items-center justify-center sm: pt-[max(24px,env(safe-area-inset-top,24px))] overflow-y-auto font-sans p-0 sm:p-4 pb-0"
+    >
+      <div 
+        onClick={(e) => e.stopPropagation()} 
+        className="bg-surface border border-surface-border rounded-t-[28px] sm:rounded-2xl pb-safe-bottom sm:pb-0 mb-0 w-full max-w-2xl shadow-2xl overflow-hidden animate-scale-up flex flex-col max-h-[90vh]"
+      >
         <div className="w-12 h-1.5 bg-slate-200 dark:bg-slate-800 rounded-full mx-auto mt-3 mb-1 sm:hidden shrink-0" />
         
         {/* Header */}

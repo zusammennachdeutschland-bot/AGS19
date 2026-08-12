@@ -5,12 +5,28 @@ import {
   Clock, Calendar, DollarSign, ArrowUpRight, AlertTriangle, Filter, Check
 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart as RePieChart, Pie, Cell } from 'recharts';
-import { Lesson } from '../types';
+import { Lesson, PaymentRecord } from '../types';
 import { calculateOverallAttendance } from '../utils/lessonUtils';
 import confetti from 'canvas-confetti';
 
 export const ReportsView: React.FC = () => {
-  const { lessons, updateLesson, profile, openLessonControl, t, groups, students, payments } = useApp();
+  const { lessons: activeLessons, payments: activePayments, getHistoricalLessons, getHistoricalPayments, updateLesson, profile, openLessonControl, t, groups, students } = useApp();
+
+  const [lessons, setLessons] = useState<Lesson[]>(activeLessons);
+  const [payments, setPayments] = useState<PaymentRecord[]>(activePayments);
+  const [loadingHistory, setLoadingHistory] = useState(true);
+
+  React.useEffect(() => {
+    let isMounted = true;
+    Promise.all([getHistoricalLessons(), getHistoricalPayments()]).then(([histLessons, histPayments]) => {
+      if (isMounted) {
+        if (histLessons && histLessons.length > 0) setLessons(histLessons);
+        if (histPayments && histPayments.length > 0) setPayments(histPayments);
+        setLoadingHistory(false);
+      }
+    });
+    return () => { isMounted = false; };
+  }, [getHistoricalLessons, getHistoricalPayments]);
   const [showDebugModal, setShowDebugModal] = useState(false);
 
   const [activeFilter, setActiveFilter] = useState<'all' | 'this_week' | 'paid' | 'unpaid'>('all');
@@ -52,15 +68,17 @@ export const ReportsView: React.FC = () => {
   // Filter lessons
   const today = new Date();
   const currentWeekStart = getWeekStart(today);
-  const currentWeekStartStr = currentWeekStart.toISOString().split('T')[0];
+  const getLocalDateStr = (d: Date) => new Date(d.getTime() - (d.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
+
+  const currentWeekStartStr = getLocalDateStr(currentWeekStart);
 
   const filteredLessons = sortedLessons.filter(l => {
     if (activeFilter === 'paid') return l.paymentStatus === 'paid';
     if (activeFilter === 'unpaid') return l.paymentStatus !== 'paid';
     if (activeFilter === 'this_week') {
       const lDate = new Date(l.date);
-      const lWeekStart = getWeekStart(lDate).toISOString().split('T')[0];
-      return lWeekStart === currentWeekStartStr;
+      const lWeekStart = getWeekStart(lDate);
+      return getLocalDateStr(lWeekStart) === currentWeekStartStr;
     }
     return true;
   });
@@ -100,8 +118,8 @@ export const ReportsView: React.FC = () => {
     const wStart = getWeekStart(sampleLessonDate);
     const wEnd = new Date(wStart);
     wEnd.setDate(wStart.getDate() + 6);
-    const wStartStr = wStart.toISOString().split('T')[0];
-    const wEndStr = wEnd.toISOString().split('T')[0];
+    const wStartStr = getLocalDateStr(wStart);
+    const wEndStr = getLocalDateStr(wEnd);
 
     const collected = payments.filter(p => p.status === 'paid').filter(p => {
       const d = (p.paidDate || p.dueDate || '').substring(0, 10);
@@ -284,8 +302,8 @@ export const ReportsView: React.FC = () => {
             const wStart = getWeekStart(sampleLessonDate);
             const wEnd = new Date(wStart);
             wEnd.setDate(wStart.getDate() + 6);
-            const wStartStr = wStart.toISOString().split('T')[0];
-            const wEndStr = wEnd.toISOString().split('T')[0];
+            const wStartStr = getLocalDateStr(wStart);
+            const wEndStr = getLocalDateStr(wEnd);
 
             const weekRevenue = payments.filter(p => p.status === 'paid').filter(p => {
               const d = (p.paidDate || p.dueDate || '').substring(0, 10);

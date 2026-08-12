@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { ParentSummaryModal } from './ParentSummaryModal';
 import { ArabicParentReportModal } from './ArabicParentReportModal';
+import { buildWhatsAppUrl, formatWhatsAppPhone } from '../utils/phoneUtils';
 import confetti from 'canvas-confetti';
 
 export const LessonControlModal: React.FC = () => {
@@ -21,6 +22,7 @@ export const LessonControlModal: React.FC = () => {
     students, 
     profile, 
     groups, 
+    lessons,
     convertQuickLessonToStudent,
     activeLessonSession,
     startActiveLessonTimer,
@@ -47,6 +49,15 @@ export const LessonControlModal: React.FC = () => {
   // Form state for lesson report
   const [attendance, setAttendance] = useState<AttendanceStatus>('present');
   const [studentAttendance, setStudentAttendance] = useState<Record<string, AttendanceStatus>>({});
+  
+  // Brand new Session Report Fields (Unifying lesson & student details)
+  const [lessonWhatWasTaught, setLessonWhatWasTaught] = useState('');
+  const [lessonNextHomework, setLessonNextHomework] = useState('');
+  const [studentHomeworkDone, setStudentHomeworkDone] = useState<Record<string, 'yes' | 'no'>>({});
+  const [studentDictationGrade, setStudentDictationGrade] = useState<Record<string, number>>({});
+  const [studentExamGrade, setStudentExamGrade] = useState<Record<string, number>>({});
+  const [studentNotes, setStudentNotes] = useState<Record<string, string>>({});
+
   const [homeworkStatus, setHomeworkStatus] = useState<HomeworkStatus>('assigned');
   const [homeworkTitle, setHomeworkTitle] = useState('Kapitel 3: Grammatik Übungen');
   const [homeworkDescription, setHomeworkDescription] = useState('Seiten 45-48 im Arbeitsbuch fertigstellen.');
@@ -68,7 +79,10 @@ export const LessonControlModal: React.FC = () => {
   // Initialize report form if selected lesson already has a report
   useEffect(() => {
     if (selectedLesson?.report) {
-      setAttendance(selectedLesson.report.attendanceStatus);
+      setAttendance(selectedLesson.report.attendanceStatus || 'present');
+      setLessonWhatWasTaught(selectedLesson.report.teacherNotes || '');
+      setLessonNextHomework(selectedLesson.report.homeworkDescription || '');
+      
       if (selectedLesson.report.studentAttendance) {
         setStudentAttendance(selectedLesson.report.studentAttendance);
       } else if (selectedLesson.groupId) {
@@ -79,13 +93,38 @@ export const LessonControlModal: React.FC = () => {
         });
         setStudentAttendance(initialAtt);
       }
-      setHomeworkStatus(selectedLesson.report.homeworkStatus);
+
+      if (selectedLesson.report.studentHomeworkDone) {
+        setStudentHomeworkDone(selectedLesson.report.studentHomeworkDone);
+      } else {
+        setStudentHomeworkDone({});
+      }
+
+      if (selectedLesson.report.studentDictationGrade) {
+        setStudentDictationGrade(selectedLesson.report.studentDictationGrade);
+      } else {
+        setStudentDictationGrade({});
+      }
+
+      if (selectedLesson.report.studentExamGrade) {
+        setStudentExamGrade(selectedLesson.report.studentExamGrade);
+      } else {
+        setStudentExamGrade({});
+      }
+
+      if (selectedLesson.report.studentNotes) {
+        setStudentNotes(selectedLesson.report.studentNotes);
+      } else {
+        setStudentNotes({});
+      }
+
+      setHomeworkStatus(selectedLesson.report.homeworkStatus || 'assigned');
       setHomeworkTitle(selectedLesson.report.homeworkTitle || '');
       setHomeworkDescription(selectedLesson.report.homeworkDescription || '');
       setQuizScore(selectedLesson.report.quizScore || 85);
       setExamScore(selectedLesson.report.examScore || 90);
       setParticipationScore(selectedLesson.report.participationScore || 95);
-      setPaymentStatus(selectedLesson.report.paymentStatus);
+      setPaymentStatus(selectedLesson.report.paymentStatus || 'paid');
       setAmountPaid(selectedLesson.report.amountPaid || selectedLesson.amountDue);
       setTeacherNotes(selectedLesson.report.teacherNotes || '');
       setPackageChoice(selectedLesson.totalSessionsInPackage || 4);
@@ -107,6 +146,13 @@ export const LessonControlModal: React.FC = () => {
       setAmountPaid(selectedLesson.amountDue);
       setPaymentStatus(selectedLesson.paymentStatus);
       setPackageChoice(selectedLesson.totalSessionsInPackage || 4);
+      setLessonWhatWasTaught('');
+      setLessonNextHomework('');
+      setStudentHomeworkDone({});
+      setStudentDictationGrade({});
+      setStudentExamGrade({});
+      setStudentNotes({});
+
       if (selectedLesson.groupId) {
         const initialAtt: Record<string, AttendanceStatus> = {};
         const groupSts = students.filter(s => s.groupId === selectedLesson.groupId);
@@ -114,7 +160,17 @@ export const LessonControlModal: React.FC = () => {
           initialAtt[st.id] = 'present';
         });
         setStudentAttendance(initialAtt);
+      } else {
+        // Individual lesson - initialize for single student
+        const targetSt = students.find(s => 
+          (selectedLesson.studentId && s.id === selectedLesson.studentId) || 
+          (selectedLesson.studentName && s.name.trim().toLowerCase() === selectedLesson.studentName.trim().toLowerCase())
+        );
+        if (targetSt) {
+          setStudentAttendance({ [targetSt.id]: 'present' });
+        }
       }
+
       if (selectedLesson.studentPayments) {
         const initialMap: Record<string, { status: PaymentStatus; amount: number }> = {};
         Object.entries(selectedLesson.studentPayments).forEach(([stId, pDetail]: [string, any]) => {
@@ -144,6 +200,12 @@ export const LessonControlModal: React.FC = () => {
             if (draft.examScore !== undefined) setExamScore(draft.examScore);
             if (draft.participationScore !== undefined) setParticipationScore(draft.participationScore);
             if (draft.teacherNotes) setTeacherNotes(draft.teacherNotes);
+            if (draft.lessonWhatWasTaught) setLessonWhatWasTaught(draft.lessonWhatWasTaught);
+            if (draft.lessonNextHomework) setLessonNextHomework(draft.lessonNextHomework);
+            if (draft.studentHomeworkDone) setStudentHomeworkDone(draft.studentHomeworkDone);
+            if (draft.studentDictationGrade) setStudentDictationGrade(draft.studentDictationGrade);
+            if (draft.studentExamGrade) setStudentExamGrade(draft.studentExamGrade);
+            if (draft.studentNotes) setStudentNotes(draft.studentNotes);
             setShowReportForm(true);
             setIsEditingReport(true);
           }
@@ -155,13 +217,14 @@ export const LessonControlModal: React.FC = () => {
 
   // Auto-save report draft as teacher types
   useEffect(() => {
-    if (selectedLesson && (teacherNotes || homeworkTitle || homeworkDescription)) {
+    if (selectedLesson && (lessonWhatWasTaught || lessonNextHomework || teacherNotes || homeworkTitle || homeworkDescription)) {
       storage.setItem(`dl_draft_report_${selectedLesson.id}`, {
         attendance, studentAttendance, homeworkStatus, homeworkTitle, homeworkDescription,
-        quizScore, examScore, participationScore, teacherNotes
+        quizScore, examScore, participationScore, teacherNotes,
+        lessonWhatWasTaught, lessonNextHomework, studentHomeworkDone, studentDictationGrade, studentExamGrade, studentNotes
       });
     }
-  }, [selectedLesson?.id, attendance, studentAttendance, homeworkStatus, homeworkTitle, homeworkDescription, quizScore, examScore, participationScore, teacherNotes]);
+  }, [selectedLesson?.id, attendance, studentAttendance, homeworkStatus, homeworkTitle, homeworkDescription, quizScore, examScore, participationScore, teacherNotes, lessonWhatWasTaught, lessonNextHomework, studentHomeworkDone, studentDictationGrade, studentExamGrade, studentNotes]);
 
   const handleSendPaymentReminder = () => {
     const text = `السلام عليكم ورحمة الله وبركاته.\nتم الانتهاء من عدد الحصص المتفق عليها. برجاء تحويل الرسوم المستحقة.\n\nبيانات التحويل:\n📱 رقم الهاتف: ${profile.phone || '01012345678'}\n💳 InstaPay: ${profile.instaPayId || 'abdulrahman@instapay'}\n\nمع الشكر والتقدير\n${profile.displayName}`;
@@ -228,16 +291,21 @@ export const LessonControlModal: React.FC = () => {
     (selectedLesson.studentName && s.name.trim().toLowerCase() === selectedLesson.studentName.trim().toLowerCase())
   ) || (selectedLesson.groupId ? students.find(s => s.groupId === selectedLesson.groupId) : undefined);
   
+  const activeLessonStudents = selectedLesson.groupId 
+    ? students.filter(s => s.groupId === selectedLesson.groupId)
+    : (targetStudent ? [targetStudent] : []);
+  
   const targetGroup = groups.find(g => g.id === selectedLesson.groupId);
 
   // Recipient Phone Resolution (Parent Phone > Student Phone > Quick Lesson Phone)
-  const recipientPhone = (
+  const rawRecipientPhone = (
     targetStudent?.parentPhone || 
     selectedLesson?.quickParentPhone || 
     targetStudent?.studentPhone || 
     selectedLesson?.quickStudentPhone || 
     ''
-  ).replace(/[^0-9+]/g, '');
+  );
+  const recipientPhone = formatWhatsAppPhone(rawRecipientPhone);
 
   const formatTimer = (totalSecs: number) => {
     const mins = Math.floor(totalSecs / 60);
@@ -276,18 +344,19 @@ export const LessonControlModal: React.FC = () => {
     } catch {}
   };
 
-  const handleSaveReport = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSaveReport = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     const reportData: LessonReport = {
       attendanceStatus: attendance,
       studentAttendance,
-      homeworkStatus,
-      homeworkTitle,
-      homeworkDescription,
-      quizScore: Number(quizScore),
-      examScore: Number(examScore),
-      participationScore: Number(participationScore),
-      teacherNotes,
+      homeworkStatus: 'assigned',
+      homeworkTitle: lessonNextHomework,
+      homeworkDescription: lessonNextHomework,
+      teacherNotes: lessonWhatWasTaught,
+      studentHomeworkDone,
+      studentDictationGrade,
+      studentExamGrade,
+      studentNotes,
       savedAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     };
 
@@ -295,44 +364,32 @@ export const LessonControlModal: React.FC = () => {
     endActiveLessonTimer();
     storage.removeItem(`dl_draft_report_${selectedLesson.id}`);
     setIsEditingReport(false);
-    setShowParentSummaryModal(true);
+    setShowArabicParentReportModal(true); // Automatically open Arabic parent report to make sharing incredibly easy!
   };
 
   // Communication Handlers with Recipient Validation & Teacher Name
   const handleSendConfirmationMessage = () => {
-    const text = encodeURIComponent(`Hallo! Erinnerung an die Deutschstunde (${selectedLesson.title}) heute um ${selectedLesson.time} Uhr.\nMit freundlichen Grüßen,\nHerr ${profile.displayName}`);
-    if (recipientPhone) {
-      window.open(`https://wa.me/${recipientPhone}?text=${text}`, '_blank');
-    } else {
-      alert('Keine gültige Telefonnummer gefunden.');
-    }
+    const text = `Hallo! Erinnerung an die Deutschstunde (${selectedLesson.title}) heute um ${selectedLesson.time} Uhr.\nMit freundlichen Grüßen,\nHerr ${profile.displayName}`;
+    const url = buildWhatsAppUrl(recipientPhone, text);
+    window.open(url, '_blank');
   };
 
   const handleSendOfflineLessonStartMessage = () => {
-    const text = encodeURIComponent(`السلام عليكم ورحمة الله وبركاته\n\nتم بدء الحصة الآن.\n\nنحيطكم علماً بأن الطالب بدأ الحصة في موعدها المحدد.\n\nمع تحيات\nأ. ${profile.displayName}`);
-    if (recipientPhone) {
-      window.open(`https://wa.me/${recipientPhone}?text=${text}`, '_blank');
-    } else {
-      alert('يرجى التأكد من إضافة رقم هاتف ولي الأمر أولاً.');
-    }
+    const text = `السلام عليكم ورحمة الله وبركاته\n\nتم بدء الحصة الآن.\n\nنحيطكم علماً بأن الطالب بدأ الحصة في موعدها المحدد.\n\nمع تحيات\nأ. ${profile.displayName}`;
+    const url = buildWhatsAppUrl(recipientPhone, text);
+    window.open(url, '_blank');
   };
 
   const handleSendPaymentRequestMessage = () => {
-    const text = encodeURIComponent(`السلام عليكم ورحمة الله وبركاته\n\nتم الانتهاء من عدد الحصص المتفق عليها.\nبرجاء تحويل الرسوم المستحقة.\n\nمع تحيات\nأ. ${profile.displayName}`);
-    if (recipientPhone) {
-      window.open(`https://wa.me/${recipientPhone}?text=${text}`, '_blank');
-    } else {
-      alert('يرجى التأكد من إضافة رقم هاتف ولي الأمر أولاً.');
-    }
+    const text = `السلام عليكم ورحمة الله وبركاته\n\nتم الانتهاء من عدد الحصص المتفق عليها.\nبرجاء تحويل الرسوم المستحقة.\n\nمع تحيات\nأ. ${profile.displayName}`;
+    const url = buildWhatsAppUrl(recipientPhone, text);
+    window.open(url, '_blank');
   };
 
   const handleStartTrip = () => {
-    const text = encodeURIComponent(`السلام عليكم ورحمة الله وبركاته\n\nأ. ${profile.displayName} في الطريق الآن للحصة (${selectedLesson.title}). الوصول المتوقع خلال 20-30 دقيقة إن شاء الله. 🚗`);
-    if (recipientPhone) {
-      window.open(`https://wa.me/${recipientPhone}?text=${text}`, '_blank');
-    } else {
-      alert('Keine Telefonnummer angegeben.');
-    }
+    const text = `السلام عليكم ورحمة الله وبركاته\n\nأ. ${profile.displayName} في الطريق الآن للحصة (${selectedLesson.title}). الوصول المتوقع خلال 20-30 دقيقة إن شاء الله. 🚗`;
+    const url = buildWhatsAppUrl(recipientPhone, text);
+    window.open(url, '_blank');
   };
 
   const handleOpenMaps = () => {
@@ -342,8 +399,14 @@ export const LessonControlModal: React.FC = () => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-xs flex items-end sm:items-center justify-center sm: pt-[max(24px,env(safe-area-inset-top,24px))] overflow-y-auto p-0 sm:p-4 pb-0">
-      <div className="bg-surface border border-surface-border rounded-t-[28px] sm:rounded-xl pb-safe-bottom sm:pb-0 mb-0 w-full max-w-xl shadow-2xl overflow-hidden animate-scale-up">
+    <div 
+      onClick={closeLessonControl} 
+      className="fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-xs flex items-end sm:items-center justify-center sm: pt-[max(24px,env(safe-area-inset-top,24px))] overflow-y-auto p-0 sm:p-4 pb-0"
+    >
+      <div 
+        onClick={(e) => e.stopPropagation()} 
+        className="bg-surface border border-surface-border rounded-t-[28px] sm:rounded-xl pb-safe-bottom sm:pb-0 mb-0 w-full max-w-xl shadow-2xl overflow-hidden animate-scale-up"
+      >
         <div className="w-12 h-1.5 bg-slate-200 dark:bg-slate-800 rounded-full mx-auto mt-3 mb-1 sm:hidden shrink-0" />
         {/* Top Header */}
         <div className="bg-slate-900 text-white p-5 flex items-center justify-between relative">
@@ -357,7 +420,7 @@ export const LessonControlModal: React.FC = () => {
             <div>
               <div className="flex items-center gap-2">
                 <span className="bg-primary/20 text-primary/70 font-mono text-[10px] font-bold px-2 py-0.5 rounded border border-primary/30">
-                  {selectedLesson.type.toUpperCase()}
+                  {(selectedLesson.type || '').toUpperCase()}
                 </span>
                 <span className="text-xs text-text-muted/70 font-medium">{selectedLesson.grade}</span>
               </div>
@@ -412,41 +475,41 @@ export const LessonControlModal: React.FC = () => {
                 <div className="flex items-center gap-2">
                   <CheckCircle2 className="w-5 h-5 text-primary dark:text-primary" />
                   <span className="text-xs font-black uppercase tracking-wider text-slate-800 dark:text-slate-200">
-                    Kurze Zusammenfassung (Quick Review)
+                    {_t('ملخص سريع', 'Quick Review', 'Kurze Zusammenfassung')}
                   </span>
                 </div>
                 <span className="text-[10px] font-bold text-primary dark:text-primary bg-primary-soft dark:bg-primary-soft px-2.5 py-1 rounded-full border border-primary-border dark:border-primary-border">
-                  ✓ Bericht gespeichert
+                  {_t('✓ تم حفظ التقرير', '✓ Report saved', '✓ Bericht gespeichert')}
                 </span>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs">
                 {/* Attendance Summary */}
                 <div className="p-3 bg-surface rounded-xl border border-surface-border/80 dark:border-surface-border space-y-1">
-                  <span className="block text-[10px] font-black uppercase text-text-muted/70">1. Anwesenheit (Attendance)</span>
+                  <span className="block text-[10px] font-black uppercase text-text-muted/70">{_t('١. الحضور', '1. Attendance', '1. Anwesenheit')}</span>
                   <span className={`font-black flex items-center gap-1 ${
                     selectedLesson.report.attendanceStatus === 'present' ? 'text-primary dark:text-primary' :
                     selectedLesson.report.attendanceStatus === 'late' ? 'text-primary dark:text-primary' :
                     'text-primary dark:text-primary'
                   }`}>
-                    {selectedLesson.report.attendanceStatus === 'present' && '✓ Anwesend (Present)'}
-                    {selectedLesson.report.attendanceStatus === 'late' && '⚠️ Verspätet (Late)'}
-                    {selectedLesson.report.attendanceStatus === 'absent' && '✕ Abwesend (Absent)'}
+                    {selectedLesson.report.attendanceStatus === 'present' && _t('✓ حاضر', '✓ Present', '✓ Anwesend')}
+                    {selectedLesson.report.attendanceStatus === 'late' && _t('⚠️ متأخر', '⚠️ Late', '⚠️ Verspätet')}
+                    {selectedLesson.report.attendanceStatus === 'absent' && _t('✕ غائب', '✕ Absent', '✕ Abwesend')}
                   </span>
                 </div>
 
                 {/* Homework Summary */}
                 <div className="p-3 bg-surface rounded-xl border border-surface-border/80 dark:border-surface-border space-y-1">
-                  <span className="block text-[10px] font-black uppercase text-text-muted/70">2. Hausaufgaben (Homework)</span>
+                  <span className="block text-[10px] font-black uppercase text-text-muted/70">{_t('٢. الواجب', '2. Homework', '2. Hausaufgaben')}</span>
                   <div className="space-y-0.5">
                     <span className={`font-black text-xs ${
                       selectedLesson.report.homeworkStatus === 'completed' ? 'text-primary dark:text-primary' :
                       selectedLesson.report.homeworkStatus === 'assigned' ? 'text-primary dark:text-primary' :
                       'text-primary dark:text-primary'
                     }`}>
-                      {selectedLesson.report.homeworkStatus === 'completed' && 'Erledigt (Completed)'}
-                      {selectedLesson.report.homeworkStatus === 'assigned' && 'Aufgegeben (Assigned)'}
-                      {selectedLesson.report.homeworkStatus === 'not_completed' && 'Nicht erledigt'}
+                      {selectedLesson.report.homeworkStatus === 'completed' && _t('مكتمل', 'Completed', 'Erledigt')}
+                      {selectedLesson.report.homeworkStatus === 'assigned' && _t('مطلوب', 'Assigned', 'Aufgegeben')}
+                      {selectedLesson.report.homeworkStatus === 'not_completed' && _t('غير مكتمل', 'Not completed', 'Nicht erledigt')}
                     </span>
                     {selectedLesson.report.homeworkTitle && (
                       <p className="text-[11px] font-medium text-slate-600 dark:text-slate-300">
@@ -460,7 +523,7 @@ export const LessonControlModal: React.FC = () => {
               {/* Teacher Notes Summary */}
               {selectedLesson.report.teacherNotes && (
                 <div className="p-3 bg-surface rounded-xl border border-surface-border/80 dark:border-surface-border space-y-1 text-xs">
-                  <span className="block text-[10px] font-black uppercase text-text-muted/70">3. Notizen der Lehrkraft (Teacher Notes)</span>
+                  <span className="block text-[10px] font-black uppercase text-text-muted/70">{_t('٣. ملاحظات المعلم', '3. Teacher Notes', '3. Lehrernotizen')}</span>
                   <p className="text-xs font-medium text-text-main italic">
                     "{selectedLesson.report.teacherNotes}"
                   </p>
@@ -474,7 +537,7 @@ export const LessonControlModal: React.FC = () => {
                   onClick={() => setIsEditingReport(true)}
                   className="text-xs font-bold text-primary dark:text-primary hover:text-primary dark:hover:text-primary underline cursor-pointer"
                 >
-                  Bericht bearbeiten / Edit Report
+                  {_t('تعديل التقرير', 'Edit Report', 'Bericht bearbeiten')}
                 </button>
               </div>
             </div>
@@ -484,7 +547,7 @@ export const LessonControlModal: React.FC = () => {
               <div className="space-y-2 border-b border-slate-100 dark:border-surface-border pb-4">
                 <p className="text-xs font-bold uppercase tracking-wider text-text-muted flex items-center gap-1.5">
                   <Sparkles className="w-3.5 h-3.5 text-primary" />
-                  <span>Vor Unterrichtsbeginn (Before Starting)</span>
+                  <span>{_t('قبل بدء الدرس', 'Before Starting', 'Vor Unterrichtsbeginn')}</span>
                 </p>
 
                 <div className="flex flex-wrap items-center gap-2">
@@ -495,7 +558,7 @@ export const LessonControlModal: React.FC = () => {
                         className="bg-primary-soft dark:bg-primary-soft/60 hover:bg-primary-soft dark:hover:bg-primary-soft border border-primary-border dark:border-primary-border text-primary dark:text-primary/70 font-bold text-xs px-3.5 py-2 rounded-xl transition-all flex items-center gap-1.5 cursor-pointer active:scale-95"
                       >
                         <Send className="w-3.5 h-3.5" />
-                        <span>Send Confirmation Message</span>
+                        <span>{_t('إرسال رسالة تأكيد', 'Send Confirmation Message', 'Bestätigungsnachricht senden')}</span>
                       </button>
 
                       <a
@@ -505,7 +568,7 @@ export const LessonControlModal: React.FC = () => {
                         className="bg-primary hover:bg-primary-hover text-white font-bold text-xs px-3.5 py-2 rounded-xl transition-all flex items-center gap-1.5 shadow-xs active:scale-95 hover:shadow-lg hover:shadow-primary/30"
                       >
                         <Video className="w-3.5 h-3.5" />
-                        <span>Open Zoom Link</span>
+                        <span>{_t('فتح رابط زووم', 'Open Zoom Link', 'Zoom-Link öffnen')}</span>
                         <ExternalLink className="w-3 h-3" />
                       </a>
 
@@ -516,7 +579,7 @@ export const LessonControlModal: React.FC = () => {
                         className="bg-primary hover:bg-primary-hover text-white font-bold text-xs px-3.5 py-2 rounded-xl transition-all flex items-center gap-1.5 shadow-xs"
                       >
                         <Video className="w-3.5 h-3.5" />
-                        <span>Open Google Meet</span>
+                        <span>{_t('فتح جوجل ميت', 'Open Google Meet', 'Google Meet öffnen')}</span>
                         <ExternalLink className="w-3 h-3" />
                       </a>
                     </>
@@ -560,7 +623,7 @@ export const LessonControlModal: React.FC = () => {
                 </div>
               </div>
 
-              {/* DURING LESSON SECTION: LIVE TIMER & LESSON ACTIONS - ALWAYS VISIBLE */}
+              {/* SECTION 2 – SESSION TIMER */}
               <div className="bg-surface border border-surface-border rounded-2xl p-5 shadow-sm space-y-6 text-center relative overflow-hidden">
                 {/* Background ambient glow when timer is running */}
                 {isTimerRunning && (
@@ -573,74 +636,96 @@ export const LessonControlModal: React.FC = () => {
                     <span>{_t('مؤقت الحصة المباشر', 'Live Lesson Timer', 'Live-Unterrichts-Timer')}</span>
                   </span>
 
-                  <span className="text-[10px] font-bold text-primary dark:text-primary bg-primary-soft dark:bg-primary-soft px-2 py-1 rounded-md border border-primary-border/30">
-                    {_t(`المدة: ${selectedLesson.durationMinutes} دقيقة`, `Duration: ${selectedLesson.durationMinutes} min`, `Dauer: ${selectedLesson.durationMinutes} Min`)}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-bold text-primary dark:text-primary bg-primary-soft dark:bg-primary-soft px-2 py-1 rounded-md border border-primary-border/30">
+                      {selectedLesson.status === 'completed' ? _t('مكتملة ✅', 'Completed ✅', 'Abgeschlossen ✅') :
+                       selectedLesson.status === 'cancelled' ? _t('ملغاة ✕', 'Cancelled ✕', 'Storniert ✕') :
+                       isTimerRunning ? _t('جاري التشغيل 🟢', 'In Progress 🟢', 'In Bearbeitung 🟢') :
+                       timerSeconds > 0 ? _t('موقوف مؤقتاً ⏸️', 'Paused ⏸️', 'Pausiert ⏸️') :
+                       _t('مجدولة 📅', 'Scheduled 📅', 'Geplant 📅')}
+                    </span>
+                    <span className="text-[10px] font-bold text-slate-500 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded-md border border-slate-200 dark:border-slate-700">
+                      {_t(`المدة: ${selectedLesson.durationMinutes} دقيقة`, `Duration: ${selectedLesson.durationMinutes} min`, `Dauer: ${selectedLesson.durationMinutes} Min`)}
+                    </span>
+                  </div>
                 </div>
 
                 {/* Stopwatch Display */}
                 <div className="py-6 relative z-10">
                   <div className="flex justify-center">
-                    <div className="relative">
+                    <div className="relative flex flex-col items-center">
                       <span className={`text-6xl sm:text-7xl font-black font-mono tracking-tight transition-all duration-300 ${isTimerRunning ? 'text-primary drop-shadow-[0_0_15px_rgba(var(--color-primary-rgb),0.4)]' : 'text-slate-700 dark:text-slate-300'}`}>
                         {formatTimer(timerSeconds)}
                       </span>
+                      {timerSeconds > 0 && (
+                        <span className="text-[10px] text-text-muted mt-1.5 font-bold">
+                          {_t('الوقت المنقضي', 'Elapsed Time', 'Vergangene Zeit')}
+                        </span>
+                      )}
                     </div>
                   </div>
                 </div>
 
                 {/* Timer & Main Action Buttons */}
                 <div className="flex flex-col gap-2.5 relative z-10">
-                  <div className="grid grid-cols-2 gap-2.5">
-                    {!isTimerRunning ? (
-                      <button
-                        type="button"
-                        onClick={handleStartLesson}
-                        className="col-span-2 sm:col-span-1 bg-primary hover:bg-primary-hover active:scale-95 text-white font-bold text-sm px-5 py-3.5 rounded-xl shadow-md shadow-primary/20 transition-all flex items-center justify-center gap-2 cursor-pointer"
-                      >
-                        <Play className="w-4 h-4 fill-white" />
-                        <span>{timerSeconds === 0 ? _t('بدء الحصة', 'Start', 'Starten') : _t('استئناف', 'Resume', 'Fortsetzen')}</span>
-                      </button>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={handlePauseLesson}
-                        className="col-span-2 sm:col-span-1 bg-amber-500 hover:bg-amber-600 active:scale-95 text-white font-bold text-sm px-5 py-3.5 rounded-xl shadow-md shadow-amber-500/20 transition-all flex items-center justify-center gap-2 cursor-pointer"
-                      >
-                        <Pause className="w-4 h-4 fill-white" />
-                        <span>{_t('إيقاف مؤقت', 'Pause', 'Pausieren')}</span>
-                      </button>
-                    )}
+                  {selectedLesson.status !== 'completed' && selectedLesson.status !== 'cancelled' && (
+                    <div className="grid grid-cols-2 gap-2.5">
+                      {/* If lesson has NOT started yet */}
+                      {selectedLesson.status === 'scheduled' && timerSeconds === 0 ? (
+                        <>
+                          <button
+                            type="button"
+                            onClick={handleStartLesson}
+                            className="col-span-2 bg-primary hover:bg-primary-hover active:scale-95 text-white font-black text-sm px-5 py-4 rounded-xl shadow-md shadow-primary/20 transition-all flex items-center justify-center gap-2 cursor-pointer"
+                          >
+                            <Play className="w-4.5 h-4.5 fill-white animate-pulse" />
+                            <span>{_t('بدء الحصة (Start)', 'Start Session', 'Unterricht starten')}</span>
+                          </button>
 
-                    <button
-                      type="button"
-                      onClick={handleEndLesson}
-                      className={`${isTimerRunning ? 'col-span-2 sm:col-span-1' : 'col-span-2 sm:col-span-1'} bg-surface-hover hover:bg-slate-100 dark:hover:bg-slate-800 text-text-main font-bold text-sm px-5 py-3.5 rounded-xl border border-surface-border transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95`}
-                    >
-                      <Square className="w-4 h-4 text-text-main" />
-                      <span>{_t('إنهاء', 'End Lesson', 'Beenden')}</span>
-                    </button>
-                  </div>
+                          <button
+                            type="button"
+                            onClick={() => setShowCancelPrompt(true)}
+                            className="col-span-2 bg-red-50 hover:bg-red-100 dark:bg-red-950/20 dark:hover:bg-red-900/30 text-red-600 dark:text-red-400 font-bold text-xs px-4 py-3 rounded-xl border border-red-200 dark:border-red-900/50 transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95"
+                          >
+                            <Ban className="w-4 h-4 text-red-500" />
+                            <span>{_t('إلغاء الحصة', 'Cancel Session', 'Unterricht stornieren')}</span>
+                          </button>
+                        </>
+                      ) : (
+                        /* If lesson is in progress or timer is active */
+                        <>
+                          {!isTimerRunning ? (
+                            <button
+                              type="button"
+                              onClick={handleStartLesson}
+                              className="col-span-2 bg-primary hover:bg-primary-hover active:scale-95 text-white font-black text-sm px-5 py-4 rounded-xl shadow-md shadow-primary/20 transition-all flex items-center justify-center gap-2 cursor-pointer"
+                            >
+                              <Play className="w-4 h-4 fill-white" />
+                              <span>{_t('استئناف الحصة', 'Resume Session', 'Fortsetzen')}</span>
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={handlePauseLesson}
+                              className="col-span-2 bg-amber-500 hover:bg-amber-600 active:scale-95 text-white font-black text-sm px-5 py-4 rounded-xl shadow-md shadow-amber-500/20 transition-all flex items-center justify-center gap-2 cursor-pointer"
+                            >
+                              <Pause className="w-4 h-4 fill-white" />
+                              <span>{_t('إيقاف مؤقت', 'Pause', 'Pausieren')}</span>
+                            </button>
+                          )}
 
-                  <div className="grid grid-cols-2 gap-2.5">
-                    <button
-                      type="button"
-                      onClick={() => setShowReportForm(!showReportForm)}
-                      className="bg-surface-hover hover:bg-slate-100 dark:hover:bg-slate-800 text-text-main font-bold text-xs px-4 py-3 rounded-xl border border-surface-border transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95"
-                    >
-                      <FileText className="w-4 h-4 text-text-main" />
-                      <span>{showReportForm ? _t('إخفاء التقرير', 'Hide Report', 'Bericht ausblenden') : _t('التقرير', 'Report', 'Bericht')}</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => setShowCancelPrompt(!showCancelPrompt)}
-                      className="bg-red-50/50 dark:bg-red-950/20 hover:bg-red-100 dark:hover:bg-red-900/30 text-red-600 dark:text-red-400 font-bold text-xs px-4 py-3 rounded-xl border border-red-200 dark:border-red-900/50 transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95"
-                    >
-                      <Ban className="w-4 h-4 text-red-500 dark:text-red-400" />
-                      <span>{_t('إلغاء', 'Cancel', 'Stornieren')}</span>
-                    </button>
-                  </div>
+                          <button
+                            type="button"
+                            onClick={() => setShowCancelPrompt(true)}
+                            className="col-span-2 bg-red-50/50 dark:bg-red-950/20 hover:bg-red-100 dark:hover:bg-red-900/30 text-red-600 dark:text-red-400 font-bold text-xs px-4 py-3 rounded-xl border border-red-200 dark:border-red-900/50 transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95"
+                          >
+                            <Ban className="w-4 h-4 text-red-500" />
+                            <span>{_t('إلغاء الحصة', 'Cancel Session', 'Unterricht stornieren')}</span>
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -684,6 +769,9 @@ export const LessonControlModal: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => {
+                          setIsTimerRunning(false);
+                          endActiveLessonTimer();
+                          storage.removeItem(`dl_draft_report_${selectedLesson.id}`);
                           cancelLesson(selectedLesson.id, cancelReasonNote);
                           setShowCancelPrompt(false);
                         }}
@@ -696,286 +784,340 @@ export const LessonControlModal: React.FC = () => {
                   </div>
                 )}
 
-              {/* AFTER ENDING LESSON: REPORT FORM */}
-              {showReportForm && (
-                <form onSubmit={handleSaveReport} className="space-y-4 pt-2 border-t border-surface-border">
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-sm font-bold text-text-main flex items-center gap-1.5">
-                      <FileText className="w-4 h-4 text-primary" />
-                      <span>نموذج تقرير الحصة (Lesson Report Form)</span>
-                    </h3>
+              {/* SECTION 3 – MANDATORY SESSION REPORT */}
+              {(showReportForm || timerSeconds > 0 || selectedLesson.status === 'in_progress' || selectedLesson.status === 'completed') && (() => {
+                const isReportFormValid = (() => {
+                  if (!lessonWhatWasTaught.trim()) return false;
+                  if (!lessonNextHomework.trim()) return false;
+                  
+                  // Check for each student
+                  for (const st of activeLessonStudents) {
+                    const att = studentAttendance[st.id] || 'present';
+                    if (att !== 'absent') {
+                      if (!studentHomeworkDone[st.id]) return false;
+                      if (studentDictationGrade[st.id] === undefined) return false;
+                      if (studentExamGrade[st.id] === undefined) return false;
+                    }
+                  }
+                  return true;
+                })();
 
-                    <div className="flex items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={() => setShowReportForm(false)}
-                        className="text-xs text-primary dark:text-primary font-bold hover:underline cursor-pointer"
-                      >
-                        إخفاء التقرير
-                      </button>
-                      {selectedLesson.report && (
-                        <span className="text-[10px] font-bold text-primary bg-primary-soft px-2 py-0.5 rounded-full">
-                          ✓ تم حفظ التقرير
-                        </span>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Attendance Section */}
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <label className="text-xs font-bold text-text-main">
-                        1. Anwesenheit (Attendance):
-                      </label>
-                      {selectedLesson.groupId && groupStudents.length > 0 && (
-                        <span className="text-[11px] font-bold text-primary dark:text-primary bg-primary-soft dark:bg-primary-soft px-2 py-0.5 rounded-md border border-primary-border">
-                          {groupStudents.filter(s => (studentAttendance[s.id] || attendance) === 'present').length} / {groupStudents.length} Anwesend
-                        </span>
-                      )}
-                    </div>
-
-                    {/* Bulk "Mark All as Present" checkbox banner for group lessons */}
-                    {selectedLesson.groupId && groupStudents.length > 0 && (
-                      <div className="flex items-center justify-between bg-primary-soft dark:bg-primary-soft border-2 border-primary-border dark:border-primary-border/80 p-2.5 rounded-lg shadow-xs">
-                        <label className="flex items-center gap-2.5 cursor-pointer select-none">
-                          <input
-                            type="checkbox"
-                            checked={groupStudents.every(st => (studentAttendance[st.id] || attendance) === 'present')}
-                            onChange={(e) => {
-                              const isChecked = e.target.checked;
-                              const targetStatus: AttendanceStatus = isChecked ? 'present' : 'absent';
-                              setAttendance(targetStatus);
-                              const updatedAtt: Record<string, AttendanceStatus> = {};
-                              groupStudents.forEach(st => {
-                                updatedAtt[st.id] = targetStatus;
-                              });
-                              setStudentAttendance(updatedAtt);
-                              if (isChecked) {
-                                confetti({ particleCount: 35, spread: 45 });
-                              }
-                            }}
-                            className="w-4 h-4 rounded text-primary focus:ring-primary cursor-pointer accent-primary"
-                          />
-                          <span className="text-xs font-black text-primary dark:text-primary flex items-center gap-1.5">
-                            <CheckCircle2 className="w-4 h-4 text-primary shrink-0" />
-                            <span>Alle als anwesend markieren (Mark All Present)</span>
-                          </span>
-                        </label>
-
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setAttendance('present');
-                            const updatedAtt: Record<string, AttendanceStatus> = {};
-                            groupStudents.forEach(st => {
-                              updatedAtt[st.id] = 'present';
-                            });
-                            setStudentAttendance(updatedAtt);
-                            confetti({ particleCount: 40, spread: 50 });
-                          }}
-                          className="px-3 py-1 text-[11px] font-black bg-primary hover:bg-primary-hover active:scale-95 text-white rounded-xl transition-all shadow-xs cursor-pointer flex items-center gap-1.5 shrink-0"
-                        >
-                          <CheckCircle2 className="w-3.5 h-3.5" />
-                          <span>Alle anwesend ✓</span>
-                        </button>
-                      </div>
-                    )}
-
-                    {/* Main Attendance Status Buttons */}
-                    <div className="grid grid-cols-3 gap-2 text-xs">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setAttendance('present');
-                          if (selectedLesson.groupId && groupStudents.length > 0) {
-                            const updatedAtt: Record<string, AttendanceStatus> = {};
-                            groupStudents.forEach(st => {
-                              updatedAtt[st.id] = 'present';
-                            });
-                            setStudentAttendance(updatedAtt);
-                          }
-                        }}
-                        className={`py-2 rounded-xl font-bold border transition-all cursor-pointer ${
-                          attendance === 'present'
-                            ? 'bg-primary text-white border-primary-border shadow-xs'
-                            : 'bg-surface-hover text-text-main border-surface-border dark:border-surface-border-soft'
-                        }`}
-                      >
-                        ✓ Anwesend (Present)
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setAttendance('late')}
-                        className={`py-2 rounded-xl font-bold border transition-all cursor-pointer ${
-                          attendance === 'late'
-                            ? 'bg-primary text-white border-primary-border shadow-xs'
-                            : 'bg-surface-hover text-text-main border-surface-border dark:border-surface-border-soft'
-                        }`}
-                      >
-                        ⚠️ Verspätet (Late)
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setAttendance('absent')}
-                        className={`py-2 rounded-xl font-bold border transition-all cursor-pointer ${
-                          attendance === 'absent'
-                            ? 'bg-red-600 text-white border-red-600 shadow-xs'
-                            : 'bg-surface-hover text-text-main border-surface-border dark:border-surface-border-soft'
-                        }`}
-                      >
-                        ✕ Abwesend (Absent)
-                      </button>
-                    </div>
-
-                    {/* Individual Student Attendance List for Group Lessons */}
-                    {selectedLesson.groupId && groupStudents.length > 0 && (
-                      <div className="pt-2 border-t border-surface-border dark:border-surface-border-soft/80 space-y-1.5">
-                        <div className="flex items-center justify-between">
-                          <span className="block text-[11px] font-bold text-text-main">
-                            👥 Einzelne Schüler-Anwesenheit (Individual Student Attendance):
-                          </span>
+                return (
+                  <form onSubmit={(e) => { e.preventDefault(); if (isReportFormValid) handleSaveReport(); }} className="space-y-5 pt-3 border-t border-surface-border">
+                    <div className="flex items-center justify-between bg-primary-soft/50 p-2.5 rounded-xl border border-primary-border/40">
+                      <h3 className="text-xs font-black text-primary flex items-center gap-1.5 font-mono">
+                        <FileText className="w-4 h-4 text-primary" />
+                        <span>{_t('تقرير الحصة والطلاب الموحد', 'Unified Session Report', 'Einheitlicher Unterrichtsbericht')}</span>
+                      </h3>
+                      {selectedLesson.status !== 'in_progress' && (
+                        <div className="flex items-center gap-2">
                           <button
                             type="button"
-                            onClick={() => {
-                              const updatedAtt: Record<string, AttendanceStatus> = {};
-                              groupStudents.forEach(st => {
-                                updatedAtt[st.id] = 'present';
-                              });
-                              setStudentAttendance(updatedAtt);
-                              confetti({ particleCount: 30, spread: 40 });
-                            }}
-                            className="text-[10px] text-primary dark:text-primary hover:text-primary font-extrabold cursor-pointer flex items-center gap-1 bg-primary-soft dark:bg-primary-soft px-2 py-0.5 rounded-lg border border-primary-border transition-all active:scale-95"
+                            onClick={() => setShowReportForm(false)}
+                            className="text-[11px] text-text-muted hover:text-text-main font-bold hover:underline cursor-pointer"
                           >
-                            <CheckCircle2 className="w-3 h-3" />
-                            <span>Mark All Present</span>
+                            {_t('إخفاء التقرير', 'Hide Report', 'Bericht ausblenden')}
                           </button>
                         </div>
-
-                        <div className="space-y-1.5 max-h-40 overflow-y-auto pr-1">
-                          {groupStudents.map(st => {
-                            const stAtt = studentAttendance[st.id] || attendance;
-                            return (
-                              <div key={st.id} className="flex items-center justify-between bg-surface p-2 rounded-xl border border-surface-border text-xs">
-                                <span className="font-bold text-slate-800 dark:text-slate-200">{st.name}</span>
-                                <div className="flex items-center gap-1">
-                                  {(['present', 'late', 'absent'] as AttendanceStatus[]).map(attType => (
-                                    <button
-                                      key={attType}
-                                      type="button"
-                                      onClick={() => {
-                                        setStudentAttendance(prev => ({
-                                          ...prev,
-                                          [st.id]: attType
-                                        }));
-                                      }}
-                                      className={`px-2 py-0.5 rounded-lg text-[10px] font-bold cursor-pointer border transition-all ${
-                                        stAtt === attType
-                                          ? attType === 'present' ? 'bg-primary text-white border-primary-border'
-                                            : attType === 'late' ? 'bg-primary text-white border-primary-border'
-                                            : 'bg-red-600 text-white border-red-700'
-                                          : 'bg-surface-hover text-text-muted border-surface-border dark:border-surface-border-soft'
-                                      }`}
-                                    >
-                                      {attType === 'present' ? 'Present' : attType === 'late' ? 'Late' : 'Absent'}
-                                    </button>
-                                  ))}
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Homework Status */}
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-text-main">
-                      2. Hausaufgaben (Homework):
-                    </label>
-                    <div className="grid grid-cols-3 gap-2 text-xs mb-2">
-                      <button
-                        type="button"
-                        onClick={() => setHomeworkStatus('completed')}
-                        className={`py-2 rounded-xl font-bold border transition-all ${
-                          homeworkStatus === 'completed'
-                            ? 'bg-primary text-white border-primary-border shadow-xs'
-                            : 'bg-surface-hover text-text-main border-surface-border'
-                        }`}
-                      >
-                        Erledigt (Completed)
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setHomeworkStatus('assigned')}
-                        className={`py-2 rounded-xl font-bold border transition-all ${
-                          homeworkStatus === 'assigned'
-                            ? 'bg-primary text-white border-primary shadow-xs'
-                            : 'bg-surface-hover text-text-main border-surface-border'
-                        }`}
-                      >
-                        Aufgegeben (Assigned)
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setHomeworkStatus('not_completed')}
-                        className={`py-2 rounded-xl font-bold border transition-all ${
-                          homeworkStatus === 'not_completed'
-                            ? 'bg-red-600 text-white border-red-600 shadow-xs'
-                            : 'bg-surface-hover text-text-main border-surface-border'
-                        }`}
-                      >
-                        Nicht erledigt
-                      </button>
+                      )}
                     </div>
 
-                    <input
-                      type="text"
-                      placeholder="Hausaufgaben Titel (z. B. Kapitel 3 Grammatik)"
-                      value={homeworkTitle}
-                      onChange={(e) => setHomeworkTitle(e.target.value)}
-                      className="w-full px-3 py-2 bg-surface-hover border border-surface-border dark:border-surface-border-soft rounded-xl text-xs"
-                    />
-                  </div>
+                    {/* Subject Taught */}
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-black text-text-main flex items-center gap-1">
+                        <span className="text-primary">*</span>
+                        <span>{_t('ماذا تم في الحصة (المحتوى والدروس المعطاة):', 'Subject Taught (Content & Lessons Covered):', 'Behandelter Stoff (Inhalt & durchgegangene Lektionen):')}</span>
+                      </label>
+                      <textarea
+                        rows={3}
+                        value={lessonWhatWasTaught}
+                        onChange={(e) => setLessonWhatWasTaught(e.target.value)}
+                        className="w-full px-3.5 py-2.5 bg-surface-hover hover:bg-slate-50 focus:bg-white border border-surface-border rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all placeholder:text-text-muted/60"
+                        placeholder={_t('أدخل الموضوعات التي تم شرحها، القواعد الجديدة، والكلمات التي تم تغطيتها في الحصة...', 'Enter topics taught, new grammar rules, and vocabulary covered in the lesson...', 'Geben Sie die erklärten Themen, neue Grammatikregeln und den behandelten Wortschatz ein...')}
+                      />
+                    </div>
 
-                  {/* Teacher Notes */}
-                  <div className="space-y-1">
-                    <label className="text-xs font-bold text-text-main">
-                      5. Notizen der Lehrkraft (Teacher Notes):
-                    </label>
-                    <textarea
-                      rows={3}
-                      value={teacherNotes}
-                      onChange={(e) => setTeacherNotes(e.target.value)}
-                      className="w-full px-3 py-2 bg-surface-hover border border-surface-border dark:border-surface-border-soft rounded-xl text-xs focus:outline-none"
-                      placeholder="Notizen zur Stunde hinterlassen..."
-                    />
-                  </div>
+                    {/* Next Homework Description */}
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-black text-text-main flex items-center gap-1">
+                        <span className="text-primary">*</span>
+                        <span>{_t('الواجب القادم المطلوب من الطلاب:', 'Next Homework Assigned to Students:', 'Nächste Hausaufgabe für die Schüler:')}</span>
+                      </label>
+                      <textarea
+                        rows={3}
+                        value={lessonNextHomework}
+                        onChange={(e) => setLessonNextHomework(e.target.value)}
+                        className="w-full px-3.5 py-2.5 bg-surface-hover hover:bg-slate-50 focus:bg-white border border-surface-border rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all placeholder:text-text-muted/60"
+                        placeholder={_t('أدخل تفاصيل الواجب والصفحات المطلوبة والتمارين المحددة للحصة القادمة...', 'Enter details of homework, pages required, and exercises assigned for next lesson...', 'Geben Sie Details zu Hausaufgaben, benötigten Seiten und zugewiesenen Übungen für die nächste Stunde ein...')}
+                      />
+                    </div>
 
-                  {/* Save Report Button */}
-                  <button
-                    type="submit"
-                    className="w-full bg-primary hover:bg-primary-hover active:scale-95 text-white font-black text-sm py-3 rounded-lg shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95 hover:shadow-lg hover:shadow-primary/30"
-                  >
-                    <CheckCircle2 className="w-5 h-5" />
-                    <span>Bericht speichern & Eltern benachrichtigen</span>
-                  </button>
-                </form>
-              )}
+                    {/* Individual Students Performance and Scores */}
+                    <div className="space-y-3">
+                      <h4 className="text-xs font-black text-slate-500 uppercase flex items-center gap-1.5">
+                        {_t('👥 حالة وأداء كل طالب في المجموعة:', '👥 Status & Performance of Each Student in the Group:', '👥 Status & Leistung jedes Schülers in der Gruppe:')}
+                      </h4>
+
+                      <div className="space-y-4">
+                        {activeLessonStudents.map(st => {
+                          const stAtt = studentAttendance[st.id] || 'present';
+                          const stHw = studentHomeworkDone[st.id];
+                          const stDict = studentDictationGrade[st.id];
+                          const stExam = studentExamGrade[st.id];
+
+                          // Resolve the student's homework status from their last completed session
+                          const lastSessionHwStatus = (() => {
+                            const studentLessons = lessons.filter(l => 
+                              l.status === 'completed' && l.report && 
+                              (l.groupId === st.groupId || l.studentId === st.id || l.studentName?.trim().toLowerCase() === st.name.trim().toLowerCase())
+                            );
+                            const completedLessons = [...studentLessons].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+                            const lastLessonWithReport = completedLessons.find(l => l.id !== selectedLesson.id && l.report);
+                            return lastLessonWithReport?.report?.studentHomeworkDone?.[st.id];
+                          })();
+
+                          return (
+                            <div 
+                              key={st.id} 
+                              className={`p-4 rounded-2xl border transition-all ${
+                                stAtt === 'absent' 
+                                  ? 'bg-red-50/10 border-red-200/50 dark:border-red-950/30' 
+                                  : 'bg-surface border-surface-border hover:shadow-sm'
+                              }`}
+                            >
+                              {/* Student Header */}
+                              <div className="flex items-center justify-between pb-3 border-b border-surface-border/60">
+                                <div className="flex flex-col gap-0.5">
+                                  <span className="font-extrabold text-xs text-text-main flex items-center gap-2">
+                                    <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+                                    <span>{st.name}</span>
+                                  </span>
+                                  {lastSessionHwStatus && (
+                                    <span className="text-[10px] text-text-muted mt-1 bg-slate-50 dark:bg-slate-800/50 px-2 py-0.5 rounded-md border border-slate-100 dark:border-slate-800/30 inline-block font-extrabold">
+                                      {_t(
+                                        `🎒 واجب الحصة السابقة: ${lastSessionHwStatus === 'yes' ? 'تم الحل بالكامل 👍' : 'لم يتم الحل 👎'}`,
+                                        `🎒 Previous Homework: ${lastSessionHwStatus === 'yes' ? 'Completed 👍' : 'Not Done 👎'}`,
+                                        `🎒 Letzte Hausaufgabe: ${lastSessionHwStatus === 'yes' ? 'Erledigt 👍' : 'Nicht erledigt 👎'}`
+                                      )}
+                                    </span>
+                                  )}
+                                </div>
+                                
+                                {/* Attendance toggle */}
+                                <div className="flex items-center gap-1">
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setStudentAttendance(prev => ({ ...prev, [st.id]: 'present' }));
+                                    }}
+                                    className={`px-3 py-1 rounded-lg text-[10px] font-black cursor-pointer transition-all ${
+                                      stAtt === 'present'
+                                        ? 'bg-primary text-white border border-primary shadow-xs'
+                                        : 'bg-surface-hover text-text-muted border border-surface-border'
+                                    }`}
+                                  >
+                                    {_t('حضر ✅', 'Present ✅', 'Anwesend ✅')}
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setStudentAttendance(prev => ({ ...prev, [st.id]: 'absent' }));
+                                    }}
+                                    className={`px-3 py-1 rounded-lg text-[10px] font-black cursor-pointer transition-all ${
+                                      stAtt === 'absent'
+                                        ? 'bg-red-600 text-white border border-red-700 shadow-xs'
+                                        : 'bg-surface-hover text-text-muted border border-surface-border'
+                                    }`}
+                                  >
+                                    {_t('غاب ✕', 'Absent ✕', 'Abwesend ✕')}
+                                  </button>
+                                </div>
+                              </div>
+
+                              {stAtt !== 'absent' ? (
+                                <div className="mt-3 space-y-3.5 animate-fade-in">
+                                  {/* Homework completed toggle */}
+                                  <div className="space-y-1.5">
+                                    <span className="text-[11px] font-black text-text-main block">{_t('أداء الواجب السابق:', 'Previous Homework Performance:', 'Vorherige Hausaufgabenleistung:')} <span className="text-primary">*</span></span>
+                                    <div className="flex gap-2">
+                                      <button
+                                        key={`hw-yes-${st.id}`}
+                                        type="button"
+                                        onClick={() => {
+                                          setStudentHomeworkDone(prev => ({ ...prev, [st.id]: 'yes' }));
+                                        }}
+                                        className={`flex-1 py-1.5 rounded-lg text-[11px] font-black cursor-pointer transition-all border ${
+                                          stHw === 'yes'
+                                            ? 'bg-primary-soft text-primary border-primary-border shadow-xs'
+                                            : 'bg-surface-hover text-text-muted border-surface-border'
+                                        }`}
+                                      >
+                                        {_t('عمل الواجب 👍', 'Completed 👍', 'Erledigt 👍')}
+                                      </button>
+                                      <button
+                                        key={`hw-no-${st.id}`}
+                                        type="button"
+                                        onClick={() => {
+                                          setStudentHomeworkDone(prev => ({ ...prev, [st.id]: 'no' }));
+                                        }}
+                                        className={`flex-1 py-1.5 rounded-lg text-[11px] font-black cursor-pointer transition-all border ${
+                                          stHw === 'no'
+                                            ? 'bg-red-50 text-red-600 border-red-100 shadow-xs dark:bg-red-950/20 dark:border-red-900/50'
+                                            : 'bg-surface-hover text-text-muted border-surface-border'
+                                        }`}
+                                      >
+                                        {_t('لم يعمل الواجب 👎', 'Not Completed 👎', 'Nicht erledigt 👎')}
+                                      </button>
+                                    </div>
+                                  </div>
+
+                                  {/* Dictation Score (0 to 10 pills) */}
+                                  <div className="space-y-1.5">
+                                    <span className="text-[11px] font-black text-text-main block">{_t('درجة الإملاء (من 10):', 'Dictation Grade (out of 10):', 'Diktatnote (von 10):')} <span className="text-primary">*</span></span>
+                                    <div className="flex flex-wrap gap-1">
+                                      {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(score => (
+                                        <button
+                                          key={`dict-${st.id}-${score}`}
+                                          type="button"
+                                          onClick={() => {
+                                            setStudentDictationGrade(prev => ({ ...prev, [st.id]: score }));
+                                          }}
+                                          className={`w-7 h-7 rounded-full text-[10px] font-black flex items-center justify-center border transition-all ${
+                                            stDict === score
+                                              ? 'bg-primary text-white border-primary shadow-xs scale-110'
+                                              : 'bg-surface-hover text-text-muted border-surface-border hover:bg-slate-200'
+                                          }`}
+                                        >
+                                          {score}
+                                        </button>
+                                      ))}
+                                    </div>
+                                  </div>
+
+                                  {/* Exam Score (0 to 10 pills) */}
+                                  <div className="space-y-1.5">
+                                    <span className="text-[11px] font-black text-text-main block">{_t('درجة الامتحان/الـ Quiz (من 10):', 'Exam/Quiz Grade (out of 10):', 'Prüfungs-/Quiznote (von 10):')} <span className="text-primary">*</span></span>
+                                    <div className="flex flex-wrap gap-1">
+                                      {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(score => (
+                                        <button
+                                          key={`exam-${st.id}-${score}`}
+                                          type="button"
+                                          onClick={() => {
+                                            setStudentExamGrade(prev => ({ ...prev, [st.id]: score }));
+                                          }}
+                                          className={`w-7 h-7 rounded-full text-[10px] font-black flex items-center justify-center border transition-all ${
+                                            stExam === score
+                                              ? 'bg-primary text-white border-primary shadow-xs scale-110'
+                                              : 'bg-surface-hover text-text-muted border-surface-border hover:bg-slate-200'
+                                          }`}
+                                        >
+                                          {score}
+                                        </button>
+                                      ))}
+                                    </div>
+                                  </div>
+
+                                  {/* Student-Specific Notes */}
+                                  <div className="space-y-1.5">
+                                    <span className="text-[11px] font-black text-text-main block">{_t('ملاحظات ولي الأمر والطالب (اختياري):', 'Parent & Student Notes (Optional):', 'Eltern- & Schülernotizen (Optional):')}</span>
+                                    <input
+                                      type="text"
+                                      value={studentNotes[st.id] || ''}
+                                      onChange={(e) => {
+                                        setStudentNotes(prev => ({ ...prev, [st.id]: e.target.value }));
+                                      }}
+                                      className="w-full px-3 py-2 bg-surface-hover hover:bg-slate-50 focus:bg-white border border-surface-border rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-primary/10 transition-all placeholder:text-text-muted/50"
+                                      placeholder={_t('مثال: متميز جداً اليوم في الاستماع، يحتاج مراجعة أدوات الاستفهام...', 'e.g. Excellent listening skills today, needs review on question words...', 'z.B. Heute hervorragend beim Hören, muss Fragewörter wiederholen...')}
+                                    />
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className="mt-3 py-2 px-3 bg-red-50/50 dark:bg-red-950/20 border border-red-100 dark:border-red-900/40 rounded-xl text-center animate-fade-in">
+                                  <span className="text-[10px] font-black text-red-600 dark:text-red-400">
+                                    {_t('✕ غائب - معفى من الدرجات والواجب لهذه الحصة', '✕ Absent - Exempt from grades and homework for this session', '✕ Abwesend - Befreit von Noten und Hausaufgaben für diese Stunde')}
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Validation Alerts */}
+                    {!isReportFormValid && (
+                      <div className="p-3.5 bg-amber-50 dark:bg-amber-950/20 border-2 border-dashed border-amber-300 dark:border-amber-900/50 rounded-2xl space-y-1.5 text-xs text-amber-800 dark:text-amber-300 animate-pulse">
+                        <div className="flex items-center gap-1.5 font-extrabold text-amber-950 dark:text-amber-200">
+                          <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
+                          <span>{_t('يرجى إكمال الحقول التالية لحفظ الحصة:', 'Please complete the following fields to save the lesson:', 'Bitte füllen Sie die folgenden Felder aus, um die Stunde zu speichern:')}</span>
+                        </div>
+                        <ul className="list-disc list-inside space-y-1 text-[11px] font-black pr-1">
+                          {!lessonWhatWasTaught.trim() && <li>{_t('حقل ماذا تم شرحه في الحصة', 'Subject Taught field', 'Feld "Behandelter Stoff"')}</li>}
+                          {!lessonNextHomework.trim() && <li>{_t('حقل الواجب المنزلي القادم', 'Next Homework field', 'Feld "Nächste Hausaufgabe"')}</li>}
+                          {activeLessonStudents.map(st => {
+                            const att = studentAttendance[st.id] || 'present';
+                            if (att !== 'absent') {
+                              const missing = [];
+                              if (studentHomeworkDone[st.id] === undefined) missing.push(_t('حالة الواجب', 'Homework Status', 'Hausaufgabenstatus'));
+                              if (studentDictationGrade[st.id] === undefined) missing.push(_t('درجة الإملاء', 'Dictation Grade', 'Diktatnote'));
+                              if (studentExamGrade[st.id] === undefined) missing.push(_t('درجة الامتحان', 'Exam Grade', 'Prüfungsnote'));
+                              if (missing.length > 0) {
+                                return (
+                                  <li key={st.id}>
+                                    {_t('الطالب', 'Student', 'Schüler')} <strong>{st.name}</strong>:{' '}
+                                    {_t('يحتاج', 'needs', 'benötigt')} ({missing.join(_t('، ', ', ', ', '))})
+                                  </li>
+                                );
+                              }
+                            }
+                            return null;
+                          })}
+                        </ul>
+                      </div>
+                    )}
+
+                    {/* End Session Button */}
+                    <button
+                      type="button"
+                      disabled={!isReportFormValid}
+                      onClick={() => handleSaveReport()}
+                      className={`w-full font-black text-sm py-3.5 rounded-2xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                        isReportFormValid
+                          ? 'bg-primary hover:bg-primary-hover active:scale-95 text-white hover:shadow-lg hover:shadow-primary/30'
+                          : 'bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-600 cursor-not-allowed border border-slate-300/30'
+                      }`}
+                    >
+                      <CheckCircle2 className="w-5 h-5" />
+                      <span>{_t('إنهاء الحصة وحفظ التقرير', 'End Session & Save Report', 'Stunde beenden & Bericht speichern')}</span>
+                    </button>
+                  </form>
+                );
+              })()}
             </>
           )}
 
           {/* PARENT COMMUNICATION QUICK BUTTONS */}
           <div className="pt-3 border-t border-slate-100 dark:border-surface-border space-y-2">
             <p className="text-xs font-bold text-text-main">
-              Eltern-Kommunikation / Parent Communication:
+              {_t('التواصل مع أولياء الأمور:', 'Parent Communication:', 'Eltern-Kommunikation:')}
             </p>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
               <button
                 type="button"
-                onClick={() => setShowArabicParentReportModal(true)}
-                className="bg-primary hover:bg-primary-hover active:scale-95 text-white font-black text-xs py-2.5 px-3 rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer shadow-sm"
+                disabled={selectedLesson.status !== 'completed'}
+                onClick={() => {
+                  if (selectedLesson.status !== 'completed') {
+                    alert('يرجى إنهاء الحصة أولاً بالضغط على زر "إنهاء الحصة وحفظ التقرير" لتتمكن من فتح تقرير ولي الأمر.');
+                    return;
+                  }
+                  setShowArabicParentReportModal(true);
+                }}
+                className={`font-black text-xs py-2.5 px-3 rounded-xl transition-all flex items-center justify-center gap-2 shadow-sm ${
+                  selectedLesson.status === 'completed'
+                    ? 'bg-primary hover:bg-primary-hover active:scale-95 text-white cursor-pointer'
+                    : 'bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-600 cursor-not-allowed border border-slate-200/50'
+                }`}
               >
                 <Send className="w-4 h-4" />
                 <span>تقرير ولي الأمر / Elternbericht</span>
@@ -1035,6 +1177,7 @@ export const LessonControlModal: React.FC = () => {
           student={targetStudent}
           profile={profile}
           onClose={() => setShowParentSummaryModal(false)}
+          onGoToHomeScreen={closeLessonControl}
         />
       )}
 
@@ -1060,22 +1203,7 @@ export const LessonControlModal: React.FC = () => {
           student={targetStudent}
           profile={profile}
           onClose={() => setShowArabicParentReportModal(false)}
-          onSaveReport={(arabicReportText, extraFields) => {
-            saveLessonReport(selectedLesson.id, {
-              attendanceStatus: attendance,
-              studentAttendance: studentAttendance,
-              homeworkStatus,
-              homeworkTitle,
-              homeworkDescription,
-              paymentStatus,
-              amountPaid: Number(amountPaid),
-              teacherNotes,
-              arabicFullGeneratedReport: arabicReportText,
-              ...(extraFields || {}),
-              savedAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-            }, extraFields?.totalSessionsInPackage || packageChoice);
-            confetti({ particleCount: 60, spread: 50 });
-          }}
+          onGoToHomeScreen={closeLessonControl}
         />
       )}
     </div>

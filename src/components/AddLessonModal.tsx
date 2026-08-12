@@ -35,8 +35,19 @@ export const AddLessonModal: React.FC<AddLessonModalProps> = ({ onClose }) => {
   // CONFLICT DETECTION ALGORITHM:
   // Check if chosen date + time overlaps with any existing lesson
   const checkConflict = (checkTime: string) => {
-    const dummyLesson = { id: 'dummy', date, time: checkTime, durationMinutes };
-    return lessons.some(l => checkOverlap(dummyLesson, l));
+    if (isWeeklyRecurring) {
+      for (let i = 0; i < repeatWeeks; i++) {
+        const d = new Date(date);
+        d.setDate(d.getDate() + (i * 7));
+        const dateStr = new Date(d.getTime() - (d.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
+        const dummyLesson = { id: 'dummy', date: dateStr, time: checkTime, durationMinutes };
+        if (lessons.some(l => checkOverlap(dummyLesson, l))) return true;
+      }
+      return false;
+    } else {
+      const dummyLesson = { id: 'dummy', date, time: checkTime, durationMinutes };
+      return lessons.some(l => checkOverlap(dummyLesson, l));
+    }
   };
 
   const hasConflict = checkConflict(time);
@@ -102,8 +113,14 @@ export const AddLessonModal: React.FC<AddLessonModalProps> = ({ onClose }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-end sm:items-center justify-center pt-[max(24px,env(safe-area-inset-top,24px))] overflow-y-auto p-0 sm:p-4 pb-0">
-      <div className="bg-surface border border-surface-border rounded-t-[28px] sm:rounded-xl pb-safe-bottom sm:pb-0 mb-0 w-full max-w-md shadow-2xl overflow-hidden animate-scale-up font-sans">
+    <div 
+      onClick={onClose} 
+      className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-end sm:items-center justify-center pt-[max(24px,env(safe-area-inset-top,24px))] overflow-y-auto p-0 sm:p-4 pb-0"
+    >
+      <div 
+        onClick={(e) => e.stopPropagation()} 
+        className="bg-surface border border-surface-border rounded-t-[28px] sm:rounded-xl pb-safe-bottom sm:pb-0 mb-0 w-full max-w-md shadow-2xl overflow-hidden animate-scale-up font-sans"
+      >
         <div className="w-12 h-1.5 bg-slate-200 dark:bg-slate-800 rounded-full mx-auto mt-3 mb-1 sm:hidden shrink-0" />
         {/* Header */}
         <div className="bg-gradient-to-r from-primary to-primary-hover p-5 text-white flex items-center justify-between">
@@ -143,7 +160,7 @@ export const AddLessonModal: React.FC<AddLessonModalProps> = ({ onClose }) => {
             >
               {groups.map(g => (
                 <option key={g.id} value={g.id}>
-                  {g.name} ({g.grade} • {g.type.toUpperCase()})
+                  {g.name} ({g.grade} • {(g.type || '').toUpperCase()})
                 </option>
               ))}
             </select>

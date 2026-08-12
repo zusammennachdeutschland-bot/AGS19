@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { checkOverlap } from '../utils/lessonUtils';
 import { useApp } from '../context/AppContext';
 import { PREDEFINED_GRADES } from '../data/initialData';
 import { GradeLevel, LessonType, PaymentStatus } from '../types';
-import { X, Calendar, Clock, Zap, Video, MapPin, DollarSign, User, Phone, FileText } from 'lucide-react';
+import { X, Calendar, Clock, Zap, Video, MapPin, DollarSign, User, Phone, FileText, AlertTriangle } from 'lucide-react';
 
 interface AddQuickLessonModalProps {
   onClose: () => void;
@@ -24,6 +24,14 @@ export const AddQuickLessonModal: React.FC<AddQuickLessonModalProps> = ({ onClos
   const [amountPaid, setAmountPaid] = useState(0);
   const [paymentStatus, setPaymentStatus] = useState<PaymentStatus>('pending');
   const [quickNotes, setQuickNotes] = useState('');
+
+  // Sync paid amount if amountDue changes while status is paid
+  useEffect(() => {
+    if (paymentStatus === 'paid') {
+      setAmountPaid(amountDue);
+    }
+  }, [amountDue, paymentStatus]);
+
   const [grade, setGrade] = useState<GradeLevel>('Grade 9');
   const [locationAddress, setLocationAddress] = useState('Kairo Schulungsraum');
   const [meetingLink, setMeetingLink] = useState(profile.defaultZoomLink || 'https://zoom.us/j/123456789');
@@ -37,7 +45,7 @@ export const AddQuickLessonModal: React.FC<AddQuickLessonModalProps> = ({ onClos
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!studentName.trim()) return;
+    if (!studentName.trim() || hasConflict) return;
 
     addQuickLesson({
       studentName: studentName.trim(),
@@ -62,8 +70,14 @@ export const AddQuickLessonModal: React.FC<AddQuickLessonModalProps> = ({ onClos
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-end sm:items-center justify-center pt-[max(24px,env(safe-area-inset-top,24px))] overflow-y-auto font-sans p-0 sm:p-4 pb-0">
-      <div className="bg-surface border border-surface-border rounded-t-[28px] sm:rounded-xl pb-safe-bottom sm:pb-0 mb-0 w-full max-w-md shadow-2xl overflow-hidden animate-scale-up">
+    <div 
+      onClick={onClose} 
+      className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-end sm:items-center justify-center pt-[max(24px,env(safe-area-inset-top,24px))] overflow-y-auto font-sans p-0 sm:p-4 pb-0"
+    >
+      <div 
+        onClick={(e) => e.stopPropagation()} 
+        className="bg-surface border border-surface-border rounded-t-[28px] sm:rounded-xl pb-safe-bottom sm:pb-0 mb-0 w-full max-w-md shadow-2xl overflow-hidden animate-scale-up"
+      >
         <div className="w-12 h-1.5 bg-slate-200 dark:bg-slate-800 rounded-full mx-auto mt-3 mb-1 sm:hidden shrink-0" />
         {/* Header */}
         <div className="bg-surface border-b border-slate-100 dark:border-surface-border p-5 flex items-center justify-between text-text-main shrink-0">
@@ -155,6 +169,19 @@ export const AddQuickLessonModal: React.FC<AddQuickLessonModalProps> = ({ onClos
               />
             </div>
           </div>
+
+          {/* CONFLICT DETECTION WARNING */}
+          {hasConflict && (
+            <div className="bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900 rounded-lg p-3 flex items-start gap-2 text-xs text-red-800 dark:text-red-300">
+              <AlertTriangle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
+              <div>
+                <p className="font-bold">Terminkonflikt erkannt! (Schedule Conflict)</p>
+                <p className="text-[11px] text-red-700 dark:text-red-400 mt-0.5">
+                  Es gibt bereits eine andere Lektion um {time} Uhr an diesem Tag. Bitte wählen Sie eine freie Zeit aus.
+                </p>
+              </div>
+            </div>
+          )}
 
           {/* Type Switcher */}
           <div className="space-y-1">
@@ -254,12 +281,12 @@ export const AddQuickLessonModal: React.FC<AddQuickLessonModalProps> = ({ onClos
             disabled={hasConflict}
             className={`w-full text-white font-black text-xs py-2.5 rounded-lg transition-all flex items-center justify-center gap-2 cursor-pointer mt-2 border ${
               hasConflict 
-                ? 'bg-slate-300 border-slate-300 text-slate-500 cursor-not-allowed opacity-70' 
+                ? 'bg-slate-300 dark:bg-slate-800 border-slate-300 dark:border-slate-700 text-slate-500 cursor-not-allowed opacity-70' 
                 : 'bg-primary border-primary-border hover:bg-primary text-white shadow-sm'
             }`}
           >
             <Zap className="w-3.5 h-3.5 fill-current" />
-            <span>{t('save')}</span>
+            <span>{hasConflict ? 'Konflikt beheben (Resolve Conflict)' : t('save')}</span>
           </button>
         </form>
       </div>

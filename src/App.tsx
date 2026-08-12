@@ -18,7 +18,6 @@ import { ReportsView } from './components/ReportsView';
 import { SessionHistoryView } from './components/SessionHistoryView';
 import { SettingsView } from './components/SettingsView';
 import { FreeTimeSlotsView } from './components/FreeTimeSlotsView';
-import { AndroidWidgetsHub } from './components/AndroidWidgetsHub';
 
 import { AnimatePresence, motion } from 'motion/react';
 import { BottomNav } from './components/BottomNav';
@@ -42,6 +41,7 @@ function MainApp() {
 
   const { 
     activeTab, setActiveTab, 
+    lessons, openLessonControl,
     isControlModalOpen, closeLessonControl,
     isAddLessonModalOpen, setIsAddLessonModalOpen,
     isAddQuickLessonModalOpen, setIsAddQuickLessonModalOpen,
@@ -52,6 +52,98 @@ function MainApp() {
     isGlobalSearchOpen, setIsGlobalSearchOpen,
     isRecentlyDeletedModalOpen, setIsRecentlyDeletedModalOpen
   } = useApp();
+
+  // Native Widget Deep-Link Router (ags19://...)
+  useEffect(() => {
+    let urlListener: any = null;
+
+    const setupUrlListener = async () => {
+      urlListener = await CapacitorApp.addListener('appUrlOpen', (data: { url: string }) => {
+        console.log('App opened with deep link URL:', data?.url);
+        if (!data || !data.url) return;
+
+        const url = data.url;
+
+        // 1. Handle Lesson Deep Links: ags19://lesson/{id}
+        if (url.includes('ags19://lesson/')) {
+          const rawId = url.split('ags19://lesson/')[1];
+          const lessonId = rawId ? rawId.split('?')[0].split('/')[0] : '';
+          if (lessonId && lessonId !== 'null') {
+            const targetLesson = lessons.find(l => l.id === lessonId);
+            if (targetLesson) {
+              openLessonControl(targetLesson);
+            }
+          }
+        } 
+        // 2. Handle Action Deep Links: ags19://action/{action} or ags19://{action}
+        else {
+          let action = '';
+          if (url.includes('ags19://action/')) {
+            action = url.split('ags19://action/')[1]?.split('?')[0]?.split('/')[0]?.toLowerCase();
+          } else if (url.includes('ags19://')) {
+            action = url.split('ags19://')[1]?.split('?')[0]?.split('/')[0]?.toLowerCase();
+          }
+
+          if (action) {
+            switch (action) {
+              case 'payments':
+                setActiveTab('payments');
+                break;
+              case 'schedule':
+                setActiveTab('schedule');
+                break;
+              case 'students':
+                setActiveTab('students');
+                break;
+              case 'history':
+                setActiveTab('history');
+                break;
+              case 'reports':
+                setActiveTab('reports');
+                break;
+              case 'settings':
+                setActiveTab('settings');
+                break;
+              case 'freetime':
+              case 'free_time':
+                setActiveTab('freeTime');
+                break;
+              case 'home':
+              case 'dashboard':
+                setActiveTab('home');
+                break;
+              case 'quick_lesson':
+              case 'add_quick_lesson':
+                setIsAddQuickLessonModalOpen(true);
+                break;
+              case 'add_lesson':
+                setIsAddLessonModalOpen(true);
+                break;
+              case 'add_student':
+                setIsAddStudentModalOpen(true);
+                break;
+              case 'add_group':
+                setIsAddGroupModalOpen(true);
+                break;
+              case 'start_lesson':
+                setIsStartLessonNowModalOpen(true);
+                break;
+            }
+          }
+        }
+      });
+    };
+
+    setupUrlListener();
+
+    return () => {
+      if (urlListener && typeof urlListener.then === 'function') {
+        urlListener.then((l: any) => l.remove()).catch(() => {});
+      } else if (urlListener && typeof urlListener.remove === 'function') {
+        urlListener.remove();
+      }
+    };
+  }, [lessons, openLessonControl, setActiveTab, setIsAddLessonModalOpen, setIsAddQuickLessonModalOpen, setIsAddStudentModalOpen, setIsAddGroupModalOpen, setIsStartLessonNowModalOpen]);
 
   const stateRef = useRef({
     activeTab,
@@ -130,10 +222,25 @@ function MainApp() {
           setIsAddGroupModalOpen(false);
         } else if (backupOpen) {
           setIsBackupModalOpen(false);
-        } else if (currentActiveTab !== 'home') {
-          setActiveTab('home');
         } else {
-          CapacitorApp.exitApp();
+          // Check for any DOM overlay / modal container
+          const overlays = document.querySelectorAll('.fixed.inset-0');
+          if (overlays.length > 0) {
+            const topOverlay = overlays[overlays.length - 1] as HTMLElement;
+            const closeBtn = topOverlay.querySelector('button') as HTMLButtonElement;
+            if (closeBtn) {
+              closeBtn.click();
+            } else {
+              topOverlay.click();
+            }
+            return;
+          }
+
+          if (currentActiveTab !== 'home') {
+            setActiveTab('home');
+          } else {
+            CapacitorApp.minimizeApp();
+          }
         }
       });
 
@@ -244,9 +351,8 @@ function MainApp() {
 
           {activeTab === 'reports' && <ReportsView />}
 
-          {activeTab === 'settings' && <SettingsView />}
-          {activeTab === 'freeTime' && <FreeTimeSlotsView />}
-          {activeTab === 'widgets' && <AndroidWidgetsHub />}
+              {activeTab === 'settings' && <SettingsView />}
+              {activeTab === 'freeTime' && <FreeTimeSlotsView />}
 
             </motion.div>
           </AnimatePresence>
@@ -277,8 +383,10 @@ import { storage } from './services/storageService';
 
 export default function App() {
   const [initialData, setInitialData] = useState<any>(null);
+  const [loadError, setLoadError] = useState(false);
 
   useEffect(() => {
+    let isMounted = true;
     async function loadData() {
       try {
         await migrateFromLocalStorageToIndexedDB();
@@ -290,18 +398,38 @@ export default function App() {
           'dl_active_lesson_session', 'dl_notified_lesson_alerts', 'dl_local_backup_data'
         ];
         
+        const values = await Promise.all(keys.map(k => storage.getItem(k)));
         const data: any = {};
-        for (const key of keys) {
-          data[key] = await storage.getItem(key);
+        keys.forEach((key, idx) => {
+          data[key] = values[idx];
+        });
+        if (isMounted) {
+          setInitialData(data);
         }
-        setInitialData(data);
       } catch (err) {
         console.error('Error during loadData initialisation:', err);
-        setInitialData({});
+        if (isMounted) {
+          setLoadError(true);
+        }
       }
     }
     loadData();
+    return () => {
+      isMounted = false;
+    };
   }, []);
+
+  if (loadError) {
+    return (
+      <div className="h-[100dvh] w-screen flex flex-col items-center justify-center bg-background p-6 text-center space-y-4">
+        <div className="text-red-500 font-bold text-xl">System Error / Speicherfehler</div>
+        <p className="text-text-main text-sm max-w-md">
+          A critical error occurred while accessing the local database. The app has been halted to prevent data loss. 
+          Please try restarting the app or contact support.
+        </p>
+      </div>
+    );
+  }
 
   if (!initialData) {
     return <div className="h-[100dvh] w-screen flex items-center justify-center bg-background"><div className="animate-pulse text-slate-500">Lade Daten...</div></div>;

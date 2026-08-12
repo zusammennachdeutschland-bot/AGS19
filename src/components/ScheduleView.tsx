@@ -183,7 +183,7 @@ export const ScheduleView: React.FC = () => {
 
       icsContent.push('BEGIN:VEVENT');
       icsContent.push(`SUMMARY:${l.title} (${l.grade})`);
-      icsContent.push(`DESCRIPTION:Lesson ${l.sessionNumber}/${l.totalSessionsInPackage} - Type: ${l.type.toUpperCase()}`);
+      icsContent.push(`DESCRIPTION:Lesson ${l.sessionNumber}/${l.totalSessionsInPackage} - Type: ${(l.type || '').toUpperCase()}`);
       icsContent.push(`DTSTART:${startDT}`);
       icsContent.push(`DURATION:PT${l.durationMinutes || 60}M`);
       if (l.meetingLink) icsContent.push(`LOCATION:${l.meetingLink}`);

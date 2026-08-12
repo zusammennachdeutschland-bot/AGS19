@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { Bell, RefreshCw, CheckCircle2, Camera, Clock, Search, Trash2 } from 'lucide-react';
 import { DEFAULT_OFFLINE_AVATAR } from '../data/avatarPresets';
+import { AvatarImage } from './AvatarImage';
 import { NotificationsModal } from './NotificationsModal';
 import { motion } from 'motion/react';
 
@@ -55,43 +56,6 @@ export const Header: React.FC = () => {
     }, 2500);
   };
 
-  const handleAvatarUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        if (event.target?.result) {
-          const img = new Image();
-          img.onload = () => {
-            const canvas = document.createElement('canvas');
-            let width = img.width;
-            let height = img.height;
-            const max_size = 300;
-            if (width > height) {
-              if (width > max_size) {
-                height *= max_size / width;
-                width = max_size;
-              }
-            } else {
-              if (height > max_size) {
-                width *= max_size / height;
-                height = max_size;
-              }
-            }
-            canvas.width = width;
-            canvas.height = height;
-            const ctx = canvas.getContext('2d');
-            ctx?.drawImage(img, 0, 0, width, height);
-            const dataUrl = canvas.toDataURL('image/jpeg', 0.6);
-            updateProfile({ avatarUrl: dataUrl });
-          };
-          img.src = event.target.result as string;
-        }
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
   return (
     <>
       {/* Premium Safe Area Spacer for Android Status Bar */}
@@ -106,17 +70,11 @@ export const Header: React.FC = () => {
           {/* Profile & Greeting / Tab Indicator */}
           <div className="flex items-center gap-2.5 min-w-0 flex-1">
             <div className="relative group shrink-0">
-              <img
-                src={profile.avatarUrl || DEFAULT_OFFLINE_AVATAR}
-                onError={(e) => { e.currentTarget.src = DEFAULT_OFFLINE_AVATAR; }}
-                alt={profile.displayName}
-                className="w-10 h-10 rounded-full object-cover ring-2 ring-primary/25 dark:ring-primary/40 shadow-xs transition-transform group-hover:scale-105"
+              <AvatarImage
+                name={profile.displayName}
+                className="w-10 h-10 rounded-full font-black ring-2 ring-primary/25 dark:ring-primary/40 shadow-xs transition-transform group-hover:scale-105"
               />
               <span className="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 border-2 border-white dark:border-black rounded-full shadow-2xs" />
-              <label className="absolute inset-0 bg-black/40 rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer">
-                <Camera className="w-3.5 h-3.5 text-white" />
-                <input type="file" accept="image/*" onChange={handleAvatarUpload} className="hidden" />
-              </label>
             </div>
 
             <div className="leading-tight min-w-0 flex-1 pr-1">

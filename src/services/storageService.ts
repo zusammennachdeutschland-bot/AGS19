@@ -32,7 +32,10 @@ export const storage = {
     try {
       if (isLocalforageSupported) {
         const val = await localforage.getItem<T>(key);
-        if (val !== null) return val;
+        if (val !== null) {
+          memoryStore[key] = val;
+          return val;
+        }
       }
     } catch (e) {
       console.warn('Error reading from localforage:', key, e);
@@ -43,8 +46,11 @@ export const storage = {
         const val = localStorage.getItem(key);
         if (val !== null) {
           try {
-            return JSON.parse(val) as T;
+            const parsed = JSON.parse(val) as T;
+            memoryStore[key] = parsed;
+            return parsed;
           } catch {
+            memoryStore[key] = val as unknown as T;
             return val as unknown as T;
           }
         }

@@ -117,7 +117,7 @@ export const GlobalSearchModal: React.FC = () => {
                       >
                         <div className="flex items-center gap-3">
                           <div className="w-9 h-9 rounded-full bg-primary-soft dark:bg-primary-soft/40 text-primary dark:text-primary flex items-center justify-center font-bold text-sm active:scale-95 transition-all hover:bg-primary/20">
-                            {student.name.substring(0, 2).toUpperCase()}
+                            {(student.name || '').substring(0, 2).toUpperCase()}
                           </div>
                           <div>
                             <p className="text-sm font-semibold text-text-main group-hover:text-primary dark:group-hover:text-primary">

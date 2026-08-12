@@ -10,14 +10,32 @@ import com.getcapacitor.annotation.CapacitorPlugin;
 
 @CapacitorPlugin(name = "WidgetManager")
 public class WidgetManagerPlugin extends Plugin {
+
     @PluginMethod
     public void updateWidget(PluginCall call) {
-        Intent intent = new Intent(getContext(), TodayLessonsWidget.class);
-        intent.setAction(AppWidgetManager.ACTION_APPWIDGET_UPDATE);
-        int[] ids = AppWidgetManager.getInstance(getContext())
-                .getAppWidgetIds(new ComponentName(getContext(), TodayLessonsWidget.class));
-        intent.putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, ids);
-        getContext().sendBroadcast(intent);
+        updateAllWidgets();
         call.resolve();
+    }
+
+    private void updateAllWidgets() {
+        Class<?>[] widgetClasses = new Class<?>[] {
+            TodayLessonsWidget.class,
+            QuickActionsWidget.class,
+            CurrentLessonWidget.class,
+            PaymentsDueWidget.class,
+            TodoWidget.class,
+            RevenueWidget.class,
+            MiniDashboardWidget.class,
+            UpcomingLessonsWidget.class
+        };
+
+        for (Class<?> widgetClass : widgetClasses) {
+            Intent intent = new Intent(getContext(), widgetClass);
+            intent.setAction(AppWidgetManager.ACTION_APPWIDGET_UPDATE);
+            int[] ids = AppWidgetManager.getInstance(getContext())
+                    .getAppWidgetIds(new ComponentName(getContext(), widgetClass));
+            intent.putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, ids);
+            getContext().sendBroadcast(intent);
+        }
     }
 }

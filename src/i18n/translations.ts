@@ -10,6 +10,7 @@ export type TranslationKey =
   | 'nav_settings'
   | 'nav_quickLesson'
   | 'nav_more'
+  | 'nav_widgets'
   | 'goodMorning'
   | 'goodAfternoon'
   | 'goodEvening'
@@ -370,6 +371,7 @@ export const translations: Record<AppLanguage, Record<TranslationKey, string>> =
     nav_settings: 'الإعدادات',
     nav_quickLesson: 'حصة سريعة',
     nav_more: 'المزيد',
+    nav_widgets: 'ويدجت أندرويد',
     goodMorning: 'صباح الخير',
     goodAfternoon: 'مساء الخير',
     goodEvening: 'مساء الخير',
@@ -728,6 +730,7 @@ export const translations: Record<AppLanguage, Record<TranslationKey, string>> =
     nav_settings: 'Settings',
     nav_quickLesson: 'Quick Lesson',
     nav_more: 'More',
+    nav_widgets: 'Android Widgets',
     goodMorning: 'Good morning',
     goodAfternoon: 'Good afternoon',
     goodEvening: 'Good evening',
@@ -1086,6 +1089,7 @@ export const translations: Record<AppLanguage, Record<TranslationKey, string>> =
     nav_settings: 'Einstellungen',
     nav_quickLesson: 'Schnellstunde',
     nav_more: 'Mehr',
+    nav_widgets: 'Android Widgets',
     goodMorning: 'Guten Morgen',
     goodAfternoon: 'Guten Tag',
     goodEvening: 'Guten Abend',

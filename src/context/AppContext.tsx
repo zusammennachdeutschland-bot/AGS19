@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
 import { 
   TeacherProfile, Group, Student, Lesson, PaymentRecord, NotificationItem, 
   LessonReport, StudentDocument, PaymentStatus, LessonStatus, AttendanceStatus, HomeworkStatus, SyncStatus, BackupData, BackupIntegrityReport, StudentPaymentDetail, AppLanguage, AccentColor, RecentlyDeletedData, ActiveLessonSession,
@@ -14,8 +14,10 @@ import { App as CapacitorApp } from '@capacitor/app';
 import { storage } from '../services/storageService';
 import { getStudentCyclePricing } from '../utils/paymentUtils';
 import { getGroupScheduleSlots, getDayNumber } from '../utils/scheduleUtils';
+import { isPendingStatus } from '../utils/lessonUtils';
 import { translations, TranslationKey } from '../i18n/translations';
 import { syncTodayLessonsToWidget } from '../services/widgetService';
+import LiveTimer from '../services/liveTimerPlugin';
 
 import { 
   INITIAL_TEACHER_PROFILE, INITIAL_GROUPS, INITIAL_STUDENTS, 
@@ -40,8 +42,8 @@ interface AppContextType {
   setAccentColor: (color: AccentColor) => void;
   t: (key: TranslationKey) => string;
   _t: (ar: string, en: string, de?: string) => string;
-  activeTab: 'home' | 'schedule' | 'students' | 'history' | 'payments' | 'reports' | 'settings' | 'freeTime' | 'widgets';
-  setActiveTab: (tab: 'home' | 'schedule' | 'students' | 'history' | 'payments' | 'reports' | 'settings' | 'freeTime' | 'widgets') => void;
+  activeTab: 'home' | 'schedule' | 'students' | 'history' | 'payments' | 'reports' | 'settings' | 'freeTime';
+  setActiveTab: (tab: 'home' | 'schedule' | 'students' | 'history' | 'payments' | 'reports' | 'settings' | 'freeTime') => void;
 
   // Global Search & Recently Deleted Modals
   isGlobalSearchOpen: boolean;
@@ -80,7 +82,7 @@ interface AppContextType {
 
   // Lessons
   lessons: Lesson[];
-  addLesson: (lesson: Omit<Lesson, 'id' | 'sessionNumber' | 'totalSessionsInPackage'>, repeatWeeks?: number) => void;
+  addLesson: (lesson: Omit<Lesson, 'id' | 'sessionNumber' | 'totalSessionsInPackage'> & { id?: string }, repeatWeeks?: number) => Lesson[];
   addQuickLesson: (data: Omit<Lesson, 'id' | 'sessionNumber' | 'totalSessionsInPackage' | 'groupId' | 'groupName'> & {
     studentName: string;
     quickStudentPhone?: string;
@@ -218,6 +220,8 @@ interface AppContextType {
   backupToDrive: () => void | Promise<void>;
   restoreFromDrive: (jsonString: string) => boolean;
   addAppNotification: (title: string, message: string, type: 'system' | 'reminder' | 'payment', extraFields?: any) => void;
+  getHistoricalLessons: () => Promise<Lesson[]>;
+  getHistoricalPayments: () => Promise<PaymentRecord[]>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -254,11 +258,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode, initialData: any
     return saved !== null && saved !== undefined ? saved : [];
   });
 
+  const isInitializedRef = React.useRef(false);
+
   useEffect(() => {
+    const timer = setTimeout(() => {
+      isInitializedRef.current = true;
+    }, 150);
+    return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    if (!isInitializedRef.current) return;
     storage.setItem('dl_quick_todos', todos);
   }, [todos]);
 
-  const [activeTab, setActiveTab] = useState<'home' | 'schedule' | 'students' | 'history' | 'payments' | 'reports' | 'settings' | 'freeTime' | 'widgets'>('home');
+  const [activeTab, setActiveTab] = useState<'home' | 'schedule' | 'students' | 'history' | 'payments' | 'reports' | 'settings' | 'freeTime'>('home');
 
   const [profile, setProfile] = useState<TeacherProfile>(() => {
     const saved = initialData['dl_profile'];
@@ -320,20 +334,40 @@ export const AppProvider: React.FC<{ children: React.ReactNode, initialData: any
     const raw: Student[] = saved !== null && saved !== undefined ? saved : INITIAL_STUDENTS;
     const seen = new Set<string>();
     return raw.map((item, idx) => {
-      if (seen.has(item.id)) {
-        const newId = `${item.id}_fixed_${idx}_${Math.random().toString(36).substring(2, 6)}`;
-        return { ...item, id: newId };
+      let st = item;
+      if (seen.has(st.id)) {
+        const newId = `${st.id}_fixed_${idx}_${Math.random().toString(36).substring(2, 6)}`;
+        st = { ...st, id: newId };
       }
-      seen.add(item.id);
-      return item;
+      seen.add(st.id);
+
+      // Memory Optimization: Clear any Base64/url avatar strings
+      if (st.avatarUrl) {
+        st = { ...st, avatarUrl: '' };
+      }
+      return st;
     });
   });
+
+  // Memory Optimization: Filter active lessons for global RAM state (current month / last 60 days + future / pending)
+  const filterActiveLessons = (raw: Lesson[]): Lesson[] => {
+    const sixtyDaysAgo = new Date();
+    sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
+    const cutoffStr = sixtyDaysAgo.toISOString().split('T')[0];
+
+    return raw.filter(l => {
+      if (!l.date) return true;
+      if (l.date >= cutoffStr) return true;
+      if (l.status === 'scheduled' || isPendingStatus(l.status)) return true;
+      return false;
+    });
+  };
 
   const [lessons, setLessons] = useState<Lesson[]>(() => {
     const saved = initialData['dl_lessons'];
     const raw: Lesson[] = saved !== null && saved !== undefined ? saved : INITIAL_LESSONS;
     const seen = new Set<string>();
-    return raw.map((item, idx) => {
+    const sanitized = raw.map((item, idx) => {
       if (seen.has(item.id)) {
         const newId = `${item.id}_fixed_${idx}_${Math.random().toString(36).substring(2, 6)}`;
         return { ...item, id: newId };
@@ -341,13 +375,29 @@ export const AppProvider: React.FC<{ children: React.ReactNode, initialData: any
       seen.add(item.id);
       return item;
     });
+    return filterActiveLessons(sanitized);
   });
+
+  // Memory Optimization: Filter active payments for global RAM state
+  const filterActivePayments = (raw: PaymentRecord[]): PaymentRecord[] => {
+    const sixtyDaysAgo = new Date();
+    sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
+    const cutoffStr = sixtyDaysAgo.toISOString().split('T')[0];
+
+    return raw.filter(p => {
+      const d = p.paidDate || p.dueDate || p.createdAt || '';
+      if (!d) return true;
+      if (d.substring(0, 10) >= cutoffStr) return true;
+      if (p.status === 'pending' || p.status === 'partial') return true;
+      return false;
+    });
+  };
 
   const [payments, setPayments] = useState<PaymentRecord[]>(() => {
     const saved = initialData['dl_payments'];
     const raw: PaymentRecord[] = saved !== null && saved !== undefined ? saved : INITIAL_PAYMENT_RECORDS;
     const seen = new Set<string>();
-    return raw.map((item, idx) => {
+    const sanitized = raw.map((item, idx) => {
       if (seen.has(item.id)) {
         const newId = `${item.id}_fixed_${idx}_${Math.random().toString(36).substring(2, 6)}`;
         return { ...item, id: newId };
@@ -355,7 +405,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode, initialData: any
       seen.add(item.id);
       return item;
     });
+    return filterActivePayments(sanitized);
   });
+
+  // Asynchronous Database Query methods for historical views (SessionHistoryView & ReportsView)
+  const getHistoricalLessons = async (): Promise<Lesson[]> => {
+    const full = await storage.getItem<Lesson[]>('dl_lessons');
+    return full && full.length > 0 ? full : lessons;
+  };
+
+  const getHistoricalPayments = async (): Promise<PaymentRecord[]> => {
+    const full = await storage.getItem<PaymentRecord[]>('dl_payments');
+    return full && full.length > 0 ? full : payments;
+  };
 
   const [notifications, setNotifications] = useState<NotificationItem[]>(() => {
     const saved = initialData['dl_notifications'];
@@ -475,6 +537,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode, initialData: any
   });
 
   useEffect(() => {
+    if (!isInitializedRef.current) return;
     storage.setItem('dl_recently_deleted', recentlyDeleted);
   }, [recentlyDeleted]);
 
@@ -505,6 +568,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode, initialData: any
 
   // Sync state changes to localStorage
   useEffect(() => {
+    if (!isInitializedRef.current) return;
     storage.setItem('dl_theme', theme);
     if (theme === 'dark') {
       document.documentElement.classList.add('dark');
@@ -518,34 +582,72 @@ export const AppProvider: React.FC<{ children: React.ReactNode, initialData: any
   }, [theme]);
 
   useEffect(() => {
+    if (!isInitializedRef.current) return;
     storage.setItem('dl_profile', profile);
   }, [profile]);
 
   useEffect(() => {
+    if (!isInitializedRef.current) return;
     storage.setItem('dl_groups', groups);
   }, [groups]);
 
   useEffect(() => {
+    if (!isInitializedRef.current) return;
     storage.setItem('dl_students', students);
   }, [students]);
 
   useEffect(() => {
-    storage.setItem('dl_lessons', lessons);
+    if (!isInitializedRef.current) return;
+    async function syncLessons() {
+      if (!lessons) return;
+      const full = (await storage.getItem<Lesson[]>('dl_lessons')) || [];
+      const activeMap = new Map(lessons.map(l => [l.id, l]));
+      const fullIds = new Set(full.map(l => l.id));
+
+      const merged = full.map(l => activeMap.get(l.id) || l);
+      lessons.forEach(l => {
+        if (!fullIds.has(l.id)) {
+          merged.push(l);
+        }
+      });
+
+      await storage.setItem('dl_lessons', merged);
+    }
+    syncLessons();
   }, [lessons]);
 
   useEffect(() => {
-    storage.setItem('dl_payments', payments);
+    if (!isInitializedRef.current) return;
+    async function syncPayments() {
+      if (!payments) return;
+      const full = (await storage.getItem<PaymentRecord[]>('dl_payments')) || [];
+      const activeMap = new Map(payments.map(p => [p.id, p]));
+      const fullIds = new Set(full.map(p => p.id));
+
+      const merged = full.map(p => activeMap.get(p.id) || p);
+      payments.forEach(p => {
+        if (!fullIds.has(p.id)) {
+          merged.push(p);
+        }
+      });
+
+      await storage.setItem('dl_payments', merged);
+    }
+    syncPayments();
   }, [payments]);
 
   useEffect(() => {
+    if (!isInitializedRef.current) return;
     storage.setItem('dl_notifications', notifications);
   }, [notifications]);
 
   useEffect(() => {
+    if (!isInitializedRef.current) return;
     storage.setItem('dl_inspiration_settings', inspirationSettings);
   }, [inspirationSettings]);
 
   useEffect(() => {
+    if (!isInitializedRef.current) return;
     storage.setItem('dl_inspiration_messages', inspirationMessages);
   }, [inspirationMessages]);
 
@@ -1085,7 +1187,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode, initialData: any
   };
 
   // Lesson operations with session calculation
-  const addLesson = (lessonData: Omit<Lesson, 'id' | 'sessionNumber' | 'totalSessionsInPackage'>, repeatWeeks: number = 1) => {
+  const addLesson = (lessonData: Omit<Lesson, 'id' | 'sessionNumber' | 'totalSessionsInPackage'> & { id?: string }, repeatWeeks: number = 1): Lesson[] => {
     const targetGroup = groups.find(g => g.id === lessonData.groupId);
     const groupLessons = lessons.filter(l => l.groupId === lessonData.groupId);
     const totalSessions = targetGroup?.sessionCount || 4;
@@ -1105,19 +1207,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode, initialData: any
 
         createdLessons.push({
           ...lessonData,
-          id: `l_${Date.now()}_${week}_${Math.random().toString(36).substring(2, 5)}`,
+          id: (week === 0 && lessonData.id) ? lessonData.id : `l_${Date.now()}_${week}_${Math.random().toString(36).substring(2, 5)}`,
           date: dateStr,
           sessionNumber: currentSessionNum,
           totalSessionsInPackage: totalSessions,
           meetingLink: lessonData.type === 'online' ? (targetGroup?.zoomLink || profile.defaultZoomLink) : undefined,
           locationAddress: lessonData.type === 'offline' ? (targetGroup?.address || 'Hauptstraße 45, Cairo') : undefined
-        });
+        } as Lesson);
       }
     }
 
     if (createdLessons.length > 0) {
       setLessons(prev => [...prev, ...createdLessons]);
     }
+    return createdLessons;
   };
 
   const updateLesson = (id: string, updates: Partial<Lesson>) => {
@@ -1136,6 +1239,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode, initialData: any
       }));
     }
     setLessons(prev => prev.filter(l => l.id !== id));
+    storage.getItem<Lesson[]>('dl_lessons').then(full => {
+      if (full) {
+        storage.setItem('dl_lessons', full.filter(l => l.id !== id));
+      }
+    });
     if (selectedLesson?.id === id) {
       closeLessonControl();
     }
@@ -1208,6 +1316,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode, initialData: any
           const formattedDate = parts.length === 3 ? `${parts[2]}/${parts[1]}/${parts[0]}` : targetLesson.date;
 
 
+          // Get starting session offset for the first cycle
+          const hasPaidPayments = nextPayments.some(p => p.studentId === st.id && p.status === 'paid');
+          const startSess = grp?.startingSessionNumber || 1;
+          const virtualOffset = !hasPaidPayments && startSess > 1 ? (startSess - 1) : 0;
+
           // Find open payment record cycle for this student where lesson dates length < bundleSize and status is not fully settled
           const openCycleIndex = nextPayments.findIndex(p =>
             p.studentId === st.id &&
@@ -1220,21 +1333,26 @@ export const AppProvider: React.FC<{ children: React.ReactNode, initialData: any
           // Compute how many unbilled lessons this student has right now
           const paidLessonIds = new Set<string>();
           nextPayments.forEach(p => {
-            if (p.status === 'paid' && p.lessonIds) {
+            if (p.studentId === st.id && p.status === 'paid' && p.lessonIds) {
               p.lessonIds.forEach(id => paidLessonIds.add(id));
             }
           });
           
           const unbilledCompletedLessons = lessons.filter(l => {
              if (l.status !== 'completed' && l.id !== targetLesson.id) return false;
-             if (l.groupId !== st.groupId && l.studentId !== st.id) return false;
+             
+             // Check if lesson belongs to student's group or student individually
+             const matchesGroup = st.groupId ? l.groupId === st.groupId : false;
+             const matchesStudent = l.studentId === st.id || l.studentName === st.name;
+             if (!matchesGroup && !matchesStudent) return false;
+
              if (paidLessonIds.has(l.id) && l.id !== targetLesson.id) return false;
              const att = l.report?.studentAttendance?.[st.id] || l.report?.attendanceStatus || (l.id === targetLesson.id ? stAttendance : 'present');
              if (att === 'absent') return false;
              return true;
           });
           
-          const reachedBundleSize = unbilledCompletedLessons.length >= bundleSize;
+          const reachedBundleSize = (unbilledCompletedLessons.length + virtualOffset) >= bundleSize;
           const isPayingNow = stPayChoice?.amount !== undefined && stPayChoice.amount > 0;
 
           if (!reachedBundleSize && !isPayingNow) {
@@ -1242,7 +1360,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode, initialData: any
             return;
           }
 
-
+          const formattedDateWithSession = `${formattedDate} (Session ${targetLesson.sessionNumber || 1}/${bundleSize})`;
 
           if (openCycleIndex >= 0) {
             // Update existing open payment cycle
@@ -1250,16 +1368,35 @@ export const AppProvider: React.FC<{ children: React.ReactNode, initialData: any
             const existingDates = currentRec.lessonDates || [];
             const existingIds = currentRec.lessonIds || [];
 
-            const updatedDates = existingDates.includes(formattedDate) ? existingDates : [...existingDates, formattedDate];
-            const updatedIds = existingIds.includes(targetLesson.id) ? existingIds : [...existingIds, targetLesson.id];
-            
-            // If we reached bundle size and haven't added the previous ones, let's add them
+            const updatedDates = [...existingDates];
+            const updatedIds = [...existingIds];
+
+            if (!updatedIds.includes(targetLesson.id)) {
+              updatedIds.push(targetLesson.id);
+            }
+
+            // Generate virtual dates for the first cycle if needed
+            if (virtualOffset > 0) {
+              for (let i = 1; i <= virtualOffset; i++) {
+                const vLabel = `Offline (Session ${i}/${bundleSize})`;
+                if (!updatedDates.includes(vLabel)) {
+                  updatedDates.push(vLabel);
+                }
+              }
+            }
+
+            // Add all unbilled completed lessons
             if (reachedBundleSize) {
-                unbilledCompletedLessons.forEach(l => {
-                    const lDate = l.date.split('-').length === 3 ? `${l.date.split('-')[2]}/${l.date.split('-')[1]}/${l.date.split('-')[0]}` : l.date;
-                    if (!updatedIds.includes(l.id)) updatedIds.push(l.id);
-                    if (!updatedDates.includes(lDate)) updatedDates.push(lDate);
-                });
+              unbilledCompletedLessons.forEach(l => {
+                const lDate = l.date.split('-').length === 3 ? `${l.date.split('-')[2]}/${l.date.split('-')[1]}/${l.date.split('-')[0]}` : l.date;
+                const formattedLDate = `${lDate} (Session ${l.sessionNumber || 1}/${bundleSize})`;
+                if (!updatedIds.includes(l.id)) updatedIds.push(l.id);
+                if (!updatedDates.includes(formattedLDate)) updatedDates.push(formattedLDate);
+              });
+            } else {
+              if (!updatedDates.includes(formattedDateWithSession)) {
+                updatedDates.push(formattedDateWithSession);
+              }
             }
 
             const curPaid = stPayChoice?.amount !== undefined ? stPayChoice.amount : currentRec.amountPaid;
@@ -1287,15 +1424,31 @@ export const AppProvider: React.FC<{ children: React.ReactNode, initialData: any
             const initStatus = stPayChoice?.status || (initPaid >= bundlePrice ? 'paid' : (initPaid > 0 ? 'partial' : 'pending'));
             
             const initialIds = [targetLesson.id];
-            const initialDates = [formattedDate];
-            
-            if (reachedBundleSize) {
-                unbilledCompletedLessons.forEach(l => {
-                    const lDate = l.date.split('-').length === 3 ? `${l.date.split('-')[2]}/${l.date.split('-')[1]}/${l.date.split('-')[0]}` : l.date;
-                    if (!initialIds.includes(l.id)) initialIds.push(l.id);
-                    if (!initialDates.includes(lDate)) initialDates.push(lDate);
-                });
+            const initialDates: string[] = [];
+
+            if (virtualOffset > 0) {
+              for (let i = 1; i <= virtualOffset; i++) {
+                initialDates.push(`Offline (Session ${i}/${bundleSize})`);
+              }
             }
+
+            if (reachedBundleSize) {
+              unbilledCompletedLessons.forEach(l => {
+                const lDate = l.date.split('-').length === 3 ? `${l.date.split('-')[2]}/${l.date.split('-')[1]}/${l.date.split('-')[0]}` : l.date;
+                const formattedLDate = `${lDate} (Session ${l.sessionNumber || 1}/${bundleSize})`;
+                if (!initialIds.includes(l.id)) initialIds.push(l.id);
+                if (!initialDates.includes(formattedLDate)) {
+                  initialDates.push(formattedLDate);
+                }
+              });
+            } else {
+              initialDates.push(formattedDateWithSession);
+            }
+
+            // Prorated amount if partially virtual
+            const pricePerSession = bundlePrice / bundleSize;
+            const actualCount = initialIds.length;
+            const adjustedAmountDue = virtualOffset > 0 ? Math.round(pricePerSession * actualCount) : bundlePrice;
 
             const newRecord: PaymentRecord = {
               id: `pay_cycle_${st.id}_${Date.now()}_${Math.random().toString(36).substring(2, 5)}`,
@@ -1304,9 +1457,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode, initialData: any
               groupId: st.groupId || targetLesson.groupId || '',
               groupName: grp?.name || targetLesson.groupName || 'Gruppe',
               bundleSize: bundleSize,
-              amountDue: bundlePrice,
+              amountDue: adjustedAmountDue,
               amountPaid: initPaid,
-              remainingBalance: Math.max(0, bundlePrice - initPaid),
+              remainingBalance: Math.max(0, adjustedAmountDue - initPaid),
               dueDate: targetLesson.date,
               paidDate: initStatus === 'paid' ? today : undefined,
               status: initStatus,
@@ -1810,7 +1963,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode, initialData: any
     setNotifications([]);
   };
 
-  const clearAllData = () => {
+  const clearAllData = async () => {
+    // Clear all storage engines completely (localforage database, localStorage, memoryStore)
+    await storage.clear();
+
+    // Reset all React state to defaults
     setGroups([]);
     setStudents([]);
     setLessons([]);
@@ -1818,14 +1975,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode, initialData: any
     setNotifications([]);
     setRecentlyDeleted({ students: [], groups: [], lessons: [] });
     setDismissedDashboardLessonIds([]);
-    const keysToRemove = [
-      'dl_groups', 'dl_students', 'dl_lessons', 'dl_payments',
-      'dl_notifications', 'dl_quick_todos', 'dl_dismissed_dashboard_lessons',
-      'dl_recently_deleted', 'dl_notified_lesson_alerts', 'dl_active_lesson_session',
-      
-    ];
-    keysToRemove.forEach(k => storage.removeItem(k));
-    confetti({ particleCount: 60, spread: 60 });
+    setProfile(INITIAL_TEACHER_PROFILE);
+    setNotificationSettings(DEFAULT_NOTIFICATION_SETTINGS);
+    setInspirationSettings(INITIAL_INSPIRATION_SETTINGS);
+    setInspirationMessages(INITIAL_INSPIRATION_MESSAGES);
+    setLanguageState(INITIAL_TEACHER_PROFILE.language || 'de');
+
+    // Fire celebration confetti
+    confetti({ particleCount: 100, spread: 80 });
+
+    // Reload the window to reinitialize all context states with default values
+    setTimeout(() => {
+      window.location.reload();
+    }, 1000);
   };
 
   // Quick Lesson operations
@@ -2103,13 +2265,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode, initialData: any
 
   const startActiveLessonTimer = (lesson: Lesson) => {
     const startTimeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const now = Date.now();
     const session: ActiveLessonSession = {
       lessonId: lesson.id,
       lessonTitle: lesson.title,
       groupName: lesson.groupName || lesson.studentName || 'Gruppe',
       grade: lesson.grade,
       type: lesson.type,
-      startedAt: Date.now(),
+      startedAt: now,
       accumulatedSeconds: 0,
       durationMinutes: lesson.durationMinutes || 60,
       isRunning: true,
@@ -2117,6 +2280,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode, initialData: any
     };
     setActiveLessonSession(session);
     updateLesson(lesson.id, { status: 'in_progress' });
+
+    // Trigger Android Native Foreground Service for Dynamic Island / Honor Magic Capsule
+    LiveTimer.startTimer({
+      title: lesson.title || 'Live Unterricht',
+      startTime: now
+    }).catch(err => console.warn('LiveTimer start error:', err));
   };
 
   const pauseActiveLessonTimer = () => {
@@ -2127,20 +2296,32 @@ export const AppProvider: React.FC<{ children: React.ReactNode, initialData: any
       isRunning: false,
       accumulatedSeconds: activeLessonSession.accumulatedSeconds + elapsed
     });
+
+    // Pause native timer notification
+    LiveTimer.stopTimer().catch(err => console.warn('LiveTimer stop error:', err));
   };
 
   const resumeActiveLessonTimer = () => {
     if (!activeLessonSession || activeLessonSession.isRunning) return;
+    const now = Date.now();
     setActiveLessonSession({
       ...activeLessonSession,
       isRunning: true,
-      startedAt: Date.now()
+      startedAt: now
     });
+
+    // Resume native timer with offset startTime so chronometer reflects total accumulated time
+    const effectiveStartTime = now - (activeLessonSession.accumulatedSeconds * 1000);
+    LiveTimer.startTimer({
+      title: activeLessonSession.lessonTitle || 'Live Unterricht',
+      startTime: effectiveStartTime
+    }).catch(err => console.warn('LiveTimer resume error:', err));
   };
 
   const endActiveLessonTimer = () => {
     setActiveLessonSession(null);
     clearActiveLessonNotification();
+    LiveTimer.stopTimer().catch(err => console.warn('LiveTimer stop error:', err));
   };
 
   const cancelActiveLessonTimer = () => {
@@ -2149,24 +2330,52 @@ export const AppProvider: React.FC<{ children: React.ReactNode, initialData: any
     }
     setActiveLessonSession(null);
     clearActiveLessonNotification();
+    LiveTimer.stopTimer().catch(err => console.warn('LiveTimer stop error:', err));
   };
 
-  
-  useEffect(() => {
-    CapacitorApp.addListener('appUrlOpen', (data) => {
-      console.log('App opened with URL:', data.url);
-      if (data.url.includes('ags19://lesson/')) {
-        const lessonId = data.url.split('ags19://lesson/')[1];
-        if (lessonId && lessonId !== 'null') {
-           const lesson = lessons.find(l => l.id === lessonId);
-           if (lesson) openLessonControl(lesson);
+  const enrichedStudents = useMemo(() => {
+    // Map studentId -> Set of paid lesson IDs for fast lookup
+    const studentPaidLessons = new Map<string, Set<string>>();
+    payments.forEach(p => {
+      if (p.status === 'paid' && p.lessonIds && p.lessonIds.length > 0) {
+        const stId = p.studentId;
+        if (stId) {
+          if (!studentPaidLessons.has(stId)) {
+            studentPaidLessons.set(stId, new Set<string>());
+          }
+          p.lessonIds.forEach(id => studentPaidLessons.get(stId)!.add(id));
         }
       }
     });
-    return () => {
-      CapacitorApp.removeAllListeners();
-    };
-  }, [lessons]);
+
+    return students.map(st => {
+      const grp = groups.find(g => g.id === st.groupId);
+      const { cycleLength } = getStudentCyclePricing(st, grp);
+      const paidIds = studentPaidLessons.get(st.id) || new Set<string>();
+
+      const unbilledCompletedCount = lessons.filter(l => {
+        if (l.status !== 'completed') return false;
+        const matchesGroup = grp ? l.groupId === grp.id : false;
+        const matchesStudent = l.studentId === st.id || l.studentName === st.name;
+        if (!matchesGroup && !matchesStudent) return false;
+
+        const att = l.report?.studentAttendance?.[st.id] || l.report?.attendanceStatus || 'present';
+        if (att === 'absent') return false;
+
+        if (paidIds.has(l.id)) return false;
+
+        return true;
+      }).length;
+
+      const packageProgress = unbilledCompletedCount === 0 ? 0 : (unbilledCompletedCount % cycleLength || cycleLength);
+
+      return {
+        ...st,
+        packageProgress,
+        totalLessonsCount: cycleLength
+      };
+    });
+  }, [students, groups, lessons, payments]);
 
   return (
     <AppContext.Provider
@@ -2206,7 +2415,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode, initialData: any
         updateGroup,
         deleteGroup,
         archiveGroup,
-        students,
+        students: enrichedStudents,
         addStudent,
         updateStudent,
         deleteStudent,
@@ -2292,7 +2501,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode, initialData: any
         setNotificationSettings,
         setInspirationSettings,
         setInspirationMessages,
-        addAppNotification
+        addAppNotification,
+        getHistoricalLessons,
+        getHistoricalPayments
       }}
     >
       {children}

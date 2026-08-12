@@ -10,7 +10,21 @@ import {
 import { ArabicParentReportModal } from './ArabicParentReportModal';
 
 export const SessionHistoryView: React.FC = () => {
-  const { lessons, students, groups, profile, openLessonControl, updateLesson, saveLessonReport, t } = useApp();
+  const { lessons: activeLessons, getHistoricalLessons, students, groups, profile, openLessonControl, updateLesson, saveLessonReport, t } = useApp();
+
+  const [lessons, setLessons] = useState<Lesson[]>(activeLessons);
+  const [loadingHistory, setLoadingHistory] = useState(true);
+
+  React.useEffect(() => {
+    let isMounted = true;
+    getHistoricalLessons().then(history => {
+      if (isMounted && history && history.length > 0) {
+        setLessons(history);
+      }
+      if (isMounted) setLoadingHistory(false);
+    });
+    return () => { isMounted = false; };
+  }, [getHistoricalLessons]);
 
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'completed' | 'cancelled' | 'pending' | 'scheduled'>('all');

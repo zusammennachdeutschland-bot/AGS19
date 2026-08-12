@@ -33,6 +33,7 @@
             android:grantUriPermissions="true">
             <meta-data android:name="android.support.FILE_PROVIDER_PATHS" android:resource="@xml/file_paths" />
         </provider>
+        <!-- Widget 1: Today's Lessons -->
         <receiver android:name=".TodayLessonsWidget" android:exported="true">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
@@ -40,13 +41,84 @@
             <meta-data android:name="android.appwidget.provider" android:resource="@xml/today_lessons_widget_info" />
         </receiver>
         <service android:name=".TodayLessonsWidgetService" android:permission="android.permission.BIND_REMOTEVIEWS" />
+
+        <!-- Widget 2: Quick Actions -->
+        <receiver android:name=".QuickActionsWidget" android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/quick_actions_widget_info" />
+        </receiver>
+
+        <!-- Widget 3: Current Active Lesson -->
+        <receiver android:name=".CurrentLessonWidget" android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/current_lesson_widget_info" />
+        </receiver>
+
+        <!-- Widget 4: Payments Due -->
+        <receiver android:name=".PaymentsDueWidget" android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/payments_due_widget_info" />
+        </receiver>
+
+        <!-- Widget 5: To-Do Tasks -->
+        <receiver android:name=".TodoWidget" android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/todo_widget_info" />
+        </receiver>
+        <service android:name=".TodoWidgetService" android:permission="android.permission.BIND_REMOTEVIEWS" />
+
+        <!-- Widget 6: Revenue & Goals -->
+        <receiver android:name=".RevenueWidget" android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/revenue_widget_info" />
+        </receiver>
+
+        <!-- Widget 7: Mini Business Dashboard -->
+        <receiver android:name=".MiniDashboardWidget" android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/mini_dashboard_widget_info" />
+        </receiver>
+
+        <!-- Widget 8: Upcoming Lessons -->
+        <receiver android:name=".UpcomingLessonsWidget" android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/upcoming_lessons_widget_info" />
+        </receiver>
+        <service android:name=".UpcomingLessonsWidgetService" android:permission="android.permission.BIND_REMOTEVIEWS" />
+
+        <!-- Live Timer Foreground Service for System Notification Tray & Honor Magic Capsule -->
+        <service
+            android:name=".LiveTimerService"
+            android:enabled="true"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Live Lesson Stopwatch Timer" />
+        </service>
     </application>
 
     <!-- Permissions -->
 
     <uses-permission android:name="android.permission.INTERNET" />
-    <!-- Notification Permissions -->
+    <!-- Notification & Foreground Service Permissions -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
     <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />

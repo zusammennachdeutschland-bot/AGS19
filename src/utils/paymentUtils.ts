@@ -39,17 +39,24 @@ export const calculateDuePaymentCycles = (
 ): DuePaymentCycle[] => {
   const list: DuePaymentCycle[] = [];
 
-  // Map paid lesson IDs for fast lookup
-  const paidLessonIds = new Set<string>();
+  // Map studentId -> Set of paid lesson IDs for fast lookup
+  const studentPaidLessons = new Map<string, Set<string>>();
   payments.forEach(p => {
     if (p.status === 'paid' && p.lessonIds && p.lessonIds.length > 0) {
-      p.lessonIds.forEach(id => paidLessonIds.add(id));
+      const stId = p.studentId;
+      if (stId) {
+        if (!studentPaidLessons.has(stId)) {
+          studentPaidLessons.set(stId, new Set<string>());
+        }
+        p.lessonIds.forEach(id => studentPaidLessons.get(stId)!.add(id));
+      }
     }
   });
 
   students.forEach(st => {
     const grp = groups.find(g => g.id === st.groupId);
     const { cycleLength, amountDue } = getStudentCyclePricing(st, grp);
+    const paidIds = studentPaidLessons.get(st.id) || new Set<string>();
 
     // Collect all completed attended lessons for this student that have NOT been paid for
     const stCompletedLessons = lessons.filter(l => {
@@ -61,44 +68,92 @@ export const calculateDuePaymentCycles = (
       const att = l.report?.studentAttendance?.[st.id] || l.report?.attendanceStatus || 'present';
       if (att === 'absent') return false;
 
-      if (paidLessonIds.has(l.id)) return false;
+      if (paidIds.has(l.id)) return false;
 
       return true;
     });
 
     stCompletedLessons.sort((a, b) => a.date.localeCompare(b.date));
 
+    // Determine if we need to apply starting session number offset
+    // Offset is applied ONLY for the first cycle if startingSessionNumber > 1 and student has no paid payments
+    const hasPaidPayments = payments.some(p => p.studentId === st.id && p.status === 'paid');
+    const startSess = grp?.startingSessionNumber || 1;
+    const virtualOffset = !hasPaidPayments && startSess > 1 ? (startSess - 1) : 0;
+
+    interface ProcessedLesson {
+      id: string;
+      dateLabel: string;
+      isVirtual: boolean;
+    }
+
+    const processedLessons: ProcessedLesson[] = [];
+    
+    // Add virtual lessons
+    for (let i = 1; i <= virtualOffset; i++) {
+      processedLessons.push({
+        id: `virtual_${st.id}_sess_${i}`,
+        dateLabel: `Offline (Session ${i}/${cycleLength})`,
+        isVirtual: true
+      });
+    }
+
+    // Add actual completed lessons
+    stCompletedLessons.forEach(l => {
+      processedLessons.push({
+        id: l.id,
+        dateLabel: `${formatDateDisplay(l.date)} (Session ${l.sessionNumber || 1}/${cycleLength})`,
+        isVirtual: false
+      });
+    });
+
     // Unpaid record in payments
     const unpaidRec = payments.find(p => p.studentId === st.id && p.status !== 'paid');
 
-    if (stCompletedLessons.length >= cycleLength) {
-      let remaining = [...stCompletedLessons];
+    if (processedLessons.length >= cycleLength) {
+      let remaining = [...processedLessons];
       let chunkIndex = 0;
 
       while (remaining.length >= cycleLength) {
         const currentChunk = remaining.slice(0, cycleLength);
-        const lessonDates = currentChunk.map(l => formatDateDisplay(l.date));
-        const lessonIds = currentChunk.map(l => l.id);
+        const lessonDates = currentChunk.map(cl => cl.dateLabel);
+        const lessonIds = currentChunk.filter(cl => !cl.isVirtual).map(cl => cl.id);
 
-        list.push({
-          id: (chunkIndex === 0 && unpaidRec?.id) ? unpaidRec.id : `due_cycle_${st.id}_${currentChunk[0]?.id || Date.now()}_chunk_${chunkIndex}`,
-          studentId: st.id,
-          studentName: st.name,
-          groupId: st.groupId || grp?.id || '',
-          groupName: grp?.name || 'Gruppe',
-          cycleLength,
-          amountDue,
-          lessonDates,
-          lessonIds,
-          status: (chunkIndex === 0 && unpaidRec) ? 'not_yet' : 'due',
-          parentPhone: st.parentPhone || st.studentPhone || '',
-          existingPaymentRecordId: chunkIndex === 0 ? unpaidRec?.id : undefined
-        });
+        // Only create a cycle if there is at least one actual lesson in it, OR if we need to align with unpaidRec
+        const actualCount = currentChunk.filter(cl => !cl.isVirtual).length;
+        if (actualCount > 0 || (chunkIndex === 0 && unpaidRec)) {
+          // Adjust price for the first cycle if it's partially virtual!
+          const pricePerSession = amountDue / cycleLength;
+          const adjustedAmountDue = (chunkIndex === 0 && virtualOffset > 0)
+            ? Math.round(pricePerSession * actualCount)
+            : amountDue;
+
+          list.push({
+            id: (chunkIndex === 0 && unpaidRec?.id) ? unpaidRec.id : `due_cycle_${st.id}_${currentChunk.find(cl => !cl.isVirtual)?.id || Date.now()}_chunk_${chunkIndex}`,
+            studentId: st.id,
+            studentName: st.name,
+            groupId: st.groupId || grp?.id || '',
+            groupName: grp?.name || 'Gruppe',
+            cycleLength,
+            amountDue: adjustedAmountDue,
+            lessonDates,
+            lessonIds,
+            status: (chunkIndex === 0 && unpaidRec) ? 'not_yet' : 'due',
+            parentPhone: st.parentPhone || st.studentPhone || '',
+            existingPaymentRecordId: chunkIndex === 0 ? unpaidRec?.id : undefined
+          });
+        }
 
         remaining = remaining.slice(cycleLength);
         chunkIndex++;
       }
     } else if (unpaidRec) {
+      // Format unpaid rec lesson dates if they don't have session numbers yet
+      const lessonDates = (unpaidRec.lessonDates || []).map((d, idx) => {
+        if (d.includes('Session')) return d;
+        return `${d} (Session ${idx + 1}/${unpaidRec.bundleSize || cycleLength})`;
+      });
+
       list.push({
         id: unpaidRec.id,
         studentId: st.id,
@@ -107,7 +162,7 @@ export const calculateDuePaymentCycles = (
         groupName: grp?.name || unpaidRec.groupName || 'Gruppe',
         cycleLength: unpaidRec.bundleSize || cycleLength,
         amountDue: unpaidRec.amountDue || amountDue,
-        lessonDates: unpaidRec.lessonDates || [],
+        lessonDates,
         lessonIds: unpaidRec.lessonIds || [],
         status: 'not_yet',
         parentPhone: st.parentPhone || st.studentPhone || '',
