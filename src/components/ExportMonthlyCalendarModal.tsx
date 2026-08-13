@@ -88,7 +88,7 @@ export const ExportMonthlyCalendarModal: React.FC<ExportMonthlyCalendarModalProp
     let icsLines = [
       'BEGIN:VCALENDAR',
       'VERSION:2.0',
-      'PRODID:-//AGS19//Teacher Assistant Calendar//EN',
+      'PRODID:-//AGS//Teacher Assistant Calendar//EN',
       'CALSCALE:GREGORIAN',
       'METHOD:PUBLISH',
       'X-WR-CALNAME:Teacher Assistant - ' + MONTH_NAMES_DISPLAY[selectedMonth] + ' ' + selectedYear

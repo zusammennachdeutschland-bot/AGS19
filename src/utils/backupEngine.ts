@@ -338,6 +338,254 @@ export function generateBackupFilename(isFull: boolean): string {
 }
 
 // Analyze backup payload against current app state
+export interface ValidationResult {
+  isValid: boolean;
+  errorMessage?: string;
+  version: string;
+  data: {
+    profile?: TeacherProfile;
+    groups: Group[];
+    students: Student[];
+    lessons: Lesson[];
+    payments: PaymentRecord[];
+    notifications: NotificationItem[];
+    notificationSettings?: NotificationSettings;
+    inspirationSettings?: InspirationSettings;
+    inspirationMessages?: InspirationMessage[];
+    todos?: TodoItem[];
+    [key: string]: any;
+  };
+}
+
+export function validateAndSanitizeBackupPayload(rawParsed: any): ValidationResult {
+  if (!rawParsed || typeof rawParsed !== 'object' || Array.isArray(rawParsed)) {
+    return {
+      isValid: false,
+      errorMessage: 'Invalid backup file structure: expected a JSON object.',
+      version: '1.0.0',
+      data: { groups: [], students: [], lessons: [], payments: [], notifications: [] }
+    };
+  }
+
+  // Version check
+  const version = String(rawParsed.version || rawParsed.data?.version || '1.0.0');
+  const majorVersion = parseInt(version.split('.')[0], 10);
+  if (!isNaN(majorVersion) && majorVersion > 2) {
+    return {
+      isValid: false,
+      errorMessage: `Unsupported backup version (v${version}). Please update the app to restore this backup.`,
+      version,
+      data: { groups: [], students: [], lessons: [], payments: [], notifications: [] }
+    };
+  }
+
+  const data = rawParsed.data || rawParsed;
+
+  // Collection array type checks
+  const collectionsToCheck = [
+    { key: 'students', label: 'students' },
+    { key: 'groups', label: 'groups' },
+    { key: 'lessons', label: 'lessons' },
+    { key: 'payments', label: 'payments' },
+    { key: 'notifications', label: 'notifications' },
+    { key: 'todos', label: 'todos' },
+    { key: 'inspirationMessages', label: 'inspirationMessages' }
+  ];
+
+  for (const col of collectionsToCheck) {
+    const val = data[col.key];
+    if (val !== undefined && val !== null && !Array.isArray(val)) {
+      return {
+        isValid: false,
+        errorMessage: `Invalid backup format: '${col.label}' must be an array, but received ${typeof val}.`,
+        version,
+        data: { groups: [], students: [], lessons: [], payments: [], notifications: [] }
+      };
+    }
+  }
+
+  const sanitizeNumber = (val: any, fallback: number = 0): number => {
+    if (typeof val === 'number') {
+      return Number.isFinite(val) && !isNaN(val) ? val : fallback;
+    }
+    if (typeof val === 'string' && val.trim() !== '') {
+      const parsed = Number(val);
+      return Number.isFinite(parsed) && !isNaN(parsed) ? parsed : fallback;
+    }
+    return fallback;
+  };
+
+  const sanitizeOptionalNumber = (val: any): number | undefined => {
+    if (val === undefined || val === null) return undefined;
+    if (typeof val === 'number') {
+      return Number.isFinite(val) && !isNaN(val) ? val : undefined;
+    }
+    if (typeof val === 'string' && val.trim() !== '') {
+      const parsed = Number(val);
+      return Number.isFinite(parsed) && !isNaN(parsed) ? parsed : undefined;
+    }
+    return undefined;
+  };
+
+  // Sanitize Students
+  const rawStudents: any[] = Array.isArray(data.students) ? data.students : [];
+  const sanitizedStudents: Student[] = [];
+  for (let i = 0; i < rawStudents.length; i++) {
+    const s = rawStudents[i];
+    if (!s || typeof s !== 'object' || Array.isArray(s)) continue;
+
+    const id = typeof s.id === 'string' && s.id.trim() ? s.id.trim() : `st_imp_${Date.now()}_${i}`;
+    const name = typeof s.name === 'string' ? s.name : (s.name ? String(s.name) : 'Unnamed Student');
+    const groupId = typeof s.groupId === 'string' ? s.groupId : '';
+
+    let avatarUrl = s.avatarUrl;
+    if (typeof avatarUrl === 'string' && avatarUrl.length > 1000000) {
+      avatarUrl = undefined;
+    }
+
+    sanitizedStudents.push({
+      ...s,
+      id,
+      name,
+      groupId,
+      parentPhone: typeof s.parentPhone === 'string' ? s.parentPhone : '',
+      studentPhone: typeof s.studentPhone === 'string' ? s.studentPhone : '',
+      notes: typeof s.notes === 'string' ? s.notes : '',
+      avatarUrl,
+      attendanceRate: sanitizeOptionalNumber(s.attendanceRate),
+      homeworkRate: sanitizeOptionalNumber(s.homeworkRate),
+      examAverage: sanitizeOptionalNumber(s.examAverage),
+      customBalance: sanitizeOptionalNumber(s.customBalance),
+      completedLessonsCount: sanitizeOptionalNumber(s.completedLessonsCount),
+      documents: Array.isArray(s.documents) ? s.documents : []
+    });
+  }
+
+  // Sanitize Groups
+  const rawGroups: any[] = Array.isArray(data.groups) ? data.groups : [];
+  const sanitizedGroups: Group[] = [];
+  for (let i = 0; i < rawGroups.length; i++) {
+    const g = rawGroups[i];
+    if (!g || typeof g !== 'object' || Array.isArray(g)) continue;
+
+    const id = typeof g.id === 'string' && g.id.trim() ? g.id.trim() : `grp_imp_${Date.now()}_${i}`;
+    const name = typeof g.name === 'string' ? g.name : 'Unnamed Group';
+
+    sanitizedGroups.push({
+      ...g,
+      id,
+      name,
+      grade: typeof g.grade === 'string' ? g.grade : '',
+      subject: typeof g.subject === 'string' ? g.subject : '',
+      type: (g.type === 'private' || g.type === 'group') ? g.type : 'group',
+      sessionCount: sanitizeNumber(g.sessionCount, 0),
+      pricePerSession: sanitizeNumber(g.pricePerSession, 0),
+      monthlyPackagePrice: sanitizeNumber(g.monthlyPackagePrice, 0),
+      startingSessionNumber: sanitizeNumber(g.startingSessionNumber, 1),
+      price: sanitizeNumber(g.price, 0),
+      studentIds: Array.isArray(g.studentIds) ? g.studentIds.filter((sid: any) => typeof sid === 'string') : [],
+      schedules: Array.isArray(g.schedules) ? g.schedules : []
+    });
+  }
+
+  // Sanitize Lessons
+  const rawLessons: any[] = Array.isArray(data.lessons) ? data.lessons : [];
+  const sanitizedLessons: Lesson[] = [];
+  for (let i = 0; i < rawLessons.length; i++) {
+    const l = rawLessons[i];
+    if (!l || typeof l !== 'object' || Array.isArray(l)) continue;
+
+    const id = typeof l.id === 'string' && l.id.trim() ? l.id.trim() : `les_imp_${Date.now()}_${i}`;
+    const date = typeof l.date === 'string' ? l.date : new Date().toISOString().split('T')[0];
+    const validStatuses = ['scheduled', 'completed', 'cancelled', 'moved'];
+    const status = validStatuses.includes(l.status) ? l.status : 'scheduled';
+
+    let report = l.report;
+    if (report && typeof report === 'object') {
+      report = {
+        ...report,
+        quizScore: sanitizeOptionalNumber(report.quizScore),
+        examScore: sanitizeOptionalNumber(report.examScore),
+        dictationScore: sanitizeOptionalNumber(report.dictationScore),
+        arabicExamScore: sanitizeOptionalNumber(report.arabicExamScore)
+      };
+    }
+
+    sanitizedLessons.push({
+      ...l,
+      id,
+      date,
+      status,
+      groupId: typeof l.groupId === 'string' ? l.groupId : '',
+      studentId: typeof l.studentId === 'string' ? l.studentId : undefined,
+      sessionNumber: sanitizeOptionalNumber(l.sessionNumber),
+      price: sanitizeOptionalNumber(l.price),
+      report
+    });
+  }
+
+  // Sanitize Payments
+  const rawPayments: any[] = Array.isArray(data.payments) ? data.payments : [];
+  const sanitizedPayments: PaymentRecord[] = [];
+  for (let i = 0; i < rawPayments.length; i++) {
+    const p = rawPayments[i];
+    if (!p || typeof p !== 'object' || Array.isArray(p)) continue;
+
+    const id = typeof p.id === 'string' && p.id.trim() ? p.id.trim() : `pay_imp_${Date.now()}_${i}`;
+    const validStatuses = ['paid', 'pending', 'overdue', 'partially_paid'];
+    const status = validStatuses.includes(p.status) ? p.status : 'pending';
+
+    sanitizedPayments.push({
+      ...p,
+      id,
+      status,
+      studentId: typeof p.studentId === 'string' ? p.studentId : '',
+      groupId: typeof p.groupId === 'string' ? p.groupId : '',
+      amountDue: Math.max(0, sanitizeNumber(p.amountDue, 0)),
+      amountPaid: Math.max(0, sanitizeNumber(p.amountPaid, 0)),
+      discountAmount: Math.max(0, sanitizeNumber(p.discountAmount, 0)),
+      bundleSize: Math.max(0, sanitizeNumber(p.bundleSize, 0)),
+      lessonIds: Array.isArray(p.lessonIds) ? p.lessonIds.filter((lid: any) => typeof lid === 'string') : []
+    });
+  }
+
+  // Sanitize Notifications
+  const rawNotifications: any[] = Array.isArray(data.notifications) ? data.notifications : [];
+  const sanitizedNotifications: NotificationItem[] = [];
+  for (let i = 0; i < rawNotifications.length; i++) {
+    const n = rawNotifications[i];
+    if (!n || typeof n !== 'object' || Array.isArray(n)) continue;
+
+    const id = typeof n.id === 'string' && n.id.trim() ? n.id.trim() : `notif_imp_${Date.now()}_${i}`;
+    sanitizedNotifications.push({
+      ...n,
+      id,
+      title: typeof n.title === 'string' ? n.title : 'Notification',
+      message: typeof n.message === 'string' ? n.message : '',
+      date: typeof n.date === 'string' ? n.date : new Date().toISOString(),
+      read: Boolean(n.read)
+    });
+  }
+
+  return {
+    isValid: true,
+    version,
+    data: {
+      ...data,
+      students: sanitizedStudents,
+      groups: sanitizedGroups,
+      lessons: sanitizedLessons,
+      payments: sanitizedPayments,
+      notifications: sanitizedNotifications,
+      profile: data.profile && typeof data.profile === 'object' ? data.profile : undefined,
+      notificationSettings: data.notificationSettings && typeof data.notificationSettings === 'object' ? data.notificationSettings : undefined,
+      inspirationSettings: data.inspirationSettings && typeof data.inspirationSettings === 'object' ? data.inspirationSettings : undefined,
+      inspirationMessages: Array.isArray(data.inspirationMessages) ? data.inspirationMessages : undefined,
+      todos: Array.isArray(data.todos) ? data.todos : undefined
+    }
+  };
+}
+
 export function analyzeBackupPayload(
   rawParsed: any,
   currentAppState: {
@@ -388,8 +636,24 @@ export function analyzeBackupPayload(
       };
     }
 
+    // Run schema validation and sanitization
+    const validation = validateAndSanitizeBackupPayload(rawParsed);
+    if (!validation.isValid) {
+      return {
+        isValid: false,
+        isEncrypted: false,
+        version: validation.version || '1.0.0',
+        timestamp: new Date().toISOString(),
+        backupType: 'Partial',
+        categories: [],
+        counts: { students: 0, groups: 0, lessons: 0, attendance: 0, homework: 0, exams: 0, payments: 0, notifications: 0, settingsIncluded: false },
+        impact: { addStudents: 0, updateStudents: 0, addGroups: 0, updateGroups: 0, addLessons: 0, updateLessons: 0, addPayments: 0, updatePayments: 0, duplicateEntries: 0, conflicts: 0 },
+        errorMessage: validation.errorMessage || 'Invalid backup structure.'
+      };
+    }
+
     // Standard or legacy backup
-    const data = rawParsed.data || rawParsed;
+    const data = validation.data;
     const students: Student[] = data.students || [];
     const groups: Group[] = data.groups || [];
     const lessons: Lesson[] = data.lessons || [];

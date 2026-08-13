@@ -30,6 +30,7 @@ import confetti from 'canvas-confetti';
 import { Capacitor } from '@capacitor/core';
 import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
+import { validateAndSanitizeBackupPayload } from '../utils/backupEngine';
 
 interface AppContextType {
   todos: any[];
@@ -226,6 +227,10 @@ interface AppContextType {
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
+
+// Module-level serialized storage sync queues to eliminate concurrent read-modify-write race conditions
+let lessonSyncQueue: Promise<void> = Promise.resolve();
+let paymentSyncQueue: Promise<void> = Promise.resolve();
 
 export const AppProvider: React.FC<{ children: React.ReactNode, initialData: any }> = ({ children, initialData }) => {
   // Ensure a clean fresh start on app initialization
@@ -599,40 +604,58 @@ export const AppProvider: React.FC<{ children: React.ReactNode, initialData: any
 
   useEffect(() => {
     if (!isInitializedRef.current) return;
-    async function syncLessons() {
+    function syncLessons() {
       if (!lessons) return;
-      const full = (await storage.getItem<Lesson[]>('dl_lessons')) || [];
-      const activeMap = new Map(lessons.map(l => [l.id, l]));
-      const fullIds = new Set(full.map(l => l.id));
+      const currentLessons = lessons;
+      lessonSyncQueue = lessonSyncQueue.then(async () => {
+        const full = (await storage.getItem<Lesson[]>('dl_lessons')) || [];
+        const activeMap = new Map<string, Lesson>(currentLessons.map(l => [l.id, l]));
+        const fullIds = new Set(full.map(l => l.id));
 
-      const merged = full.map(l => activeMap.get(l.id) || l);
-      lessons.forEach(l => {
-        if (!fullIds.has(l.id)) {
-          merged.push(l);
-        }
-      });
+        const merged: Lesson[] = [];
+        (full as Lesson[]).forEach((l: Lesson) => {
+          if (activeMap.has(l.id)) {
+            merged.push(activeMap.get(l.id)!);
+          } else {
+            const isActive = filterActiveLessons([l]).length > 0;
+            if (!isActive) {
+              // Historical lesson, preserve in storage
+              merged.push(l);
+            }
+          }
+        });
 
-      await storage.setItem('dl_lessons', merged);
+        currentLessons.forEach(l => {
+          if (!fullIds.has(l.id)) {
+            merged.push(l);
+          }
+        });
+
+        await storage.setItem('dl_lessons', merged);
+      }).catch(err => console.error('Lesson sync error:', err));
     }
     syncLessons();
   }, [lessons]);
 
   useEffect(() => {
     if (!isInitializedRef.current) return;
-    async function syncPayments() {
+    function syncPayments() {
       if (!payments) return;
-      const full = (await storage.getItem<PaymentRecord[]>('dl_payments')) || [];
-      const activeMap = new Map(payments.map(p => [p.id, p]));
-      const fullIds = new Set(full.map(p => p.id));
+      const currentPayments = payments;
+      paymentSyncQueue = paymentSyncQueue.then(async () => {
+        const full = (await storage.getItem<PaymentRecord[]>('dl_payments')) || [];
+        const activeMap = new Map(currentPayments.map(p => [p.id, p]));
+        const fullIds = new Set(full.map(p => p.id));
 
-      const merged = full.map(p => activeMap.get(p.id) || p);
-      payments.forEach(p => {
-        if (!fullIds.has(p.id)) {
-          merged.push(p);
-        }
-      });
+        const merged = full.map(p => activeMap.get(p.id) || p);
+        currentPayments.forEach(p => {
+          if (!fullIds.has(p.id)) {
+            merged.push(p);
+          }
+        });
 
-      await storage.setItem('dl_payments', merged);
+        await storage.setItem('dl_payments', merged);
+      }).catch(err => console.error('Payment sync error:', err));
     }
     syncPayments();
   }, [payments]);
@@ -771,7 +794,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode, initialData: any
     if (method === 'notification' || method === 'both') {
       if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
         try {
-          new Notification('💡 الإلهام والامتنان | AGS19', {
+          new Notification('💡 الإلهام والامتنان | AGS', {
             body: selectedMsg.text,
             icon: '/icon.png'
           });
@@ -987,7 +1010,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode, initialData: any
       exportedAt: new Date().toISOString()
     };
     const jsonStr = JSON.stringify(data, null, 2);
-    const fileName = `AGS19_Backup_${formatLocalDate()}.json`;
+    const fileName = `AGS_Backup_${formatLocalDate()}.json`;
 
     if (Capacitor.isNativePlatform()) {
       try {
@@ -998,8 +1021,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode, initialData: any
           encoding: Encoding.UTF8
         });
         await Share.share({
-          title: 'AGS19 Backup',
-          text: 'Backup Export Data (AGS19)',
+          title: 'AGS Backup',
+          text: 'Backup Export Data (AGS)',
           url: savedFile.uri,
           dialogTitle: 'Export Backup JSON'
         });
@@ -1110,6 +1133,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode, initialData: any
       }));
     }
     setGroups(prev => prev.filter(g => g.id !== id));
+
+    // Remove group association safely for linked students while preserving student records
+    setStudents(prev => prev.map(s => s.groupId === id ? { ...s, groupId: '' } : s));
+
+    // Cancel future scheduled lessons belonging to the deleted group while preserving historical lessons and reports
+    const todayStr = formatLocalDate();
+    setLessons(prev => prev.map(l => {
+      if (l.groupId === id && l.date >= todayStr && (l.status === 'scheduled' || l.status === 'in_progress' || l.status === 'pending_action')) {
+        return { ...l, status: 'cancelled' };
+      }
+      return l;
+    }));
   };
 
   const archiveGroup = (id: string) => {
@@ -1258,11 +1293,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode, initialData: any
       }));
     }
     setLessons(prev => prev.filter(l => l.id !== id));
-    storage.getItem<Lesson[]>('dl_lessons').then(full => {
-      if (full) {
-        storage.setItem('dl_lessons', full.filter(l => l.id !== id));
-      }
-    });
     if (selectedLesson?.id === id) {
       closeLessonControl();
     }
@@ -1315,9 +1345,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode, initialData: any
 
       const targetStudents = groupSts.length > 0
         ? groupSts
-        : (targetLesson.studentId || targetLesson.studentName
-            ? students.filter(s => s.id === targetLesson.studentId || s.name === targetLesson.studentName)
-            : []);
+        : (targetLesson.studentId
+            ? students.filter(s => s.id === targetLesson.studentId)
+            : (targetLesson.studentName ? students.filter(s => s.name === targetLesson.studentName) : []));
 
       if (targetStudents.length > 0) {
         targetStudents.forEach(st => {
@@ -1362,7 +1392,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode, initialData: any
              
              // Check if lesson belongs to student's group or student individually
              const matchesGroup = st.groupId ? l.groupId === st.groupId : false;
-             const matchesStudent = l.studentId === st.id || l.studentName === st.name;
+             const matchesStudent = l.studentId ? l.studentId === st.id : (!!l.studentName && l.studentName === st.name);
              if (!matchesGroup && !matchesStudent) return false;
 
              if (paidLessonIds.has(l.id) && l.id !== targetLesson.id) return false;
@@ -1501,7 +1531,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode, initialData: any
     // Update students payment status in state
     setStudents(prev => prev.map(s => {
       const isGroupMember = targetLesson.groupId && s.groupId === targetLesson.groupId;
-      const isIndividual = s.id === targetLesson.studentId || s.name === targetLesson.studentName;
+      const isIndividual = targetLesson.studentId ? s.id === targetLesson.studentId : (!!targetLesson.studentName && s.name === targetLesson.studentName);
 
       if (isGroupMember || isIndividual) {
         const stPayChoice = report.studentPayments?.[s.id];
@@ -1846,7 +1876,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode, initialData: any
     const targetSt = students.find(s => s.id === studentId);
     if (!targetSt) return;
 
-    const existingPayment = payments.find(p => p.studentId === studentId);
+    const existingPayment = payments.find(p => p.studentId === studentId && p.status !== 'paid') || payments.find(p => p.studentId === studentId);
 
     if (existingPayment) {
       toggleQuickPaymentStatus(existingPayment.id);
@@ -2150,7 +2180,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode, initialData: any
       const sourceStr = customJson || await storage.getItem('dl_local_backup_data');
       if (!sourceStr) return false;
 
-      const data: BackupData = JSON.parse(sourceStr);
+      const parsed = JSON.parse(sourceStr);
+      const validation = validateAndSanitizeBackupPayload(parsed);
+      if (!validation.isValid) {
+        console.error('importBackupFile validation failed:', validation.errorMessage);
+        return false;
+      }
+
+      const data = validation.data;
       if (data.profile) setProfile(data.profile);
       if (data.groups) setGroups(data.groups);
       if (data.students) setStudents(data.students);
@@ -2200,8 +2237,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode, initialData: any
           encoding: Encoding.UTF8
         });
         await Share.share({
-          title: 'AGS19 Backup',
-          text: 'Backup Export Data (AGS19)',
+          title: 'AGS Backup',
+          text: 'Backup Export Data (AGS)',
           url: savedFile.uri,
           dialogTitle: 'Export Backup JSON'
         });
@@ -2404,7 +2441,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode, initialData: any
       const unbilledCompletedCount = lessons.filter(l => {
         if (l.status !== 'completed') return false;
         const matchesGroup = grp ? l.groupId === grp.id : false;
-        const matchesStudent = l.studentId === st.id || l.studentName === st.name;
+        const matchesStudent = l.studentId ? l.studentId === st.id : (!!l.studentName && l.studentName === st.name);
         if (!matchesGroup && !matchesStudent) return false;
 
         const att = l.report?.studentAttendance?.[st.id] || l.report?.attendanceStatus || 'present';

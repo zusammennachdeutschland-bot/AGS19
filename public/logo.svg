@@ -25,7 +25,7 @@
     <!-- Subtle texture / shading -->
     <rect x="0" y="0" width="1024" height="1024" fill="black" opacity="0.05"/>
 
-    <!-- Bold Centered AGS19 Text -->
+    <!-- Bold Centered AGS Text -->
     <text x="512" y="580" 
           text-anchor="middle" 
           font-family="'Alexandria', 'Plus Jakarta Sans', 'Arial Black', sans-serif" 
@@ -33,6 +33,6 @@
           font-size="290" 
           letter-spacing="2"
           fill="#FFFFFF" 
-          filter="url(#shadow)">AGS19</text>
+          filter="url(#shadow)">AGS</text>
   </g>
 </svg>

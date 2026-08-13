@@ -1473,12 +1473,12 @@ export const SettingsView: React.FC = () => {
             <div className="flex flex-col sm:flex-row items-center gap-4 pb-4 border-b border-slate-100 dark:border-surface-border">
               <img
                 src="/logo.svg"
-                alt="AGS19 Logo"
+                alt="AGS Teacher App Logo"
                 className="w-16 h-16 rounded-lg object-contain bg-surface p-1 shadow-md border border-surface-border/80 dark:border-surface-border shrink-0"
               />
               <div>
                 <h1 className="text-xl font-black text-text-main">
-                  AGS19
+                  AGS Teacher App
                 </h1>
                 <p className="text-xs text-primary dark:text-primary font-extrabold mt-0.5">
                   {_t('نظام إداري متكامل لمعلمي اللغة الألمانية والدروس الخاصة', 'German Teacher Management System')}
@@ -1492,7 +1492,7 @@ export const SettingsView: React.FC = () => {
                 {_t('الوصف', 'Description')}
               </h3>
               <p className="text-xs sm:text-sm text-text-main font-medium leading-relaxed bg-surface-hover/60 p-4 rounded-lg border border-surface-border/60 dark:border-surface-border-soft">
-                AGS19 helps private teachers manage students, groups, lessons, attendance, payments, reports, parent communication, and scheduling from one place.
+                AGS Teacher App helps private teachers manage students, groups, lessons, attendance, payments, reports, parent communication, and scheduling from one place.
               </p>
             </div>
 
@@ -1554,7 +1554,7 @@ export const SettingsView: React.FC = () => {
 
             {/* Application Version */}
             <div className="text-center pt-2 text-xs font-mono font-bold text-text-muted/70">
-              AGS19 • Version 2.5.0
+              AGS Teacher App • Version 2.5.0
             </div>
           </div>
         </div>

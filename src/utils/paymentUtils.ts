@@ -62,7 +62,7 @@ export const calculateDuePaymentCycles = (
     const stCompletedLessons = lessons.filter(l => {
       if (l.status !== 'completed') return false;
       const matchesGroup = grp ? l.groupId === grp.id : false;
-      const matchesStudent = l.studentId === st.id || l.studentName === st.name;
+      const matchesStudent = l.studentId ? l.studentId === st.id : (!!l.studentName && l.studentName === st.name);
       if (!matchesGroup && !matchesStudent) return false;
 
       const att = l.report?.studentAttendance?.[st.id] || l.report?.attendanceStatus || 'present';

@@ -18,8 +18,8 @@ export default defineConfig(() => {
           registerType: 'autoUpdate',
           includeAssets: ['logo.svg', 'favicon.png', 'icon.png', 'logo.png', 'apple-touch-icon.png'],
           manifest: {
-            name: 'AGS19 Teacher App',
-            short_name: 'AGS19',
+            name: 'AGS Teacher App',
+            short_name: 'AGS',
             description: 'Teacher management application',
             theme_color: '#ffffff',
             icons: [

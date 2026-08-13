@@ -20,12 +20,12 @@ export const WhatsAppSummaryModal: React.FC<WhatsAppSummaryModalProps> = ({ stud
   // Get all completed lessons for this student
   const studentLessons = lessons.filter(l => 
     l.status === 'completed' && 
-    (l.studentId === student.id || l.studentName === student.name || l.groupId === student.groupId)
+    ((l.studentId ? l.studentId === student.id : (!!l.studentName && l.studentName === student.name)) || (student.groupId ? l.groupId === student.groupId : false))
   ).sort((a, b) => b.date.localeCompare(a.date));
 
   // Get payments for this student
   const studentPayments = payments.filter(p => 
-    p.studentId === student.id || p.studentName === student.name
+    p.studentId ? p.studentId === student.id : (!!p.studentName && p.studentName === student.name)
   );
 
   const totalDue = studentPayments.reduce((sum, p) => sum + p.amountDue, 0) || (studentLessons.length * (studentGroup?.pricePerSession || studentGroup?.monthlyPackagePrice || 200));

@@ -176,7 +176,7 @@ export const ScheduleView: React.FC = () => {
     let icsContent = [
       'BEGIN:VCALENDAR',
       'VERSION:2.0',
-      'PRODID:-//AGS19//Calendar App',
+      'PRODID:-//AGS//Calendar App',
       'CALSCALE:GREGORIAN',
       'METHOD:PUBLISH',
     ];

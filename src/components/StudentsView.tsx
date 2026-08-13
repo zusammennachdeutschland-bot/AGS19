@@ -74,7 +74,7 @@ export const StudentsView: React.FC = () => {
     // completed lessons where student is part of the group, or is the individual student
     const studentLessons = lessons.filter(l => 
       l.status === 'completed' && l.report && 
-      (l.groupId === student.groupId || l.studentId === student.id || l.studentName?.trim().toLowerCase() === student.name.trim().toLowerCase())
+      (l.groupId === student.groupId || (l.studentId ? l.studentId === student.id : (!!l.studentName && l.studentName.trim().toLowerCase() === student.name.trim().toLowerCase())))
     );
 
     const totalLessons = studentLessons.length;
@@ -835,9 +835,9 @@ export const StudentsView: React.FC = () => {
           recordsSummary={
             deleteTarget.type === 'student'
               ? {
-                  lessonsCount: lessons.filter(l => l.studentId === deleteTarget.id || l.studentName === deleteTarget.name).length,
-                  paymentsCount: payments.filter(p => p.studentId === deleteTarget.id || p.studentName === deleteTarget.name).length,
-                  attendanceCount: lessons.filter(l => (l.studentId === deleteTarget.id || l.studentName === deleteTarget.name) && l.report?.attendanceStatus).length,
+                  lessonsCount: lessons.filter(l => l.studentId ? l.studentId === deleteTarget.id : l.studentName === deleteTarget.name).length,
+                  paymentsCount: payments.filter(p => p.studentId ? p.studentId === deleteTarget.id : p.studentName === deleteTarget.name).length,
+                  attendanceCount: lessons.filter(l => (l.studentId ? l.studentId === deleteTarget.id : l.studentName === deleteTarget.name) && l.report?.attendanceStatus).length,
                 }
               : {
                   studentsCount: students.filter(s => s.groupId === deleteTarget.id).length,

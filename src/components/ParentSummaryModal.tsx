@@ -56,7 +56,7 @@ Hier ist der Unterrichtsbericht für ${lesson.studentName || lesson.title} vom $
 
 Mit freundlichen Grüßen,
 ${profile.displayName}
-AGS19 🇩🇪`;
+AGS Teacher App 🇩🇪`;
   };
 
   const summaryText = generateSummaryText();

@@ -9,7 +9,7 @@ import { Share } from '@capacitor/share';
 import { 
   ALL_BACKUP_CATEGORIES, BackupCategory, calculateBackupStats, 
   generateBackupFilename, encryptBackupData, decryptBackupData, 
-  analyzeBackupPayload, RestoreAnalysisResult, RestoreHistoryEntry 
+  analyzeBackupPayload, validateAndSanitizeBackupPayload, RestoreAnalysisResult, RestoreHistoryEntry 
 } from '../utils/backupEngine';
 import { 
   Download, Upload, ShieldCheck, Database, Lock, Unlock, 
@@ -31,6 +31,7 @@ export const SmartBackupCenter: React.FC<SmartBackupCenterProps> = ({ onBack }) 
     inspirationMessages, todos, setStudents, setGroups, 
     setLessons, setPayments, setNotifications, setProfile, 
     setNotificationSettings, setInspirationSettings, setInspirationMessages,
+    setTodos,
     lastBackupTime, performBackup, exportBackupFile, importBackupFile,
     t, _t
   } = useApp();
@@ -239,8 +240,8 @@ export const SmartBackupCenter: React.FC<SmartBackupCenterProps> = ({ onBack }) 
               encoding: Encoding.UTF8
             });
             await Share.share({
-              title: 'AGS19 Backup',
-              text: 'Backup Export Data (AGS19)',
+              title: 'AGS Backup',
+              text: 'Backup Export Data (AGS)',
               url: savedFile.uri,
               dialogTitle: 'Export Backup JSON'
             });
@@ -328,7 +329,7 @@ export const SmartBackupCenter: React.FC<SmartBackupCenterProps> = ({ onBack }) 
         };
 
         const jsonString = JSON.stringify(backupPayload, null, 2);
-        const fileName = `AGS19_Quick_Backup_${formatLocalDate()}.json`;
+        const fileName = `AGS_Quick_Backup_${formatLocalDate()}.json`;
 
         if (Capacitor.isNativePlatform()) {
           const savedFile = await Filesystem.writeFile({
@@ -338,8 +339,8 @@ export const SmartBackupCenter: React.FC<SmartBackupCenterProps> = ({ onBack }) 
             encoding: Encoding.UTF8
           });
           await Share.share({
-            title: 'AGS19 Simple Backup',
-            text: 'Quick Backup Data (AGS19)',
+            title: 'AGS Simple Backup',
+            text: 'Quick Backup Data (AGS)',
             url: savedFile.uri,
             dialogTitle: 'Save Backup File'
           });
@@ -403,38 +404,46 @@ export const SmartBackupCenter: React.FC<SmartBackupCenterProps> = ({ onBack }) 
         try {
           let parsed = JSON.parse(content);
           
-          // support decrypted or standard formats
-          const data = parsed.data || parsed;
-          if (!data) {
-            throw new Error('Invalid backup file format');
+          const validation = validateAndSanitizeBackupPayload(parsed);
+          if (!validation.isValid) {
+            throw new Error(validation.errorMessage || 'Validation failed');
           }
+          const data = validation.data;
 
-          // Restore each category present in the backup payload
-          if (data.students && Array.isArray(data.students)) {
-            setStudents(data.students);
-            await storage.setItem('dl_students', data.students);
-          }
-          if (data.groups && Array.isArray(data.groups)) {
-            setGroups(data.groups);
-            await storage.setItem('dl_groups', data.groups);
-          }
-          if (data.lessons && Array.isArray(data.lessons)) {
-            setLessons(data.lessons);
-            await storage.setItem('dl_lessons', data.lessons);
-          }
-          if (data.payments && Array.isArray(data.payments)) {
-            setPayments(data.payments);
-            await storage.setItem('dl_payments', data.payments);
-          }
-          if (data.profile) {
-            const newProfile = { ...profile, ...data.profile };
-            setProfile(newProfile);
-            await storage.setItem('dl_profile', newProfile);
-          }
+          // Prepare final state variables in-memory
+          let finalStudents = students;
+          let finalGroups = groups;
+          let finalLessons = lessons;
+          let finalPayments = payments;
+          let finalProfile = profile;
+          let finalTodos = todos;
 
-          // Optional extra lists if available in full backup
-          if (data.todos && Array.isArray(data.todos)) {
-            await storage.setItem('dl_todos', data.todos);
+          if (data.students) finalStudents = data.students;
+          if (data.groups) finalGroups = data.groups;
+          if (data.lessons) finalLessons = data.lessons;
+          if (data.payments) finalPayments = data.payments;
+          if (data.profile) finalProfile = { ...profile, ...data.profile };
+          if (data.todos) finalTodos = data.todos;
+
+          // ATOMIC STATE AND STORAGE COMMIT
+          setStudents(finalStudents);
+          await storage.setItem('dl_students', finalStudents);
+
+          setGroups(finalGroups);
+          await storage.setItem('dl_groups', finalGroups);
+
+          setLessons(finalLessons);
+          await storage.setItem('dl_lessons', finalLessons);
+
+          setPayments(finalPayments);
+          await storage.setItem('dl_payments', finalPayments);
+
+          setProfile(finalProfile);
+          await storage.setItem('dl_profile', finalProfile);
+
+          if (data.todos) {
+            setTodos(finalTodos);
+            await storage.setItem('dl_todos', finalTodos);
           }
 
           setSimpleSuccessMsg(_t('✓ تم استعادة جميع البيانات بنجاح تام وتم حفظ الملف!', '✓ All data restored successfully!'));
@@ -567,7 +576,11 @@ export const SmartBackupCenter: React.FC<SmartBackupCenterProps> = ({ onBack }) 
           parsed.data = await decryptBackupData(parsed.encryptedData, decryptPasswordInput);
         }
 
-        const data = parsed.data || parsed;
+        const validation = validateAndSanitizeBackupPayload(parsed);
+        if (!validation.isValid) {
+          throw new Error(validation.errorMessage || 'Validation failed');
+        }
+        const data = validation.data;
         setRestoreProgress(60);
 
         console.log('parsed students', data.students?.length);
@@ -576,182 +589,158 @@ export const SmartBackupCenter: React.FC<SmartBackupCenterProps> = ({ onBack }) 
         console.log('parsed payments', data.payments?.length);
         console.log('selectedRestoreCategories', selectedRestoreCategories);
 
-        // Smart Restore logic
-        if (restoreMode === 'smart') {
-          if (selectedRestoreCategories.includes('students') && data.students) {
-            try {
-              const existingMap = new Map(students.map(s => [s.id, s]));
-              const newStudentsList = [...students];
+        // Prepare final state variables in-memory
+        let finalStudents = [...students];
+        let finalGroups = [...groups];
+        let finalLessons = [...lessons];
+        let finalPayments = [...payments];
+        let finalProfile = profile ? { ...profile } : undefined;
 
-              data.students.forEach((impS: Student) => {
-                if (existingMap.has(impS.id)) {
-                  const idx = newStudentsList.findIndex(s => s.id === impS.id);
-                  if (idx !== -1) newStudentsList[idx] = { ...newStudentsList[idx], ...impS };
-                } else {
-                  newStudentsList.push(impS);
-                }
-              });
-              console.log('calling setStudents');
-              setStudents(newStudentsList);
-              await storage.setItem('dl_students', newStudentsList);
-            } catch (categoryError: any) {
-              console.error('Error during smart restore students', categoryError);
-            }
-          }
-
-          if (selectedRestoreCategories.includes('groups') && data.groups) {
-            try {
-              const existingMap = new Map(groups.map(g => [g.id, g]));
-              const newGroupsList = [...groups];
-
-              data.groups.forEach((impG: Group) => {
-                if (existingMap.has(impG.id)) {
-                  const idx = newGroupsList.findIndex(g => g.id === impG.id);
-                  if (idx !== -1) newGroupsList[idx] = { ...newGroupsList[idx], ...impG };
-                } else {
-                  newGroupsList.push(impG);
-                }
-              });
-              console.log('calling setGroups');
-              setGroups(newGroupsList);
-              await storage.setItem('dl_groups', newGroupsList);
-            } catch (categoryError: any) {
-              console.error('Error during smart restore groups', categoryError);
-            }
-          }
-
-          if (selectedRestoreCategories.includes('schedule') && data.lessons) {
-            try {
-              const existingMap = new Map(lessons.map(l => [l.id, l]));
-              const newLessonsList = [...lessons];
-
-              data.lessons.forEach((impL: Lesson) => {
-                if (existingMap.has(impL.id)) {
-                  const idx = newLessonsList.findIndex(l => l.id === impL.id);
-                  if (idx !== -1) newLessonsList[idx] = { ...newLessonsList[idx], ...impL };
-                } else {
-                  newLessonsList.push(impL);
-                }
-              });
-              console.log('calling setLessons');
-              setLessons(newLessonsList);
-              await storage.setItem('dl_lessons', newLessonsList);
-            } catch (categoryError: any) {
-              console.error('Error during smart restore lessons', categoryError);
-            }
-          }
-
-          if (selectedRestoreCategories.includes('financial') && data.payments) {
-            try {
-              const existingMap = new Map(payments.map(p => [p.id, p]));
-              const newPaymentsList = [...payments];
-
-              data.payments.forEach((impP: PaymentRecord) => {
-                if (existingMap.has(impP.id)) {
-                  const idx = newPaymentsList.findIndex(p => p.id === impP.id);
-                  if (idx !== -1) newPaymentsList[idx] = { ...newPaymentsList[idx], ...impP };
-                } else {
-                  newPaymentsList.push(impP);
-                }
-              });
-              console.log('calling setPayments');
-              setPayments(newPaymentsList);
-              await storage.setItem('dl_payments', newPaymentsList);
-            } catch (categoryError: any) {
-              console.error('Error during smart restore payments', categoryError);
-            }
-          }
-        } else if (restoreMode === 'merge') {
-          // Merge Mode: append records
-          if (selectedRestoreCategories.includes('students') && data.students) {
-            try {
-              const newList = [...students, ...data.students];
-              console.log('calling setStudents');
-              setStudents(newList);
-              await storage.setItem('dl_students', newList);
-            } catch (categoryError: any) {
-              console.error('Error during merge restore students', categoryError);
-            }
-          }
-          if (selectedRestoreCategories.includes('groups') && data.groups) {
-            try {
-              const newList = [...groups, ...data.groups];
-              console.log('calling setGroups');
-              setGroups(newList);
-              await storage.setItem('dl_groups', newList);
-            } catch (categoryError: any) {
-              console.error('Error during merge restore groups', categoryError);
-            }
-          }
-          if (selectedRestoreCategories.includes('schedule') && data.lessons) {
-            try {
-              const newList = [...lessons, ...data.lessons];
-              console.log('calling setLessons');
-              setLessons(newList);
-              await storage.setItem('dl_lessons', newList);
-            } catch (categoryError: any) {
-              console.error('Error during merge restore lessons', categoryError);
-            }
-          }
-          if (selectedRestoreCategories.includes('financial') && data.payments) {
-            try {
-              const newList = [...payments, ...data.payments];
-              console.log('calling setPayments');
-              setPayments(newList);
-              await storage.setItem('dl_payments', newList);
-            } catch (categoryError: any) {
-              console.error('Error during merge restore payments', categoryError);
-            }
-          }
-        } else if (restoreMode === 'replace') {
-          // Replace Mode: overwrite selected categories
-          if (selectedRestoreCategories.includes('students') && data.students) {
-            try {
-              console.log('calling setStudents');
-              setStudents(data.students);
-              await storage.setItem('dl_students', data.students);
-            } catch (categoryError: any) {
-              console.error('Error during replace restore students', categoryError);
-            }
-          }
-          if (selectedRestoreCategories.includes('groups') && data.groups) {
-            try {
-              console.log('calling setGroups');
-              setGroups(data.groups);
-              await storage.setItem('dl_groups', data.groups);
-            } catch (categoryError: any) {
-              console.error('Error during replace restore groups', categoryError);
-            }
-          }
-          if (selectedRestoreCategories.includes('schedule') && data.lessons) {
-            try {
-              console.log('calling setLessons');
-              setLessons(data.lessons);
-              await storage.setItem('dl_lessons', data.lessons);
-            } catch (categoryError: any) {
-              console.error('Error during replace restore lessons', categoryError);
-            }
-          }
-          if (selectedRestoreCategories.includes('financial') && data.payments) {
-            try {
-              console.log('calling setPayments');
-              setPayments(data.payments);
-              await storage.setItem('dl_payments', data.payments);
-            } catch (categoryError: any) {
-              console.error('Error during replace restore payments', categoryError);
-            }
+        // Process Students
+        if (selectedRestoreCategories.includes('students') && data.students) {
+          if (restoreMode === 'smart') {
+            const existingMap = new Map(students.map(s => [s.id, s]));
+            const newStudentsList = [...students];
+            data.students.forEach((impS: Student) => {
+              if (existingMap.has(impS.id)) {
+                const idx = newStudentsList.findIndex(s => s.id === impS.id);
+                if (idx !== -1) newStudentsList[idx] = { ...newStudentsList[idx], ...impS };
+              } else {
+                newStudentsList.push(impS);
+              }
+            });
+            finalStudents = newStudentsList;
+          } else if (restoreMode === 'merge') {
+            const mergedMap = new Map<string, Student>();
+            students.forEach(s => mergedMap.set(s.id, s));
+            data.students.forEach(s => {
+              if (mergedMap.has(s.id)) {
+                mergedMap.set(s.id, { ...mergedMap.get(s.id)!, ...s });
+              } else {
+                mergedMap.set(s.id, s);
+              }
+            });
+            finalStudents = Array.from(mergedMap.values());
+          } else if (restoreMode === 'replace') {
+            finalStudents = data.students;
           }
         }
 
-        // Restore Settings if selected
-        if (selectedRestoreCategories.includes('settings') && data.profile) {
-          try {
-            const newProfile = { ...profile, ...data.profile };
-            setProfile(newProfile);
-            await storage.setItem('dl_profile', newProfile);
-          } catch (categoryError: any) {
-            console.error('Error during restore settings', categoryError);
+        // Process Groups
+        if (selectedRestoreCategories.includes('groups') && data.groups) {
+          if (restoreMode === 'smart') {
+            const existingMap = new Map(groups.map(g => [g.id, g]));
+            const newGroupsList = [...groups];
+            data.groups.forEach((impG: Group) => {
+              if (existingMap.has(impG.id)) {
+                const idx = newGroupsList.findIndex(g => g.id === impG.id);
+                if (idx !== -1) newGroupsList[idx] = { ...newGroupsList[idx], ...impG };
+              } else {
+                newGroupsList.push(impG);
+              }
+            });
+            finalGroups = newGroupsList;
+          } else if (restoreMode === 'merge') {
+            const mergedMap = new Map<string, Group>();
+            groups.forEach(g => mergedMap.set(g.id, g));
+            data.groups.forEach(g => {
+              if (mergedMap.has(g.id)) {
+                mergedMap.set(g.id, { ...mergedMap.get(g.id)!, ...g });
+              } else {
+                mergedMap.set(g.id, g);
+              }
+            });
+            finalGroups = Array.from(mergedMap.values());
+          } else if (restoreMode === 'replace') {
+            finalGroups = data.groups;
           }
+        }
+
+        // Process Schedule (Lessons)
+        if (selectedRestoreCategories.includes('schedule') && data.lessons) {
+          if (restoreMode === 'smart') {
+            const existingMap = new Map(lessons.map(l => [l.id, l]));
+            const newLessonsList = [...lessons];
+            data.lessons.forEach((impL: Lesson) => {
+              if (existingMap.has(impL.id)) {
+                const idx = newLessonsList.findIndex(l => l.id === impL.id);
+                if (idx !== -1) newLessonsList[idx] = { ...newLessonsList[idx], ...impL };
+              } else {
+                newLessonsList.push(impL);
+              }
+            });
+            finalLessons = newLessonsList;
+          } else if (restoreMode === 'merge') {
+            const mergedMap = new Map<string, Lesson>();
+            lessons.forEach(l => mergedMap.set(l.id, l));
+            data.lessons.forEach(l => {
+              if (mergedMap.has(l.id)) {
+                mergedMap.set(l.id, { ...mergedMap.get(l.id)!, ...l });
+              } else {
+                mergedMap.set(l.id, l);
+              }
+            });
+            finalLessons = Array.from(mergedMap.values());
+          } else if (restoreMode === 'replace') {
+            finalLessons = data.lessons;
+          }
+        }
+
+        // Process Financial (Payments)
+        if (selectedRestoreCategories.includes('financial') && data.payments) {
+          if (restoreMode === 'smart') {
+            const existingMap = new Map(payments.map(p => [p.id, p]));
+            const newPaymentsList = [...payments];
+            data.payments.forEach((impP: PaymentRecord) => {
+              if (existingMap.has(impP.id)) {
+                const idx = newPaymentsList.findIndex(p => p.id === impP.id);
+                if (idx !== -1) newPaymentsList[idx] = { ...newPaymentsList[idx], ...impP };
+              } else {
+                newPaymentsList.push(impP);
+              }
+            });
+            finalPayments = newPaymentsList;
+          } else if (restoreMode === 'merge') {
+            const mergedMap = new Map<string, PaymentRecord>();
+            payments.forEach(p => mergedMap.set(p.id, p));
+            data.payments.forEach(p => {
+              if (mergedMap.has(p.id)) {
+                mergedMap.set(p.id, { ...mergedMap.get(p.id)!, ...p });
+              } else {
+                mergedMap.set(p.id, p);
+              }
+            });
+            finalPayments = Array.from(mergedMap.values());
+          } else if (restoreMode === 'replace') {
+            finalPayments = data.payments;
+          }
+        }
+
+        // Process Settings (Profile)
+        if (selectedRestoreCategories.includes('settings') && data.profile) {
+          finalProfile = { ...profile, ...data.profile };
+        }
+
+        // ATOMIC STATE AND STORAGE COMMIT
+        if (selectedRestoreCategories.includes('students') && data.students) {
+          setStudents(finalStudents);
+          await storage.setItem('dl_students', finalStudents);
+        }
+        if (selectedRestoreCategories.includes('groups') && data.groups) {
+          setGroups(finalGroups);
+          await storage.setItem('dl_groups', finalGroups);
+        }
+        if (selectedRestoreCategories.includes('schedule') && data.lessons) {
+          setLessons(finalLessons);
+          await storage.setItem('dl_lessons', finalLessons);
+        }
+        if (selectedRestoreCategories.includes('financial') && data.payments) {
+          setPayments(finalPayments);
+          await storage.setItem('dl_payments', finalPayments);
+        }
+        if (selectedRestoreCategories.includes('settings') && data.profile && finalProfile) {
+          setProfile(finalProfile);
+          await storage.setItem('dl_profile', finalProfile);
         }
 
         console.log('restore finished');

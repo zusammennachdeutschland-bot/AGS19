@@ -389,7 +389,7 @@ const updateMediaSessionLockscreen = (
     navigator.mediaSession.metadata = new window.MediaMetadata({
       title,
       artist: body,
-      album: 'AGS19',
+      album: 'AGS Teacher App',
       artwork: [
         { src: '/pwa-192x192.png', sizes: '192x192', type: 'image/png' }
       ]
