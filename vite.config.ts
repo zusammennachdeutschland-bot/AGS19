@@ -76,9 +76,6 @@ export default defineConfig(() => {
       ] : [])
     ],
     build: {
-      rollupOptions: {
-        external: ['react-is'],
-      },
     },
     resolve: {
       alias: {
