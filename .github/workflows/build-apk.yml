@@ -24,8 +24,8 @@ jobs:
           echo "Commit SHA: ${GITHUB_SHA}"
           echo "Commit Message: $(git log -1 --pretty=%B)"
           echo "Timestamp: $(date -u +'%Y-%m-%dT%H:%M:%SZ')"
-          echo "Version Code: 4"
-          echo "Version Name: 1.9"
+          echo "Version Code: 1"
+          echo "Version Name: 1.0"
           echo "========================================="
 
       - name: Setup Node.js
@@ -47,12 +47,10 @@ jobs:
           rm -rf dist android/app/src/main/assets/public
 
       - name: Install Dependencies
-        run: |
-          rm -rf node_modules package-lock.json
-          npm install --legacy-peer-deps
+        run: npm install --legacy-peer-deps
 
       - name: Build Web Application
-        run: CI=true npm run build
+        run: npm run build
 
       - name: Verify Web Build Output
         run: |
@@ -61,6 +59,9 @@ jobs:
             exit 1
           fi
           echo "Web build successfully verified in dist/."
+
+      - name: Generate Capacitor Assets
+        run: npx capacitor-assets generate --android
 
       - name: Sync Capacitor Android
         run: npx cap sync android
@@ -72,12 +73,6 @@ jobs:
             exit 1
           fi
           echo "Android public assets verified."
-
-      - name: Fix Gradle Wrapper Jar
-        run: |
-          cd android
-          rm -rf gradle/wrapper/gradle-wrapper.jar
-          curl -sLo gradle/wrapper/gradle-wrapper.jar https://raw.githubusercontent.com/gradle/gradle/v8.14.3/gradle/wrapper/gradle-wrapper.jar
 
       - name: Create Fixed Debug Keystore
         run: |

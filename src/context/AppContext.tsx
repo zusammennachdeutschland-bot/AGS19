@@ -375,26 +375,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode, initialData: any
   };
 
   const [lessons, setLessons] = useState<Lesson[]>(() => {
-    const savedGroups = initialData['dl_groups'] || [];
-    const savedStudents = initialData['dl_students'] || [];
-    if (savedGroups.length === 0 && savedStudents.length === 0) {
-      storage.setItem('dl_lessons', []);
-      return [];
-    }
     const saved = initialData['dl_lessons'];
     const raw: Lesson[] = saved !== null && saved !== undefined ? saved : INITIAL_LESSONS;
-    const validGroupIds = new Set(savedGroups.map((g: Group) => g.id));
-    const validStudentIds = new Set(savedStudents.map((s: Student) => s.id));
-
-    const nonOrphaned = raw.filter(l => {
-      if (l.isQuickLesson) return true;
-      if (l.groupId && l.groupId !== 'quick_group' && !validGroupIds.has(l.groupId)) return false;
-      if (l.studentId && !validStudentIds.has(l.studentId)) return false;
-      return true;
-    });
-
     const seen = new Set<string>();
-    const sanitized = nonOrphaned.map((item, idx) => {
+    const sanitized = raw.map((item, idx) => {
       if (seen.has(item.id)) {
         const newId = `${item.id}_fixed_${idx}_${Math.random().toString(36).substring(2, 6)}`;
         return { ...item, id: newId };
@@ -421,25 +405,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode, initialData: any
   };
 
   const [payments, setPayments] = useState<PaymentRecord[]>(() => {
-    const savedGroups = initialData['dl_groups'] || [];
-    const savedStudents = initialData['dl_students'] || [];
-    if (savedGroups.length === 0 && savedStudents.length === 0) {
-      storage.setItem('dl_payments', []);
-      return [];
-    }
     const saved = initialData['dl_payments'];
     const raw: PaymentRecord[] = saved !== null && saved !== undefined ? saved : INITIAL_PAYMENT_RECORDS;
-    const validGroupIds = new Set(savedGroups.map((g: Group) => g.id));
-    const validStudentIds = new Set(savedStudents.map((s: Student) => s.id));
-
-    const nonOrphaned = raw.filter(p => {
-      if (p.groupId && p.groupId !== 'quick_group' && !validGroupIds.has(p.groupId)) return false;
-      if (p.studentId && !validStudentIds.has(p.studentId)) return false;
-      return true;
-    });
-
     const seen = new Set<string>();
-    const sanitized = nonOrphaned.map((item, idx) => {
+    const sanitized = raw.map((item, idx) => {
       if (seen.has(item.id)) {
         const newId = `${item.id}_fixed_${idx}_${Math.random().toString(36).substring(2, 6)}`;
         return { ...item, id: newId };
@@ -771,21 +740,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode, initialData: any
     if (!isInitializedRef.current) return;
     async function syncLessons() {
       if (!lessons) return;
-      if (groups.length === 0 && students.length === 0) {
-        await storage.setItem('dl_lessons', []);
-        setLessons([]);
-        return;
-      }
       const raw = await storage.getItem('dl_lessons');
       const full = (raw as Lesson[]) || [];
       const validGroupIds = new Set(groups.map(g => g.id));
-      const validStudentIds = new Set(students.map(s => s.id));
-      const nonOrphanedFull = full.filter((l: Lesson) => {
-        if (l.isQuickLesson) return true;
-        if (l.groupId && l.groupId !== 'quick_group' && !validGroupIds.has(l.groupId)) return false;
-        if (l.studentId && !validStudentIds.has(l.studentId)) return false;
-        return true;
-      });
+      const nonOrphanedFull = full.filter((l: Lesson) => !l.groupId || validGroupIds.has(l.groupId));
 
       const activeMap = new Map(lessons.map(l => [l.id, l]));
       const fullIds = new Set(nonOrphanedFull.map(l => l.id));
@@ -797,35 +755,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode, initialData: any
         }
       });
 
-      const finalCleaned = merged.filter((l: Lesson) => {
-        if (l.isQuickLesson) return true;
-        if (l.groupId && l.groupId !== 'quick_group' && !validGroupIds.has(l.groupId)) return false;
-        if (l.studentId && !validStudentIds.has(l.studentId)) return false;
-        return true;
-      });
+      const finalCleaned = merged.filter((l: Lesson) => !l.groupId || validGroupIds.has(l.groupId));
       await storage.setItem('dl_lessons', finalCleaned);
     }
     syncLessons();
-  }, [lessons, groups, students]);
+  }, [lessons, groups]);
 
   useEffect(() => {
     if (!isInitializedRef.current) return;
     async function syncPayments() {
       if (!payments) return;
-      if (groups.length === 0 && students.length === 0) {
-        await storage.setItem('dl_payments', []);
-        setPayments([]);
-        return;
-      }
       const raw = await storage.getItem('dl_payments');
       const full = (raw as PaymentRecord[]) || [];
       const validGroupIds = new Set(groups.map(g => g.id));
-      const validStudentIds = new Set(students.map(s => s.id));
-      const nonOrphanedFull = full.filter((p: PaymentRecord) => {
-        if (p.groupId && p.groupId !== 'quick_group' && !validGroupIds.has(p.groupId)) return false;
-        if (p.studentId && !validStudentIds.has(p.studentId)) return false;
-        return true;
-      });
+      const nonOrphanedFull = full.filter((p: PaymentRecord) => !p.groupId || validGroupIds.has(p.groupId));
 
       const activeMap = new Map(payments.map(p => [p.id, p]));
       const fullIds = new Set(nonOrphanedFull.map(p => p.id));
@@ -837,15 +780,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode, initialData: any
         }
       });
 
-      const finalCleaned = merged.filter((p: PaymentRecord) => {
-        if (p.groupId && p.groupId !== 'quick_group' && !validGroupIds.has(p.groupId)) return false;
-        if (p.studentId && !validStudentIds.has(p.studentId)) return false;
-        return true;
-      });
+      const finalCleaned = merged.filter((p: PaymentRecord) => !p.groupId || validGroupIds.has(p.groupId));
       await storage.setItem('dl_payments', finalCleaned);
     }
     syncPayments();
-  }, [payments, groups, students]);
+  }, [payments, groups]);
 
   useEffect(() => {
     if (!isInitializedRef.current) return;
