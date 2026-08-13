@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getFreePeriodsForDate, getBookableSlots, formatTimeDisplay } from '../utils/timeUtils';
+import { getFreePeriodsForDate, getBookableSlots, formatTimeDisplay, formatLocalDate } from '../utils/timeUtils';
 import { checkOverlap } from '../utils/lessonUtils';
 import { useApp } from '../context/AppContext';
 import { storage } from '../services/storageService';
@@ -15,7 +15,7 @@ interface AddLessonModalProps {
 export const AddLessonModal: React.FC<AddLessonModalProps> = ({ onClose }) => {
   const { groups, students, lessons, profile, addLesson, t } = useApp();
 
-  const todayStr = new Date().toISOString().split('T')[0];
+  const todayStr = formatLocalDate();
 
   const [groupId, setGroupId] = useState(groups[0]?.id || '');
   const [studentId, setStudentId] = useState('');
@@ -39,7 +39,7 @@ export const AddLessonModal: React.FC<AddLessonModalProps> = ({ onClose }) => {
       for (let i = 0; i < repeatWeeks; i++) {
         const d = new Date(date);
         d.setDate(d.getDate() + (i * 7));
-        const dateStr = new Date(d.getTime() - (d.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
+        const dateStr = formatLocalDate(d);
         const dummyLesson = { id: 'dummy', date: dateStr, time: checkTime, durationMinutes };
         if (lessons.some(l => checkOverlap(dummyLesson, l))) return true;
       }

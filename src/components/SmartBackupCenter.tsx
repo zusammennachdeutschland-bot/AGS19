@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { Student, Group, Lesson, PaymentRecord } from '../types';
+import { formatLocalDate } from '../utils/timeUtils';
 import { storage } from '../services/storageService';
 import { Capacitor } from '@capacitor/core';
 import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
@@ -327,7 +328,7 @@ export const SmartBackupCenter: React.FC<SmartBackupCenterProps> = ({ onBack }) 
         };
 
         const jsonString = JSON.stringify(backupPayload, null, 2);
-        const fileName = `AGS19_Quick_Backup_${new Date().toISOString().split('T')[0]}.json`;
+        const fileName = `AGS19_Quick_Backup_${formatLocalDate()}.json`;
 
         if (Capacitor.isNativePlatform()) {
           const savedFile = await Filesystem.writeFile({

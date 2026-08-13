@@ -2,6 +2,7 @@ import { isPendingStatus } from "../utils/lessonUtils";
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { Lesson } from '../types';
+import { formatLocalDate } from '../utils/timeUtils';
 import { 
   CheckCircle2, Clock, PlayCircle, ChevronRight, AlertCircle, XCircle, X, Video, MapPin
 } from 'lucide-react';
@@ -17,7 +18,7 @@ export const TodaysProgressTimeline: React.FC = () => {
     return () => clearInterval(timer);
   }, []);
 
-  const todayStr = now.toISOString().split('T')[0];
+  const todayStr = formatLocalDate(now);
   const currentMinutes = now.getHours() * 60 + now.getMinutes();
 
   // 1. PAST PENDING LESSONS: Lessons from previous days with NO final status (neither completed nor cancelled)

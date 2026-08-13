@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { isPendingStatus } from '../utils/lessonUtils';
+import { formatLocalDate } from '../utils/timeUtils';
 import { Video, MapPin, Play, Sparkles, ChevronRight, Users, User } from 'lucide-react';
 
 export const NextActionCard: React.FC = () => {
@@ -8,7 +9,7 @@ export const NextActionCard: React.FC = () => {
   const [filterPeriod, setFilterPeriod] = useState<'heute' | 'morgen' | 'woche'>('heute');
   const [filterType, setFilterType] = useState<'alle' | 'online' | 'offline'>('alle');
 
-  const todayStr = new Date().toISOString().split('T')[0];
+  const todayStr = formatLocalDate();
 
   const filteredLessons = lessons.filter(l => {
     if (dismissedDashboardLessonIds.includes(l.id)) return false;

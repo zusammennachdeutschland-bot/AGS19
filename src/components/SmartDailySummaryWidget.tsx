@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { useApp } from '../context/AppContext';
 import { calculateDuePaymentCycles } from '../utils/paymentUtils';
+import { formatLocalDate } from '../utils/timeUtils';
 
 import { Sparkles, Clock, Users, BookOpen, AlertCircle, Wallet } from 'lucide-react';
 
@@ -13,7 +14,7 @@ export const SmartDailySummaryWidget: React.FC = () => {
   };
 
 
-  const todayStr = new Date().toISOString().split('T')[0];
+  const todayStr = formatLocalDate();
 
   const summary = useMemo(() => {
     const todaysLessons = lessons

@@ -354,7 +354,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode, initialData: any
   const filterActiveLessons = (raw: Lesson[]): Lesson[] => {
     const sixtyDaysAgo = new Date();
     sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
-    const cutoffStr = sixtyDaysAgo.toISOString().split('T')[0];
+    const cutoffStr = formatLocalDate(sixtyDaysAgo);
 
     return raw.filter(l => {
       if (!l.date) return true;
@@ -383,7 +383,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode, initialData: any
   const filterActivePayments = (raw: PaymentRecord[]): PaymentRecord[] => {
     const sixtyDaysAgo = new Date();
     sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
-    const cutoffStr = sixtyDaysAgo.toISOString().split('T')[0];
+    const cutoffStr = formatLocalDate(sixtyDaysAgo);
 
     return raw.filter(p => {
       const d = p.paidDate || p.dueDate || p.createdAt || '';
@@ -716,7 +716,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode, initialData: any
       return;
     }
 
-    const todayStr = new Date().toISOString().split('T')[0];
+    const todayStr = formatLocalDate();
 
     if (triggerType !== 'manual') {
       // Check if already shown today
@@ -804,7 +804,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode, initialData: any
 
     const checkUpcomingLessonsAlerts = () => {
       const now = new Date();
-      const todayStr = now.toISOString().split('T')[0];
+      const todayStr = formatLocalDate(now);
       const nowMins = now.getHours() * 60 + now.getMinutes();
 
       lessons.forEach((lesson) => {
@@ -866,7 +866,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode, initialData: any
 
         const matchingSlot = slots.find(s => getDayNumber(s.day) === dayNum);
         if (matchingSlot) {
-          const dateStr = d.toISOString().split('T')[0];
+          const dateStr = formatLocalDate(d);
           const sessionTime = matchingSlot.time || '17:00';
 
           const existsInLessons = lessons.some(l => l.groupId === group.id && l.date === dateStr && l.time === sessionTime);
@@ -987,7 +987,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode, initialData: any
       exportedAt: new Date().toISOString()
     };
     const jsonStr = JSON.stringify(data, null, 2);
-    const fileName = `AGS19_Backup_${new Date().toISOString().split('T')[0]}.json`;
+    const fileName = `AGS19_Backup_${formatLocalDate()}.json`;
 
     if (Capacitor.isNativePlatform()) {
       try {
@@ -1122,7 +1122,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode, initialData: any
       ...studentData,
       id: `s_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
       documents: [],
-      joinedDate: new Date().toISOString().split('T')[0]
+      joinedDate: formatLocalDate()
     };
     setStudents(prev => [...prev, newStudent]);
     return newStudent;
@@ -1153,7 +1153,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode, initialData: any
       fileName: file.name,
       fileType: file.type.includes('pdf') ? 'pdf' : file.type.includes('image') ? 'image' : 'doc',
       fileSize: `${(file.size / 1024).toFixed(1)} KB`,
-      uploadedAt: new Date().toISOString().split('T')[0],
+      uploadedAt: formatLocalDate(),
       url: URL.createObjectURL(file),
       category
     };
@@ -1217,7 +1217,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode, initialData: any
     for (let week = 0; week < repeatWeeks; week++) {
       const lessonDate = new Date(baseDate);
       lessonDate.setDate(baseDate.getDate() + (week * 7));
-      const dateStr = lessonDate.toISOString().split('T')[0];
+      const dateStr = formatLocalDate(lessonDate);
 
       // Check if a lesson already exists on this date/time for this group
       const exists = lessons.some(l => l.groupId === lessonData.groupId && l.date === dateStr && l.time === lessonData.time);
@@ -1275,7 +1275,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode, initialData: any
     const updatedTotalSessions = packageCount || targetLesson.totalSessionsInPackage || 4;
     const finalAmountPaid = report.amountPaid ?? targetLesson.amountPaid;
     const finalAmountDue = targetLesson.amountDue || 200;
-    const today = new Date().toISOString().split('T')[0];
+    const today = formatLocalDate();
 
     const groupSts = targetLesson.groupId 
       ? students.filter(s => s.groupId === targetLesson.groupId)
@@ -1676,7 +1676,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode, initialData: any
     advanceAmount: number = 0,
     refundAmount: number = 0
   ) => {
-    const today = new Date().toISOString().split('T')[0];
+    const today = formatLocalDate();
     setPayments(prev => prev.map(p => {
       if (p.id === paymentId) {
         const newPaid = (p.amountPaid || 0) + paidAmount + advanceAmount - refundAmount;
@@ -1726,7 +1726,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode, initialData: any
     existingPaymentRecordId?: string;
     notes?: string;
   }) => {
-    const today = new Date().toISOString().split('T')[0];
+    const today = formatLocalDate();
 
     if (data.existingPaymentRecordId) {
       setPayments(prev => prev.map(p => {
@@ -1782,7 +1782,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode, initialData: any
     existingPaymentRecordId?: string;
   }) => {
     if (!data.existingPaymentRecordId) {
-      const today = new Date().toISOString().split('T')[0];
+      const today = formatLocalDate();
       const newRecord: PaymentRecord = {
         id: `pay_due_${data.studentId}_${Date.now()}`,
         studentId: data.studentId,
@@ -1805,7 +1805,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode, initialData: any
   };
 
   const toggleQuickPaymentStatus = (paymentId: string) => {
-    const today = new Date().toISOString().split('T')[0];
+    const today = formatLocalDate();
     let targetStId = '';
     let newStStatus: PaymentStatus = 'pending';
 
@@ -1842,7 +1842,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode, initialData: any
   };
 
   const toggleStudentPaymentStatus = (studentId: string) => {
-    const today = new Date().toISOString().split('T')[0];
+    const today = formatLocalDate();
     const targetSt = students.find(s => s.id === studentId);
     if (!targetSt) return;
 
@@ -1907,7 +1907,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode, initialData: any
       ? customAmountPaid 
       : (status === 'paid' ? due : 0);
 
-    const today = new Date().toISOString().split('T')[0];
+    const today = formatLocalDate();
 
     // Update lesson status and amount
     setLessons(prev => prev.map(l => {
@@ -2085,7 +2085,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode, initialData: any
       studentPhone: targetLesson.quickStudentPhone || '',
       notes: `Konvertiert aus Quick Lesson vom ${targetLesson.date}. Notizen: ${targetLesson.quickNotes || 'Keine'}`,
       documents: [],
-      joinedDate: new Date().toISOString().split('T')[0]
+      joinedDate: formatLocalDate()
     };
 
     setStudents(prev => [newStudent, ...prev]);
@@ -2189,7 +2189,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode, initialData: any
       todos,
     };
     const jsonStr = JSON.stringify(backupObj, null, 2);
-    const fileName = `znd_backup_${new Date().toISOString().split('T')[0]}.json`;
+    const fileName = `znd_backup_${formatLocalDate()}.json`;
 
     if (Capacitor.isNativePlatform()) {
       try {

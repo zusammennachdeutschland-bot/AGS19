@@ -1,5 +1,6 @@
 import React from 'react';
 import { useApp } from '../context/AppContext';
+import { formatLocalDate } from '../utils/timeUtils';
 
 import { CheckCircle2, XCircle, Clock, Wallet, CalendarDays } from 'lucide-react';
 
@@ -26,8 +27,8 @@ export const WeeklyOverviewWidget: React.FC = () => {
     thursday.setDate(friday.getDate() + 6);
     thursday.setHours(23, 59, 59, 999);
 
-    const friStr = friday.toISOString().split('T')[0];
-    const thuStr = thursday.toISOString().split('T')[0];
+    const friStr = formatLocalDate(friday);
+    const thuStr = formatLocalDate(thursday);
 
     const weekLessons = lessons.filter(l => l.date >= friStr && l.date <= thuStr);
 

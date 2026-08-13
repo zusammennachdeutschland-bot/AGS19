@@ -2,6 +2,7 @@ import { isPendingStatus } from "../utils/lessonUtils";
 import React, { useState, useMemo } from 'react';
 import { useApp } from '../context/AppContext';
 import { Lesson } from '../types';
+import { formatLocalDate } from '../utils/timeUtils';
 import { 
   History, Search, Filter, Calendar, Clock, CheckCircle2, XCircle, 
   AlertTriangle, Users, User, ArrowUpRight, FileText, Settings, Play, 
@@ -35,14 +36,14 @@ export const SessionHistoryView: React.FC = () => {
   const [reportModalLesson, setReportModalLesson] = useState<Lesson | null>(null);
 
   // Date calculations
-  const todayStr = new Date().toISOString().split('T')[0];
+  const todayStr = formatLocalDate();
   
   const getWeekStart = (d: Date): string => {
     const date = new Date(d);
     const day = date.getDay();
     const diff = date.getDate() - day + (day === 0 ? -6 : 1);
     const monday = new Date(date.setDate(diff));
-    return monday.toISOString().split('T')[0];
+    return formatLocalDate(monday);
   };
 
   const currentWeekStart = getWeekStart(new Date());

@@ -1,6 +1,7 @@
 import React from 'react';
 import { useApp } from '../context/AppContext';
 import { isPendingStatus } from "../utils/lessonUtils";
+import { formatLocalDate } from '../utils/timeUtils';
 import { AlertCircle, ChevronRight } from 'lucide-react';
 import { WeeklyOverviewWidget } from './WeeklyOverviewWidget';
 import { MonthlyOverviewWidget } from './MonthlyOverviewWidget';
@@ -8,7 +9,7 @@ import { MonthlyOverviewWidget } from './MonthlyOverviewWidget';
 export const DailyStats: React.FC = () => {
   const { lessons, openLessonControl, dismissedDashboardLessonIds, t } = useApp();
 
-  const todayStr = new Date().toISOString().split('T')[0];
+  const todayStr = formatLocalDate();
 
   // Past pending sessions (past lessons not completed or cancelled, excluding dismissed)
   const pastPendingLessons = lessons.filter(l => 

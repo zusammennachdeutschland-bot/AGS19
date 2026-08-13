@@ -2,6 +2,7 @@ import {
   Student, Group, Lesson, PaymentRecord, NotificationItem, 
   TeacherProfile, NotificationSettings, InspirationSettings, InspirationMessage, TodoItem 
 } from '../types';
+import { formatLocalDate } from './timeUtils';
 
 export type BackupCategory = 
   | 'students'
@@ -329,7 +330,7 @@ export function calculateBackupStats(
 // Generate formatted Backup filename
 export function generateBackupFilename(isFull: boolean): string {
   const now = new Date();
-  const dateStr = now.toISOString().split('T')[0];
+  const dateStr = formatLocalDate(now);
   const hours = String(now.getHours()).padStart(2, '0');
   const mins = String(now.getMinutes()).padStart(2, '0');
   const typeTag = isFull ? 'Full' : 'Partial';

@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { useApp } from '../context/AppContext';
 import { PaymentRecord, Student, Group } from '../types';
 import { getStudentCyclePricing, calculateDuePaymentCycles, DuePaymentCycle } from '../utils/paymentUtils';
+import { formatLocalDate } from '../utils/timeUtils';
 import { buildWhatsAppUrl } from '../utils/phoneUtils';
 import { 
   DollarSign, CheckCircle2, Clock, Send, Search, 
@@ -31,7 +32,7 @@ export const PaymentsView: React.FC = () => {
   const [customProrateAmount, setCustomProrateAmount] = useState<number>(0);
 
   const currency = profile.currency || 'EGP';
-  const todayStr = new Date().toISOString().split('T')[0];
+  const todayStr = formatLocalDate();
 
   // Helper to format YYYY-MM-DD -> DD/MM/YYYY
   const formatDateDisplay = (dateStr: string) => {

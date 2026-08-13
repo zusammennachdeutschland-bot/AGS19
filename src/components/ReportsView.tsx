@@ -7,6 +7,7 @@ import {
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart as RePieChart, Pie, Cell } from 'recharts';
 import { Lesson, PaymentRecord } from '../types';
 import { calculateOverallAttendance } from '../utils/lessonUtils';
+import { formatLocalDate } from '../utils/timeUtils';
 import confetti from 'canvas-confetti';
 
 export const ReportsView: React.FC = () => {
@@ -68,7 +69,7 @@ export const ReportsView: React.FC = () => {
   // Filter lessons
   const today = new Date();
   const currentWeekStart = getWeekStart(today);
-  const getLocalDateStr = (d: Date) => new Date(d.getTime() - (d.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
+  const getLocalDateStr = (d: Date) => formatLocalDate(d);
 
   const currentWeekStartStr = getLocalDateStr(currentWeekStart);
 

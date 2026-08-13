@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { useApp } from '../context/AppContext';
 import { Clock, ChevronRight, CheckCircle2, Calendar } from 'lucide-react';
-import { getFreePeriodsForDate, getBookableSlots } from '../utils/timeUtils';
+import { getFreePeriodsForDate, getBookableSlots, formatLocalDate } from '../utils/timeUtils';
 
 export const AvailableTodayWidget: React.FC = () => {
   const { language, profile, lessons, groups, setActiveTab, t } = useApp();
@@ -10,7 +10,7 @@ export const AvailableTodayWidget: React.FC = () => {
     return language === 'ar' ? ar : language === 'de' ? (de || en) : en;
   };
 
-  const todayStr = new Date().toISOString().split('T')[0];
+  const todayStr = formatLocalDate();
 
   const { totalHours, slotsCount, nextSlot } = useMemo(() => {
     if (!profile.weeklyWorkingHours) return { totalHours: '0h 0m', slotsCount: 0, nextSlot: null };

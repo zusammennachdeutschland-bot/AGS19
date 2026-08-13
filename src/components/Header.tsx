@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
+import { formatLocalDate } from '../utils/timeUtils';
 import { Bell, RefreshCw, CheckCircle2, Camera, Clock, Search, Trash2 } from 'lucide-react';
 import { DEFAULT_OFFLINE_AVATAR } from '../data/avatarPresets';
 import { AvatarImage } from './AvatarImage';
@@ -33,7 +34,7 @@ export const Header: React.FC = () => {
   const urgent30MinLesson = useMemo(() => {
     if (profile.enableLessonAlerts === false && profile.enableBrowserPush === false) return null;
     const now = new Date();
-    const todayStr = now.toISOString().split('T')[0];
+    const todayStr = formatLocalDate(now);
     const nowMins = now.getHours() * 60 + now.getMinutes();
 
     const upcoming = lessons.filter(l => {

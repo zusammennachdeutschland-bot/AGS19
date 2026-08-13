@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { checkOverlap } from '../utils/lessonUtils';
 import { useApp } from '../context/AppContext';
+import { formatLocalDate } from '../utils/timeUtils';
 import { PREDEFINED_GRADES } from '../data/initialData';
 import { GradeLevel, LessonType, PaymentStatus } from '../types';
 import { X, Calendar, Clock, Zap, Video, MapPin, DollarSign, User, Phone, FileText, AlertTriangle } from 'lucide-react';
@@ -12,7 +13,7 @@ interface AddQuickLessonModalProps {
 export const AddQuickLessonModal: React.FC<AddQuickLessonModalProps> = ({ onClose }) => {
   const { addQuickLesson, profile, lessons, t } = useApp();
 
-  const todayStr = new Date().toISOString().split('T')[0];
+  const todayStr = formatLocalDate();
 
   const [studentName, setStudentName] = useState('');
   const [quickStudentPhone, setQuickStudentPhone] = useState('');

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { Group, Student, LessonType, AttendanceStatus, HomeworkStatus, PaymentStatus } from '../types';
 import { getDayNumber } from '../utils/scheduleUtils';
+import { formatLocalDate } from '../utils/timeUtils';
 import { 
   X, Play, Users, User, Clock, Calendar as CalendarIcon, Video, MapPin, 
   CheckCircle2, Sparkles, BookOpen, Award, FileText, Zap, ChevronRight, ArrowLeft
@@ -16,7 +17,7 @@ export const StartLessonNowModal: React.FC<StartLessonNowModalProps> = ({ onClos
   const { groups, students, profile, addLesson, openLessonControl, saveLessonReport, startActiveLessonTimer, t } = useApp();
 
   const now = new Date();
-  const todayStr = now.toISOString().split('T')[0];
+  const todayStr = formatLocalDate(now);
   const currentTimeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
 
   const activeGroups = groups.filter(g => g.status !== 'archived');

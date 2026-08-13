@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useApp } from '../context/AppContext';
 import { Clock, Calendar, ChevronRight, CheckCircle2 } from 'lucide-react';
-import { getFreePeriodsForDate, getBookableSlots, formatTimeDisplay } from '../utils/timeUtils';
+import { getFreePeriodsForDate, getBookableSlots, formatTimeDisplay, formatLocalDate } from '../utils/timeUtils';
 import { motion, AnimatePresence } from 'motion/react';
 
 type FilterType = 'today' | 'tomorrow' | 'this_week' | 'specific_day';
@@ -12,7 +12,7 @@ export const FreeTimeSlotsView: React.FC = () => {
   const { profile, lessons, groups, language, t } = useApp();
   
   const [filterType, setFilterType] = useState<FilterType>('today');
-  const [specificDate, setSpecificDate] = useState<string>(new Date().toISOString().split('T')[0]);
+  const [specificDate, setSpecificDate] = useState<string>(formatLocalDate());
   const [displayMode, setDisplayMode] = useState<DisplayMode>('periods');
   const [slotDuration, setSlotDuration] = useState<SlotDuration>(60);
 
@@ -21,17 +21,17 @@ export const FreeTimeSlotsView: React.FC = () => {
     const today = new Date();
     
     if (filterType === 'today') {
-      dates.push(today.toISOString().split('T')[0]);
+      dates.push(formatLocalDate(today));
     } else if (filterType === 'tomorrow') {
       const tomorrow = new Date(today);
       tomorrow.setDate(tomorrow.getDate() + 1);
-      dates.push(tomorrow.toISOString().split('T')[0]);
+      dates.push(formatLocalDate(tomorrow));
     } else if (filterType === 'this_week') {
       // Show next 7 days
       for (let i = 0; i < 7; i++) {
         const d = new Date(today);
         d.setDate(d.getDate() + i);
-        dates.push(d.toISOString().split('T')[0]);
+        dates.push(formatLocalDate(d));
       }
     } else if (filterType === 'specific_day') {
       dates.push(specificDate);
@@ -165,7 +165,7 @@ export const FreeTimeSlotsView: React.FC = () => {
         ) : (
           results.map((result, idx) => {
             const dateObj = new Date(result.dateStr);
-            const isToday = result.dateStr === new Date().toISOString().split('T')[0];
+            const isToday = result.dateStr === formatLocalDate();
             const title = isToday ? 'Today' : dateObj.toLocaleDateString(language, { weekday: 'long', month: 'short', day: 'numeric' });
             
             return (

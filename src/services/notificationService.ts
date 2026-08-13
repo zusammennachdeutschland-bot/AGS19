@@ -4,6 +4,7 @@ import {
   NotificationSettings, Lesson, Group, Student, PaymentRecord, 
   ScheduledNotificationItem, NotificationPriority, NotificationSound 
 } from '../types';
+import { formatLocalDate } from '../utils/timeUtils';
 
 export interface NotificationActionHandler {
   onEndLesson?: () => void;
@@ -682,7 +683,7 @@ export const rebuildAllNotificationSchedules = async (
       summaryDate.setDate(summaryDate.getDate() + 1);
     }
 
-    const todayStr = new Date().toISOString().split('T')[0];
+    const todayStr = formatLocalDate();
     const todayLessons = lessons.filter(l => l.date === todayStr);
 
     let summaryText = 'ملخص اليوم: ';

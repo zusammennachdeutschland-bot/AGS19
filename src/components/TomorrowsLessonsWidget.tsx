@@ -1,5 +1,6 @@
 import React from 'react';
 import { useApp } from '../context/AppContext';
+import { formatLocalDate } from '../utils/timeUtils';
 import { Calendar, Video, MapPin, Home, User, Clock, ChevronRight } from 'lucide-react';
 
 export const TomorrowsLessonsWidget: React.FC = () => {
@@ -13,7 +14,7 @@ export const TomorrowsLessonsWidget: React.FC = () => {
 
   const tomorrow = new Date();
   tomorrow.setDate(tomorrow.getDate() + 1);
-  const tomorrowStr = tomorrow.toISOString().split('T')[0];
+  const tomorrowStr = formatLocalDate(tomorrow);
 
   const tomorrowsLessons = lessons
     .filter(l => l.date === tomorrowStr && l.status !== 'cancelled')

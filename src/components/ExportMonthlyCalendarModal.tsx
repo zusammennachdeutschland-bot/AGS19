@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
+import { formatLocalDate } from '../utils/timeUtils';
 import { X, Calendar as CalendarIcon, Download, Share2, CheckCircle2, ArrowRight } from 'lucide-react';
 
 interface ExportMonthlyCalendarModalProps {
@@ -22,7 +23,7 @@ export const ExportMonthlyCalendarModal: React.FC<ExportMonthlyCalendarModalProp
   const now = new Date();
   const currentYear = now.getFullYear();
   const currentMonthIndex = now.getMonth(); // 0-11
-  const todayStr = now.toISOString().split('T')[0]; // YYYY-MM-DD
+  const todayStr = formatLocalDate(now); // YYYY-MM-DD
   const currentMinutes = now.getHours() * 60 + now.getMinutes();
 
   const [selectedYear, setSelectedYear] = useState<number>(currentYear);

@@ -2,6 +2,7 @@ import { isPendingStatus } from "../utils/lessonUtils";
 import { useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { sendSystemNotification, getNotificationPermission } from '../services/notificationService';
+import { formatLocalDate } from '../utils/timeUtils';
 
 export const useLessonReminders = () => {
   const { lessons, profile } = useApp();
@@ -16,7 +17,7 @@ export const useLessonReminders = () => {
           if (perm !== 'granted') return;
 
           const now = new Date();
-          const todayStr = now.toISOString().split('T')[0];
+          const todayStr = formatLocalDate(now);
           const nowMins = now.getHours() * 60 + now.getMinutes();
 
           // 1. Upcoming lesson starting in 15-30 minutes
