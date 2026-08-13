@@ -202,12 +202,7 @@ export const ScheduleView: React.FC = () => {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    const now = new Date();
-    const dateStr = now.toISOString().split('T')[0];
-    const hours = String(now.getHours()).padStart(2, '0');
-    const mins = String(now.getMinutes()).padStart(2, '0');
-    const secs = String(now.getSeconds()).padStart(2, '0');
-    link.download = `Schedule_${dateStr}_${hours}-${mins}-${secs}.ics`;
+    link.download = `Schedule_${new Date().toISOString().split('T')[0]}.ics`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);

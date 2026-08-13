@@ -92,8 +92,8 @@ export const PaymentsView: React.FC = () => {
   // Filtered Due Cycles based on search & group filter
   const filteredDueCycles = useMemo(() => {
     return dueCycles.filter(item => {
-      const matchesSearch = (item.studentName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-                            (item.groupName || '').toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesSearch = item.studentName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                            item.groupName.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesGroup = selectedGroupId === 'all' || item.groupId === selectedGroupId;
       return matchesSearch && matchesGroup;
     });
@@ -191,8 +191,8 @@ export const PaymentsView: React.FC = () => {
 
   const filteredInProgressCycles = useMemo(() => {
     return inProgressCycles.filter(item => {
-      const matchesSearch = (item.studentName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-                            (item.groupName || '').toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesSearch = item.studentName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                            item.groupName.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesGroup = selectedGroupId === 'all' || item.groupId === selectedGroupId;
       return matchesSearch && matchesGroup;
     });
@@ -203,8 +203,8 @@ export const PaymentsView: React.FC = () => {
     return payments
       .filter(p => p.status === 'paid')
       .filter(p => {
-        const matchesSearch = (p.studentName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-                              (p.groupName || '').toLowerCase().includes(searchTerm.toLowerCase());
+        const matchesSearch = p.studentName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                              p.groupName.toLowerCase().includes(searchTerm.toLowerCase());
         const matchesGroup = selectedGroupId === 'all' || p.groupId === selectedGroupId;
         return matchesSearch && matchesGroup;
       })

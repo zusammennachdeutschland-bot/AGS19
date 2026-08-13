@@ -327,12 +327,7 @@ export const SmartBackupCenter: React.FC<SmartBackupCenterProps> = ({ onBack }) 
         };
 
         const jsonString = JSON.stringify(backupPayload, null, 2);
-        const now = new Date();
-        const dateStr = now.toISOString().split('T')[0];
-        const hours = String(now.getHours()).padStart(2, '0');
-        const mins = String(now.getMinutes()).padStart(2, '0');
-        const secs = String(now.getSeconds()).padStart(2, '0');
-        const fileName = `AGS19_Quick_Backup_${dateStr}_${hours}-${mins}-${secs}.json`;
+        const fileName = `AGS19_Quick_Backup_${new Date().toISOString().split('T')[0]}.json`;
 
         if (Capacitor.isNativePlatform()) {
           const savedFile = await Filesystem.writeFile({

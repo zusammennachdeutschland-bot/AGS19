@@ -9,9 +9,7 @@ export const RecentlyDeletedModal: React.FC = () => {
     recentlyDeleted, 
     restoreItem, 
     permanentlyDeleteItem, 
-    clearRecentlyDeleted,
-    setPermanentDeleteGroupModalTarget,
-    setPinnedDeleteModalTarget
+    clearRecentlyDeleted 
   } = useApp();
 
   const [activeType, setActiveType] = useState<'all' | 'students' | 'groups' | 'lessons'>('all');
@@ -181,7 +179,7 @@ export const RecentlyDeletedModal: React.FC = () => {
                       Wiederherstellen
                     </button>
                     <button
-                      onClick={() => setPermanentDeleteGroupModalTarget(item)}
+                      onClick={() => permanentlyDeleteItem('group', item.id)}
                       className="p-1.5 text-text-muted/70 hover:text-primary dark:hover:text-primary rounded-lg transition"
                       title="Endgültig löschen"
                     >

@@ -116,19 +116,19 @@ export const StudentsView: React.FC = () => {
     const studentGroup = groups.find(g => g.id === s.groupId);
     const term = searchTerm.toLowerCase();
     const matchesSearch = !term ||
-                          (s.name || '').toLowerCase().includes(term) || 
-                          (s.parentName || '').toLowerCase().includes(term) ||
-                          (s.studentPhone || '').toLowerCase().includes(term) ||
-                          (s.parentPhone || '').toLowerCase().includes(term) ||
-                          (s.grade || '').toLowerCase().includes(term) ||
-                          (studentGroup && (studentGroup.name || '').toLowerCase().includes(term));
+                          s.name.toLowerCase().includes(term) || 
+                          s.parentName.toLowerCase().includes(term) ||
+                          s.studentPhone.toLowerCase().includes(term) ||
+                          s.parentPhone.toLowerCase().includes(term) ||
+                          s.grade.toLowerCase().includes(term) ||
+                          (studentGroup && studentGroup.name.toLowerCase().includes(term));
     const matchesGrade = selectedGrade === 'all' || s.grade === selectedGrade;
     return matchesSearch && matchesGrade;
   });
 
   const sortedStudents = [...filteredStudents].sort((a, b) => {
     if (studentSortBy === 'name') {
-      return (a.name || '').localeCompare(b.name || '');
+      return a.name.localeCompare(b.name);
     }
     const statsA = getStudentStats(a);
     const statsB = getStudentStats(b);
@@ -151,8 +151,8 @@ export const StudentsView: React.FC = () => {
   const filteredGroups = activeGroups.filter(g => {
     const term = searchTerm.toLowerCase();
     const matchesSearch = !term ||
-                          (g.name || '').toLowerCase().includes(term) ||
-                          (g.grade || '').toLowerCase().includes(term);
+                          g.name.toLowerCase().includes(term) ||
+                          g.grade.toLowerCase().includes(term);
     const matchesGrade = selectedGrade === 'all' || g.grade === selectedGrade;
     const matchesDay = matchGroupDay(g, selectedGroupDay);
     return matchesSearch && matchesGrade && matchesDay;
@@ -160,12 +160,12 @@ export const StudentsView: React.FC = () => {
 
   const filteredArchivedStudents = archivedStudents.filter(s => {
     const term = searchTerm.toLowerCase();
-    return !term || (s.name || '').toLowerCase().includes(term) || (s.parentName || '').toLowerCase().includes(term);
+    return !term || s.name.toLowerCase().includes(term) || s.parentName.toLowerCase().includes(term);
   });
 
   const filteredArchivedGroups = archivedGroups.filter(g => {
     const term = searchTerm.toLowerCase();
-    return !term || (g.name || '').toLowerCase().includes(term);
+    return !term || g.name.toLowerCase().includes(term);
   });
 
   return (

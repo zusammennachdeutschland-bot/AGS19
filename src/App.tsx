@@ -29,9 +29,6 @@ import { AddGroupModal } from './components/AddGroupModal';
 import { StartLessonNowModal } from './components/StartLessonNowModal';
 import { GlobalSearchModal } from './components/GlobalSearchModal';
 import { RecentlyDeletedModal } from './components/RecentlyDeletedModal';
-import { PermanentGroupDeleteModal } from './components/PermanentGroupDeleteModal';
-import { PinnedItemDeleteModal } from './components/PinnedItemDeleteModal';
-import { DeletionCompleteModal } from './components/DeletionCompleteModal';
 import { SetupWizard } from './components/SetupWizard';
 import { BackupModal } from './components/BackupModal';
 
@@ -44,7 +41,7 @@ function MainApp() {
 
   const { 
     activeTab, setActiveTab, 
-    lessons, students, payments, openLessonControl,
+    lessons, openLessonControl,
     isControlModalOpen, closeLessonControl,
     isAddLessonModalOpen, setIsAddLessonModalOpen,
     isAddQuickLessonModalOpen, setIsAddQuickLessonModalOpen,
@@ -53,12 +50,7 @@ function MainApp() {
     isAddGroupModalOpen, setIsAddGroupModalOpen,
     isBackupModalOpen, setIsBackupModalOpen,
     isGlobalSearchOpen, setIsGlobalSearchOpen,
-    isRecentlyDeletedModalOpen, setIsRecentlyDeletedModalOpen,
-    permanentDeleteGroupModalTarget, setPermanentDeleteGroupModalTarget,
-    confirmDeleteGroupOnly, confirmDeleteGroupAndAllData,
-    pinnedDeleteModalTarget, setPinnedDeleteModalTarget,
-    confirmDeletePinnedItem,
-    deletionCompleteModalData, setDeletionCompleteModalData
+    isRecentlyDeletedModalOpen, setIsRecentlyDeletedModalOpen
   } = useApp();
 
   // Native Widget Deep-Link Router (ags19://...)
@@ -379,37 +371,6 @@ function MainApp() {
         {isBackupModalOpen && <BackupModal onClose={() => setIsBackupModalOpen(false)} />}
         <GlobalSearchModal />
         <RecentlyDeletedModal />
-        {permanentDeleteGroupModalTarget && (
-          <PermanentGroupDeleteModal
-            isOpen={!!permanentDeleteGroupModalTarget}
-            group={permanentDeleteGroupModalTarget}
-            students={students}
-            lessons={lessons}
-            payments={payments}
-            onClose={() => setPermanentDeleteGroupModalTarget(null)}
-            onDeleteGroupOnly={() => confirmDeleteGroupOnly(permanentDeleteGroupModalTarget.id)}
-            onDeleteGroupAndAllData={() => confirmDeleteGroupAndAllData(permanentDeleteGroupModalTarget.id)}
-          />
-        )}
-
-        {pinnedDeleteModalTarget && (
-          <PinnedItemDeleteModal
-            isOpen={!!pinnedDeleteModalTarget}
-            itemName={pinnedDeleteModalTarget.item.name || pinnedDeleteModalTarget.item.title || 'Item'}
-            itemType={pinnedDeleteModalTarget.type === 'group' ? 'Group' : pinnedDeleteModalTarget.type === 'student' ? 'Student' : 'Lesson'}
-            onClose={() => setPinnedDeleteModalTarget(null)}
-            onConfirmDeletePermanently={() => confirmDeletePinnedItem(pinnedDeleteModalTarget.type, pinnedDeleteModalTarget.item)}
-          />
-        )}
-
-        {deletionCompleteModalData.isOpen && (
-          <DeletionCompleteModal
-            isOpen={deletionCompleteModalData.isOpen}
-            title={deletionCompleteModalData.title}
-            deletedCounts={deletionCompleteModalData.counts}
-            onClose={() => setDeletionCompleteModalData({ isOpen: false, counts: {} })}
-          />
-        )}
         <SetupWizard />
       </div>
     </div>
