@@ -2351,14 +2351,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode, initialData: any
     const percent = 0;
 
     // Trigger Android Native Foreground Service for Google Maps navigation style notification
-    LiveTimer.startTimer({
-      title: `${lesson.title} (${session.groupName})`,
-      startTime: now,
-      durationMins,
-      elapsedMins,
-      remainingMins,
-      percent
-    }).catch(err => console.warn('LiveTimer start error:', err));
+    // LiveTimer.startTimer({
+    //   title: `${lesson.title} (${session.groupName})`,
+    //   startTime: now,
+    //   durationMins,
+    //   elapsedMins,
+    //   remainingMins,
+    //   percent
+    // }).catch(err => console.warn('LiveTimer start error:', err));
   };
 
   const pauseActiveLessonTimer = () => {
@@ -2371,7 +2371,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode, initialData: any
     });
 
     // Pause native timer notification
-    LiveTimer.stopTimer().catch(err => console.warn('LiveTimer stop error:', err));
+    // LiveTimer.stopTimer().catch(err => console.warn('LiveTimer stop error:', err));
   };
 
   const resumeActiveLessonTimer = () => {
@@ -2393,20 +2393,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode, initialData: any
 
     // Resume native timer with offset startTime so chronometer reflects total accumulated time
     const effectiveStartTime = now - (activeLessonSession.accumulatedSeconds * 1000);
-    LiveTimer.startTimer({
-      title: `${activeLessonSession.lessonTitle} (${activeLessonSession.groupName})`,
-      startTime: effectiveStartTime,
-      durationMins,
-      elapsedMins,
-      remainingMins,
-      percent
-    }).catch(err => console.warn('LiveTimer resume error:', err));
+    // LiveTimer.startTimer({
+    //   title: `${activeLessonSession.lessonTitle} (${activeLessonSession.groupName})`,
+    //   startTime: effectiveStartTime,
+    //   durationMins,
+    //   elapsedMins,
+    //   remainingMins,
+    //   percent
+    // }).catch(err => console.warn('LiveTimer resume error:', err));
   };
 
   const endActiveLessonTimer = () => {
     setActiveLessonSession(null);
     clearActiveLessonNotification();
-    LiveTimer.stopTimer().catch(err => console.warn('LiveTimer stop error:', err));
+    // LiveTimer.stopTimer().catch(err => console.warn('LiveTimer stop error:', err));
   };
 
   const cancelActiveLessonTimer = () => {
@@ -2415,7 +2415,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode, initialData: any
     }
     setActiveLessonSession(null);
     clearActiveLessonNotification();
-    LiveTimer.stopTimer().catch(err => console.warn('LiveTimer stop error:', err));
+    // LiveTimer.stopTimer().catch(err => console.warn('LiveTimer stop error:', err));
   };
 
   const enrichedStudents = useMemo(() => {

@@ -33,11 +33,11 @@ public class UpcomingLessonsWidget extends AppWidgetProvider {
         views.setTextViewText(R.id.upcoming_count_badge, count + " Lektionen");
 
         Intent headerIntent = new Intent(Intent.ACTION_VIEW, Uri.parse("ags19://action/schedule"), context, MainActivity.class);
-        PendingIntent piHeader = PendingIntent.getActivity(context, 701, headerIntent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+        PendingIntent piHeader = PendingIntent.getActivity(context, 701, headerIntent, PendingIntent.FLAG_UPDATE_CURRENT | (android.os.Build.VERSION.SDK_INT >= 23 ? PendingIntent.FLAG_IMMUTABLE : 0));
         views.setOnClickPendingIntent(R.id.widget_header, piHeader);
 
         Intent templateIntent = new Intent(Intent.ACTION_VIEW, Uri.parse("ags19://action/schedule"), context, MainActivity.class);
-        PendingIntent piTemplate = PendingIntent.getActivity(context, 702, templateIntent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_MUTABLE);
+        PendingIntent piTemplate = PendingIntent.getActivity(context, 702, templateIntent, PendingIntent.FLAG_UPDATE_CURRENT | (android.os.Build.VERSION.SDK_INT >= 31 ? PendingIntent.FLAG_MUTABLE : 0));
         views.setPendingIntentTemplate(R.id.upcoming_list_view, piTemplate);
 
         appWidgetManager.updateAppWidget(appWidgetId, views);

@@ -47,7 +47,7 @@ public class CurrentLessonWidget extends AppWidgetProvider {
         }
 
         Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse("ags19://action/active_lesson"), context, MainActivity.class);
-        PendingIntent pi = PendingIntent.getActivity(context, 201, intent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+        PendingIntent pi = PendingIntent.getActivity(context, 201, intent, PendingIntent.FLAG_UPDATE_CURRENT | (android.os.Build.VERSION.SDK_INT >= 23 ? PendingIntent.FLAG_IMMUTABLE : 0));
         views.setOnClickPendingIntent(R.id.widget_container, pi);
         views.setOnClickPendingIntent(R.id.btn_action, pi);
 

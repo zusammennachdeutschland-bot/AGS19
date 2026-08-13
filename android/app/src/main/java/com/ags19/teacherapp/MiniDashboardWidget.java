@@ -40,7 +40,7 @@ public class MiniDashboardWidget extends AppWidgetProvider {
         }
 
         Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse("ags19://action/home"), context, MainActivity.class);
-        PendingIntent pi = PendingIntent.getActivity(context, 601, intent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+        PendingIntent pi = PendingIntent.getActivity(context, 601, intent, PendingIntent.FLAG_UPDATE_CURRENT | (android.os.Build.VERSION.SDK_INT >= 23 ? PendingIntent.FLAG_IMMUTABLE : 0));
         views.setOnClickPendingIntent(R.id.widget_container, pi);
 
         appWidgetManager.updateAppWidget(appWidgetId, views);

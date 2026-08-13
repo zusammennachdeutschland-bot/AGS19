@@ -33,11 +33,11 @@ public class TodoWidget extends AppWidgetProvider {
         views.setTextViewText(R.id.todo_count_badge, count + " Tasks");
 
         Intent headerIntent = new Intent(Intent.ACTION_VIEW, Uri.parse("ags19://action/todos"), context, MainActivity.class);
-        PendingIntent piHeader = PendingIntent.getActivity(context, 401, headerIntent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+        PendingIntent piHeader = PendingIntent.getActivity(context, 401, headerIntent, PendingIntent.FLAG_UPDATE_CURRENT | (android.os.Build.VERSION.SDK_INT >= 23 ? PendingIntent.FLAG_IMMUTABLE : 0));
         views.setOnClickPendingIntent(R.id.widget_header, piHeader);
 
         Intent templateIntent = new Intent(Intent.ACTION_VIEW, Uri.parse("ags19://action/todos"), context, MainActivity.class);
-        PendingIntent piTemplate = PendingIntent.getActivity(context, 402, templateIntent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_MUTABLE);
+        PendingIntent piTemplate = PendingIntent.getActivity(context, 402, templateIntent, PendingIntent.FLAG_UPDATE_CURRENT | (android.os.Build.VERSION.SDK_INT >= 31 ? PendingIntent.FLAG_MUTABLE : 0));
         views.setPendingIntentTemplate(R.id.todo_list_view, piTemplate);
 
         appWidgetManager.updateAppWidget(appWidgetId, views);

@@ -108,7 +108,7 @@ public class LiveTimerService extends Service {
                 this,
                 0,
                 mainIntent,
-                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
+                PendingIntent.FLAG_UPDATE_CURRENT | (android.os.Build.VERSION.SDK_INT >= 23 ? PendingIntent.FLAG_IMMUTABLE : 0)
         );
 
         // Pause Action
@@ -118,7 +118,7 @@ public class LiveTimerService extends Service {
                 this,
                 1,
                 pauseIntent,
-                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
+                PendingIntent.FLAG_UPDATE_CURRENT | (android.os.Build.VERSION.SDK_INT >= 23 ? PendingIntent.FLAG_IMMUTABLE : 0)
         );
 
         // End Action
@@ -128,7 +128,7 @@ public class LiveTimerService extends Service {
                 this,
                 2,
                 endIntent,
-                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
+                PendingIntent.FLAG_UPDATE_CURRENT | (android.os.Build.VERSION.SDK_INT >= 23 ? PendingIntent.FLAG_IMMUTABLE : 0)
         );
 
         String progressText = elapsedMins + " min of " + durationMins + " min completed (" + percent + "%)";
