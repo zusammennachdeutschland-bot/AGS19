@@ -477,7 +477,7 @@ export function validateAndSanitizeBackupPayload(rawParsed: any): ValidationResu
       name,
       grade: typeof g.grade === 'string' ? g.grade : '',
       subject: typeof g.subject === 'string' ? g.subject : '',
-      type: (g.type === 'private' || g.type === 'group') ? g.type : 'group',
+      type: (g.type === 'online' || g.type === 'offline') ? g.type : 'offline',
       sessionCount: sanitizeNumber(g.sessionCount, 0),
       pricePerSession: sanitizeNumber(g.pricePerSession, 0),
       monthlyPackagePrice: sanitizeNumber(g.monthlyPackagePrice, 0),

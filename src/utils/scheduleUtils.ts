@@ -105,3 +105,59 @@ export function formatGroupScheduleDisplay(group: Partial<Group>, lang: 'ar' | '
 
   return slots.map(s => `${normalizeDayToDisplay(s.day, lang)} @ ${s.time}`).join(' | ');
 }
+
+/**
+ * Single source of truth for group's next upcoming schedule.
+ * Calculates the exact day and time based ONLY on the group's saved settings.
+ */
+export function getUpcomingGroupSchedule(group: Partial<Group>): { day: string; time: string; dayDisplay: string } | null {
+  const slots = getGroupScheduleSlots(group);
+  if (slots.length === 0) return null;
+
+  // Find the closest upcoming slot
+  const now = new Date();
+  const currentDayNum = now.getDay();
+  const currentHour = now.getHours();
+  const currentMinute = now.getMinutes();
+  const currentTotalMinutes = currentHour * 60 + currentMinute;
+
+  let nextSlot = slots[0];
+  let minDaysDiff = 999;
+  let nextSlotDayNum = -1;
+
+  for (const slot of slots) {
+    const slotDayNum = getDayNumber(slot.day);
+    if (slotDayNum === -1) continue;
+
+    let daysDiff = slotDayNum - currentDayNum;
+    if (daysDiff < 0) daysDiff += 7;
+
+    const [hStr, mStr] = slot.time.split(':');
+    const slotTotalMinutes = parseInt(hStr || '0', 10) * 60 + parseInt(mStr || '0', 10);
+
+    // If it's today but the time has passed, it will be next week
+    if (daysDiff === 0 && slotTotalMinutes <= currentTotalMinutes) {
+      daysDiff += 7;
+    }
+
+    if (daysDiff < minDaysDiff) {
+      minDaysDiff = daysDiff;
+      nextSlot = slot;
+      nextSlotDayNum = slotDayNum;
+    } else if (daysDiff === minDaysDiff) {
+      // If same day difference, pick the earlier one
+      const [nH, nM] = nextSlot.time.split(':');
+      const nTotal = parseInt(nH || '0', 10) * 60 + parseInt(nM || '0', 10);
+      if (slotTotalMinutes < nTotal) {
+        nextSlot = slot;
+        nextSlotDayNum = slotDayNum;
+      }
+    }
+  }
+
+  return {
+    day: nextSlot.day,
+    time: nextSlot.time,
+    dayDisplay: nextSlotDayNum !== -1 ? NUM_TO_ARABIC_DAY[nextSlotDayNum] : nextSlot.day
+  };
+}

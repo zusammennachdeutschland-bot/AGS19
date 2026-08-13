@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { Lesson, Group } from '../types';
 import { buildWhatsAppUrl, formatWhatsAppPhone } from '../utils/phoneUtils';
+import { getUpcomingGroupSchedule } from '../utils/scheduleUtils';
 import { 
   X, Send, Copy, Check, MessageSquare, AlertTriangle, Clock, Link as LinkIcon, 
   MapPin, Video, Sparkles, Phone, CheckCircle2 
@@ -35,14 +36,25 @@ export const LessonReminderModal: React.FC<LessonReminderModalProps> = ({
   // Find associated group
   const targetGroup = group || (lesson?.groupId ? groups.find(g => g.id === lesson.groupId) : null);
   
+  // Single Source of Truth for Schedule
+  const upcomingSchedule = targetGroup ? getUpcomingGroupSchedule(targetGroup) : null;
+  
+  // Strict rule: Always use the group's current schedule time, never calculate independently
+  const rawTime = upcomingSchedule?.time || '17:00';
+  const displayDay = upcomingSchedule?.dayDisplay || '';
+  
+  // Validation: Detect if lesson time doesn't match group schedule
+  const hasTimeMismatch = lesson?.time && lesson.time !== rawTime;
+  
+  if (hasTimeMismatch) {
+    console.warn(`Time mismatch detected! Lesson time (${lesson.time}) differs from group schedule (${rawTime}). Forced to use group schedule.`);
+  }
+
   // Determine if lesson/group is online or offline
   const isOnline = lesson?.type === 'online' || targetGroup?.type === 'online';
 
-  // Extract lesson time
-  const rawTime = lesson?.time || targetGroup?.time || '17:00';
-  
-  // Extract initial zoom link
-  const initialZoomLink = lesson?.meetingLink || targetGroup?.zoomLink || profile.defaultZoomLink || '';
+  // Extract initial zoom link (Strictly favor group settings first)
+  const initialZoomLink = targetGroup?.zoomLink || lesson?.meetingLink || profile.defaultZoomLink || '';
 
   // Resolve target student / parent phone
   const targetStudent = lesson?.studentId 
@@ -72,10 +84,11 @@ export const LessonReminderModal: React.FC<LessonReminderModalProps> = ({
       if (h > 12) h -= 12;
       if (h === 0) h = 12;
       const period = isPm ? 'مساءً' : 'صباحاً';
-      return `${rawTime} (${h}:${mStr} ${period})`;
+      const timeDisplay = `${h}:${mStr} ${period}`;
+      return displayDay ? `يوم ${displayDay} الساعة ${timeDisplay}` : timeDisplay;
     }
-    return rawTime;
-  }, [rawTime]);
+    return displayDay ? `يوم ${displayDay} الساعة ${rawTime}` : rawTime;
+  }, [rawTime, displayDay]);
 
   // Generate exact Arabic template according to requirements
   const generatedMessage = React.useMemo(() => {
@@ -175,6 +188,21 @@ export const LessonReminderModal: React.FC<LessonReminderModalProps> = ({
 
         {/* Body Content */}
         <div className="p-5 space-y-5 max-h-[78vh] overflow-y-auto">
+
+          {/* MISMATCH WARNING */}
+          {hasTimeMismatch && (
+            <div className="bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 p-3.5 rounded-xl flex items-start gap-3">
+              <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+              <div className="text-xs space-y-1">
+                <p className="font-bold text-amber-800 dark:text-amber-300">
+                  تنبيه: وقت الحصة مختلف عن موعد الجروب
+                </p>
+                <p className="text-amber-700 dark:text-amber-400">
+                  تم تحديد موعد الجروب ليكون ({rawTime}) لكن هذه الحصة مسجلة في ({lesson?.time}). التزاماً بمعايير النظام، التذكير يعتمد على <span className="font-bold">موعد الجروب الأساسي</span>.
+                </p>
+              </div>
+            </div>
+          )}
 
           {/* Recipient Phone Input */}
           <div className="space-y-1.5">
