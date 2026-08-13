@@ -22,6 +22,15 @@ allprojects {
         google()
         mavenCentral()
     }
+    
+    // ADD THIS BLOCK TO FORCE COMPATIBLE ANDROIDX VERSIONS
+    configurations.all {
+        resolutionStrategy {
+            force 'androidx.activity:activity:1.10.0'
+            force 'androidx.core:core:1.15.0'
+            force 'androidx.core:core-ktx:1.15.0'
+        }
+    }
 }
 
 task clean(type: Delete) {
