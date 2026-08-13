@@ -1,1 +1,25 @@
-if(!self.define){let e,s={};const n=(n,i)=>(n=new URL(n+".js",i).href,s[n]||new Promise(s=>{if("document"in self){const e=document.createElement("script");e.src=n,e.onload=s,document.head.appendChild(e)}else e=n,importScripts(n),s()}).then(()=>{let e=s[n];if(!e)throw new Error(`Module ${n} didn’t register its module`);return e}));self.define=(i,o)=>{const r=e||("document"in self?document.currentScript.src:"")||location.href;if(s[r])return;let l={};const t=e=>n(e,r),u={module:{uri:r},exports:l,require:t};s[r]=Promise.all(i.map(e=>u[e]||t(e))).then(e=>(o(...e),l))}}define(["./workbox-835c8c05"],function(e){"use strict";self.skipWaiting(),e.clientsClaim(),e.precacheAndRoute([{url:"logo.svg",revision:"3587d809b6c6cd8c6782dd96a25f31a0"},{url:"logo.png",revision:"846945f972e862d859e24a37ce0cdff9"},{url:"index.html",revision:"950824c95c3859d006ced687c30206a4"},{url:"icon.png",revision:"ebc7709d367e47233a944edd6959976a"},{url:"favicon.png",revision:"9ed2bc77f858d91ad36fa442db85fcb1"},{url:"apple-touch-icon.png",revision:"8f89cd2f2a9ba50ab5df639d67645ea7"},{url:"assets/workbox-window.prod.es5-BBnX5xw4.js",revision:null},{url:"assets/web-iQDvU9o9.js",revision:null},{url:"assets/web-c0JPJW8B.js",revision:null},{url:"assets/web-C9-JOWqB.js",revision:null},{url:"assets/web-BeBoJuQg.js",revision:null},{url:"assets/web-Bc4CV8uO.js",revision:null},{url:"assets/virtual_pwa-register-Dfx5SnuO.js",revision:null},{url:"assets/index-CtkfUBme.js",revision:null},{url:"assets/index-BeRBxaFx.css",revision:null},{url:"logo.svg",revision:"3587d809b6c6cd8c6782dd96a25f31a0"},{url:"manifest.webmanifest",revision:"2919279ad0546bed3bf8c830aae5dd7f"}],{}),e.cleanupOutdatedCaches(),e.registerRoute(new e.NavigationRoute(e.createHandlerBoundToURL("index.html"))),e.registerRoute(/^https:\/\/fonts\.googleapis\.com\/.*/i,new e.CacheFirst({cacheName:"google-fonts-cache",plugins:[new e.ExpirationPlugin({maxEntries:10,maxAgeSeconds:31536e3}),new e.CacheableResponsePlugin({statuses:[0,200]})]}),"GET")});
+
+self.addEventListener('install', (e) => {
+  self.skipWaiting();
+});
+self.addEventListener('activate', (e) => {
+  self.registration.unregister()
+    .then(() => self.clients.matchAll())
+    .then((clients) => {
+      clients.forEach((client) => {
+        if (client instanceof WindowClient)
+          client.navigate(client.url);
+      });
+      return Promise.resolve();
+    })
+    .then(() => {
+      self.caches.keys().then((cacheNames) => {
+        Promise.all(
+          cacheNames.map((cacheName) => {
+            return self.caches.delete(cacheName);
+          }),
+        );
+      })
+    });
+});
+    

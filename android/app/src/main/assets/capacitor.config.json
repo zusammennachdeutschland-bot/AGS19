@@ -1,6 +1,6 @@
 {
 	"appId": "com.ags19.teacherapp",
-	"appName": "AGS19",
+	"appName": "AGS Teacher App",
 	"webDir": "dist",
 	"server": {
 		"androidScheme": "https"
