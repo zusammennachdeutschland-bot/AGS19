@@ -1,88 +1,7 @@
-name: Build Android APK
-
-on:
-  push:
-    branches: [ main, master ]
-  workflow_dispatch:
-
-jobs:
-  build:
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          lfs: true
-
-      - name: Display Build Metadata
-        run: |
-          echo "========================================="
-          echo "       BUILD INTEGRITY METADATA"
-          echo "========================================="
-          echo "Branch: ${GITHUB_REF_NAME}"
-          echo "Commit SHA: ${GITHUB_SHA}"
-          echo "Commit Message: $(git log -1 --pretty=%B)"
-          echo "Timestamp: $(date -u +'%Y-%m-%dT%H:%M:%SZ')"
-          echo "Version Code: 1"
-          echo "Version Name: 1.0"
-          echo "========================================="
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: 'npm'
-
-      - name: Setup Java JDK
-        uses: actions/setup-java@v5
-        with:
-          distribution: 'zulu'
-          java-version: '21'
-          cache: 'gradle'
-
-      - name: Force Clean Stale Build Artifacts
-        run: |
-          echo "Removing stale dist/ and android web assets..."
-          rm -rf dist android/app/src/main/assets/public
-
-      - name: Install Dependencies
-        run: npm install --legacy-peer-deps
-
-      - name: Build Web Application
-        run: CI=true npm run build
-
-      - name: Verify Web Build Output
-        run: |
-          if [ ! -f "dist/index.html" ]; then
-            echo "ERROR: Web build failed - dist/index.html missing!"
-            exit 1
-          fi
-          echo "Web build successfully verified in dist/."
-
-      - name: Sync Capacitor Android
-        run: npx cap sync android
-
-      - name: Verify Android Asset Sync
-        run: |
-          if [ ! -f "android/app/src/main/assets/public/index.html" ]; then
-            echo "ERROR: Capacitor sync failed - android assets missing!"
-            exit 1
-          fi
-          echo "Android public assets verified."
-
-      - name: Create Fixed Debug Keystore
-        run: |
-          mkdir -p android/app
-          if [ ! -f "android/app/debug.keystore" ]; then
-            keytool -genkey -v -keystore android/app/debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
-          fi
-
-      - name: Setup Gradle
+- name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
-          gradle-version: '8.5'
+          gradle-version: '8.9'
           validate-wrappers: false
 
       - name: Ensure Valid Gradle Wrapper
@@ -92,38 +11,16 @@ jobs:
           
           if command -v gradle >/dev/null 2>&1; then
             echo "Generating clean Gradle wrapper via system Gradle..."
-            gradle wrapper --gradle-version 8.5 --distribution-type bin
+            gradle wrapper --gradle-version 8.9 --distribution-type bin
           fi
 
           echo "Ensuring gradle-wrapper.properties..."
           cat << 'EOF' > gradle/wrapper/gradle-wrapper.properties
           distributionBase=GRADLE_USER_HOME
           distributionPath=wrapper/dists
-          distributionUrl=https\://services.gradle.org/distributions/gradle-8.5-bin.zip
+          distributionUrl=https\://services.gradle.org/distributions/gradle-8.9-bin.zip
           networkTimeout=10000
           validateDistributionUrl=true
           zipStoreBase=GRADLE_USER_HOME
           zipStorePath=wrapper/dists
           EOF
-
-      - name: Build Fresh Debug APK (Clean Build)
-        run: |
-          cd android
-          chmod +x gradlew
-          ./gradlew clean assembleDebug --stacktrace
-
-      - name: Verify APK Generated
-        run: |
-          if [ ! -f "android/app/build/outputs/apk/debug/app-debug.apk" ]; then
-            echo "ERROR: APK build failed - output file missing!"
-            exit 1
-          fi
-          echo "APK successfully generated."
-
-      - name: Upload APK Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: AGS19-App-APK
-          path: android/app/build/outputs/apk/debug/app-debug.apk
-          if-no-files-found: error
-          overwrite: true
