@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">AGS Teacher App</string>
-    <string name="title_activity_main">AGS Teacher App</string>
+    <string name="app_name">AGS</string>
+    <string name="title_activity_main">AGS</string>
     <string name="package_name">com.ags19.teacherapp</string>
     <string name="custom_url_scheme">com.ags19.teacherapp</string>
 

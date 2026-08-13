@@ -88,9 +88,10 @@ public class LiveTimerService extends Service {
                 android.util.Log.d("LiveTimerService", "Notification Progress Value: " + progressVal);
 
                 Notification notification = buildNotification(title, startTime, effectiveDuration, elapsedMins, remainingMins, percent);
-                NotificationManager manager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-                if (manager != null) {
-                    manager.notify(NOTIFICATION_ID, notification);
+                if (Build.VERSION.SDK_INT >= 34) { // Build.VERSION_CODES.UPSIDE_DOWN_CAKE
+                    startForeground(NOTIFICATION_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE);
+                } else {
+                    startForeground(NOTIFICATION_ID, notification);
                 }
 
                 // Refresh every 10 seconds in background / screen lock

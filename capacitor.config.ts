@@ -2,7 +2,7 @@ import { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
   appId: 'com.ags19.teacherapp',
-  appName: 'AGS Teacher App',
+  appName: 'AGS',
   webDir: 'dist',
   server: {
     androidScheme: 'https'

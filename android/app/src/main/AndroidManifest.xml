@@ -34,7 +34,10 @@
             <meta-data android:name="android.support.FILE_PROVIDER_PATHS" android:resource="@xml/file_paths" />
         </provider>
         <!-- Widget 1: Today's Lessons -->
-        <receiver android:name=".TodayLessonsWidget" android:label="@string/widget_name_today_lessons" android:exported="true">
+        <receiver
+            android:name=".TodayLessonsWidget"
+            android:label="@string/widget_name_today_lessons"
+            android:exported="true">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
             </intent-filter>
@@ -43,7 +46,10 @@
         <service android:name=".TodayLessonsWidgetService" android:permission="android.permission.BIND_REMOTEVIEWS" />
 
         <!-- Widget 2: Quick Actions -->
-        <receiver android:name=".QuickActionsWidget" android:label="@string/widget_name_quick_actions" android:exported="true">
+        <receiver
+            android:name=".QuickActionsWidget"
+            android:label="@string/widget_name_quick_actions"
+            android:exported="true">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
             </intent-filter>
@@ -51,7 +57,10 @@
         </receiver>
 
         <!-- Widget 3: Current Active Lesson -->
-        <receiver android:name=".CurrentLessonWidget" android:label="@string/widget_name_current_lesson" android:exported="true">
+        <receiver
+            android:name=".CurrentLessonWidget"
+            android:label="@string/widget_name_current_lesson"
+            android:exported="true">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
             </intent-filter>
@@ -59,7 +68,10 @@
         </receiver>
 
         <!-- Widget 4: Payments Due -->
-        <receiver android:name=".PaymentsDueWidget" android:label="@string/widget_name_payment_tracker" android:exported="true">
+        <receiver
+            android:name=".PaymentsDueWidget"
+            android:label="@string/widget_name_payment_tracker"
+            android:exported="true">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
             </intent-filter>
@@ -76,7 +88,10 @@
         <service android:name=".TodoWidgetService" android:permission="android.permission.BIND_REMOTEVIEWS" />
 
         <!-- Widget 6: Revenue & Goals -->
-        <receiver android:name=".RevenueWidget" android:label="@string/widget_name_revenue_tracker" android:exported="true">
+        <receiver
+            android:name=".RevenueWidget"
+            android:label="@string/widget_name_revenue_tracker"
+            android:exported="true">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
             </intent-filter>
@@ -84,7 +99,10 @@
         </receiver>
 
         <!-- Widget 7: Mini Business Dashboard -->
-        <receiver android:name=".MiniDashboardWidget" android:label="@string/widget_name_teacher_overview" android:exported="true">
+        <receiver
+            android:name=".MiniDashboardWidget"
+            android:label="@string/widget_name_teacher_overview"
+            android:exported="true">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
             </intent-filter>
@@ -92,13 +110,19 @@
         </receiver>
 
         <!-- Widget 8: Upcoming Lessons -->
-        <receiver android:name=".UpcomingLessonsWidget" android:label="@string/widget_name_upcoming_lessons" android:exported="true">
+        <receiver
+            android:name=".UpcomingLessonsWidget"
+            android:label="@string/widget_name_upcoming_lessons"
+            android:exported="true">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
             </intent-filter>
             <meta-data android:name="android.appwidget.provider" android:resource="@xml/upcoming_lessons_widget_info" />
         </receiver>
-        <service android:name=".UpcomingLessonsWidgetService" android:permission="android.permission.BIND_REMOTEVIEWS" />
+        <service
+            android:name=".UpcomingLessonsWidgetService"
+            android:permission="android.permission.BIND_REMOTEVIEWS"
+        />
 
         <!-- Live Timer Foreground Service for System Notification Tray & Honor Magic Capsule -->
         <service
@@ -108,7 +132,8 @@
             android:foregroundServiceType="specialUse">
             <property
                 android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
-                android:value="Live Lesson Stopwatch Timer" />
+                android:value="Live Lesson Stopwatch Timer"
+            />
         </service>
     </application>
 
