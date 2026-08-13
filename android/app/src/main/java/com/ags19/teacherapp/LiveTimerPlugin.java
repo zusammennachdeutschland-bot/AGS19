@@ -43,7 +43,11 @@ public class LiveTimerPlugin extends Plugin {
         try {
             Intent intent = new Intent(getContext(), LiveTimerService.class);
             intent.setAction(LiveTimerService.ACTION_STOP);
-            getContext().stopService(intent);
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                getContext().startForegroundService(intent);
+            } else {
+                getContext().startService(intent);
+            }
             call.resolve();
         } catch (Exception e) {
             call.reject("Failed to stop LiveTimer service: " + e.getLocalizedMessage());

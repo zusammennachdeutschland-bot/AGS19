@@ -11,6 +11,9 @@ import {
 import { StartLessonNowModal } from './StartLessonNowModal';
 import { LessonReminderModal } from './LessonReminderModal';
 import { ExportMonthlyCalendarModal } from './ExportMonthlyCalendarModal';
+import { Capacitor } from '@capacitor/core';
+import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
+import { Share } from '@capacitor/share';
 
 export const ScheduleView: React.FC = () => {
   const { lessons, profile, openLessonControl, setIsAddLessonModalOpen, setIsAddQuickLessonModalOpen, updateLesson, deleteLesson, refreshCalendarAndDashboard,  t } = useApp();
@@ -172,7 +175,7 @@ export const ScheduleView: React.FC = () => {
   };
 
   // GOOGLE CALENDAR ICS EXPORT
-  const handleExportICS = () => {
+  const handleExportICS = async () => {
     let icsContent = [
       'BEGIN:VCALENDAR',
       'VERSION:2.0',
@@ -198,14 +201,38 @@ export const ScheduleView: React.FC = () => {
 
     icsContent.push('END:VCALENDAR');
 
-    const blob = new Blob([icsContent.join('\r\n')], { type: 'text/calendar;charset=utf-8' });
+    const icsContentStr = icsContent.join('\r\n');
+    const filename = `Schedule_${formatLocalDate(new Date())}.ics`;
+
+    if (Capacitor.isNativePlatform()) {
+      try {
+        const savedFile = await Filesystem.writeFile({
+          path: filename,
+          data: icsContentStr,
+          directory: Directory.Cache,
+          encoding: Encoding.UTF8
+        });
+        await Share.share({
+          title: 'Schedule Export',
+          text: `AGS Teacher App Schedule Export - ${filename}`,
+          url: savedFile.uri,
+          dialogTitle: 'Save Schedule Calendar File'
+        });
+        return;
+      } catch (err) {
+        console.warn('Capacitor schedule save/share failed, fallback to web:', err);
+      }
+    }
+
+    const blob = new Blob([icsContentStr], { type: 'text/calendar;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `Schedule_${formatLocalDate()}.ics`;
+    link.download = filename;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   };
 
   return (

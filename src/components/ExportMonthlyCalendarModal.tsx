@@ -2,6 +2,9 @@ import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { formatLocalDate } from '../utils/timeUtils';
 import { X, Calendar as CalendarIcon, Download, Share2, CheckCircle2, ArrowRight } from 'lucide-react';
+import { Capacitor } from '@capacitor/core';
+import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
+import { Share } from '@capacitor/share';
 
 interface ExportMonthlyCalendarModalProps {
   onClose: () => void;
@@ -185,8 +188,29 @@ export const ExportMonthlyCalendarModal: React.FC<ExportMonthlyCalendarModalProp
     setExportStep('summary');
   };
 
-  const handleDownloadFile = () => {
+  const handleDownloadFile = async () => {
     if (!exportStats) return;
+
+    if (Capacitor.isNativePlatform()) {
+      try {
+        const savedFile = await Filesystem.writeFile({
+          path: exportStats.filename,
+          data: exportStats.icsContent,
+          directory: Directory.Cache,
+          encoding: Encoding.UTF8
+        });
+        await Share.share({
+          title: 'Calendar Export',
+          text: `AGS Calendar Export - ${exportStats.filename}`,
+          url: savedFile.uri,
+          dialogTitle: 'Save Calendar File'
+        });
+        return;
+      } catch (err) {
+        console.warn('Capacitor save/share failed, fallback to web download:', err);
+      }
+    }
+
     const blob = new Blob([exportStats.icsContent], { type: 'text/calendar;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
@@ -200,6 +224,27 @@ export const ExportMonthlyCalendarModal: React.FC<ExportMonthlyCalendarModalProp
 
   const handleShareFile = async () => {
     if (!exportStats) return;
+
+    if (Capacitor.isNativePlatform()) {
+      try {
+        const savedFile = await Filesystem.writeFile({
+          path: exportStats.filename,
+          data: exportStats.icsContent,
+          directory: Directory.Cache,
+          encoding: Encoding.UTF8
+        });
+        await Share.share({
+          title: `Calendar Export - ${MONTH_NAMES_DISPLAY[selectedMonth]} ${selectedYear}`,
+          text: `Teacher Assistant calendar for ${MONTH_NAMES_DISPLAY[selectedMonth]} ${selectedYear}`,
+          url: savedFile.uri,
+          dialogTitle: 'Share Calendar File'
+        });
+        return;
+      } catch (err) {
+        console.warn('Capacitor share failed, fallback to web:', err);
+      }
+    }
+
     const file = new File([exportStats.icsContent], exportStats.filename, { type: 'text/calendar' });
     if (navigator.canShare && navigator.canShare({ files: [file] })) {
       try {
