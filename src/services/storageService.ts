@@ -7,9 +7,9 @@ let isLocalforageSupported = false;
 
 try {
   localforage.config({
-    name: 'AGS19_DB',
+    name: 'Glück_DB',
     storeName: 'ags19_store',
-    description: 'Data storage for AGS19'
+    description: 'Data storage for Glück'
   });
   isLocalforageSupported = true;
 } catch (e) {

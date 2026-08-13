@@ -1,38 +1,42 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
-  <defs>
-    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" stop-color="#111111"/>
-      <stop offset="33.3%" stop-color="#111111"/>
-      <stop offset="33.3%" stop-color="#DD0000"/>
-      <stop offset="66.6%" stop-color="#DD0000"/>
-      <stop offset="66.6%" stop-color="#FFCC00"/>
-      <stop offset="100%" stop-color="#FFCC00"/>
-    </linearGradient>
-    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
-      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#000000" flood-opacity="0.5"/>
-    </filter>
-    <clipPath id="roundedCorners">
-      <rect x="0" y="0" width="1024" height="1024" rx="220" ry="220"/>
-    </clipPath>
-  </defs>
-
-  <g clip-path="url(#roundedCorners)">
-    <!-- German Flag Bands -->
-    <rect x="0" y="0" width="1024" height="341.33" fill="#18181b"/>
-    <rect x="0" y="341.33" width="1024" height="341.33" fill="#dc2626"/>
-    <rect x="0" y="682.66" width="1024" height="341.33" fill="#eab308"/>
-
-    <!-- Subtle texture / shading -->
-    <rect x="0" y="0" width="1024" height="1024" fill="black" opacity="0.05"/>
-
-    <!-- Bold Centered AGS Text -->
-    <text x="512" y="580" 
-          text-anchor="middle" 
-          font-family="'Alexandria', 'Plus Jakarta Sans', 'Arial Black', sans-serif" 
-          font-weight="900" 
-          font-size="290" 
-          letter-spacing="2"
-          fill="#FFFFFF" 
-          filter="url(#shadow)">AGS</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <rect width="512" height="512" fill="#ffffff" />
+  <g transform="translate(15, 180) scale(0.55)">
+    <style>
+      .brand-title {
+        font-family: 'Arial Black', Impact, sans-serif;
+        font-size: 140px;
+        fill: #eb5e45;
+        font-weight: 900;
+        letter-spacing: 5px;
+      }
+      .brand-title-shadow {
+        font-family: 'Arial Black', Impact, sans-serif;
+        font-size: 140px;
+        fill: #f5b7b1;
+        font-weight: 900;
+        letter-spacing: 5px;
+      }
+      .umlaut {
+        fill: #eb5e45;
+      }
+      .subtitle {
+        font-family: 'Arial', sans-serif;
+        font-size: 40px;
+        fill: #3b5978;
+        font-weight: bold;
+      }
+      .line {
+        stroke: #f3a968;
+        stroke-width: 4;
+        stroke-linecap: round;
+      }
+    </style>
+    <text x="30" y="210" class="brand-title-shadow">GLUCK</text>
+    <text x="25" y="205" class="brand-title">GLUCK</text>
+    <circle cx="210" cy="65" r="12" class="umlaut" />
+    <circle cx="250" cy="65" r="12" class="umlaut" />
+    <text x="680" y="150" class="subtitle" text-anchor="middle">HERR ABDUL RHMAN</text>
+    <text x="680" y="200" class="subtitle" text-anchor="middle">01156435802</text>
+    <line x1="25" y1="240" x2="850" y2="240" class="line" />
   </g>
 </svg>

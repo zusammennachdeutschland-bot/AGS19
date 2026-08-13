@@ -228,6 +228,7 @@ export interface Lesson {
   quickStudentPhone?: string;
   quickParentPhone?: string;
   quickNotes?: string;
+  homeworkFollowUpSentAt?: string; // ISO string when follow-up was sent
 }
 
 export type SyncStatus = 'synced' | 'pending' | 'error';

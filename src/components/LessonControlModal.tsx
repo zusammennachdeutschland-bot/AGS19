@@ -10,6 +10,8 @@ import {
 import { ParentSummaryModal } from './ParentSummaryModal';
 import { ArabicParentReportModal } from './ArabicParentReportModal';
 import { LessonReminderModal } from './LessonReminderModal';
+import { HomeworkFollowUpModal } from './HomeworkFollowUpModal';
+import { getPendingHomeworkFollowUps } from '../utils/homeworkFollowUpUtils';
 import { buildWhatsAppUrl, formatWhatsAppPhone } from '../utils/phoneUtils';
 import confetti from 'canvas-confetti';
 
@@ -72,6 +74,14 @@ export const LessonControlModal: React.FC = () => {
   const [studentPayments, setStudentPayments] = useState<Record<string, { status: PaymentStatus; amount: number }>>({});
   const [reminderCopied, setReminderCopied] = useState(false);
   const [showLessonReminderModal, setShowLessonReminderModal] = useState(false);
+  const [showFollowUpModal, setShowFollowUpModal] = useState(false);
+  const [dismissFollowUpBanner, setDismissFollowUpBanner] = useState(false);
+
+  // Check pending follow-ups for this group
+  const pendingFollowUps = getPendingHomeworkFollowUps(lessons, groups);
+  const groupPendingFollowUp = selectedLesson?.groupId 
+    ? pendingFollowUps.find(p => p.groupId === selectedLesson.groupId)
+    : null;
 
   // Group students for bulk/individual attendance
   const groupStudents = selectedLesson?.groupId 
@@ -440,6 +450,30 @@ export const LessonControlModal: React.FC = () => {
 
         {/* Modal Body */}
         <div className="p-5 space-y-3 max-h-[78vh] overflow-y-auto font-sans">
+          {/* Homework Follow-Up Pending Banner */}
+          {groupPendingFollowUp && !dismissFollowUpBanner && (
+            <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 p-3 rounded-xl flex items-center justify-between gap-3 mb-2">
+              <div className="flex items-center gap-2">
+                <AlertCircle className="w-5 h-5 text-amber-500" />
+                <span className="text-sm font-bold text-amber-800 dark:text-amber-400">Homework Follow-Up Pending</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setShowFollowUpModal(true)}
+                  className="bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition-colors"
+                >
+                  Send Now
+                </button>
+                <button
+                  onClick={() => setDismissFollowUpBanner(true)}
+                  className="bg-amber-100 dark:bg-amber-900/40 hover:bg-amber-200 dark:hover:bg-amber-800 text-amber-700 dark:text-amber-300 text-xs font-bold px-3 py-1.5 rounded-lg transition-colors"
+                >
+                  Dismiss
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* Quick Lesson Banner & Convert Action */}
           {selectedLesson.isQuickLesson && (
             <div className="p-3 bg-primary-soft dark:bg-primary-soft border border-primary-border dark:border-primary-border rounded-lg flex items-center justify-between gap-3">
@@ -1214,6 +1248,15 @@ export const LessonControlModal: React.FC = () => {
           group={targetGroup}
           recipientPhone={recipientPhone}
           onClose={() => setShowLessonReminderModal(false)}
+        />
+      )}
+
+      {/* Homework Follow-Up Modal */}
+      {showFollowUpModal && pendingFollowUps.length > 0 && (
+        <HomeworkFollowUpModal
+          pendingFollowUps={pendingFollowUps}
+          initialGroupId={selectedLesson?.groupId}
+          onClose={() => setShowFollowUpModal(false)}
         />
       )}
     </div>

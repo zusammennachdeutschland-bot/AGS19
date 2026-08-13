@@ -389,7 +389,7 @@ const updateMediaSessionLockscreen = (
     navigator.mediaSession.metadata = new window.MediaMetadata({
       title,
       artist: body,
-      album: 'AGS Teacher App',
+      album: 'Glück fröhlich und froh',
       artwork: [
         { src: '/pwa-192x192.png', sizes: '192x192', type: 'image/png' }
       ]

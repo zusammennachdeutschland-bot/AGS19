@@ -1,8 +1,8 @@
 import { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'com.ags19.teacherapp',
-  appName: 'AGS Teacher App',
+  appId: 'com.glueck.app',
+  appName: 'Glück',
   webDir: 'dist',
   server: {
     androidScheme: 'https'
@@ -14,7 +14,7 @@ const config: CapacitorConfig = {
       backgroundColor: '#00000000'
     },
     LocalNotifications: {
-      smallIcon: 'ic_stat_icon_config_sample',
+      smallIcon: 'ic_launcher_monochrome',
       iconColor: '#2563EB',
       sound: 'beep.wav'
     },

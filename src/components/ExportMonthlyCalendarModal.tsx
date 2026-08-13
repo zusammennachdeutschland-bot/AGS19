@@ -91,7 +91,7 @@ export const ExportMonthlyCalendarModal: React.FC<ExportMonthlyCalendarModalProp
     let icsLines = [
       'BEGIN:VCALENDAR',
       'VERSION:2.0',
-      'PRODID:-//AGS//Teacher Assistant Calendar//EN',
+      'PRODID:-//Glück//Teacher Assistant Calendar//EN',
       'CALSCALE:GREGORIAN',
       'METHOD:PUBLISH',
       'X-WR-CALNAME:Teacher Assistant - ' + MONTH_NAMES_DISPLAY[selectedMonth] + ' ' + selectedYear
@@ -201,7 +201,7 @@ export const ExportMonthlyCalendarModal: React.FC<ExportMonthlyCalendarModalProp
         });
         await Share.share({
           title: 'Calendar Export',
-          text: `AGS Calendar Export - ${exportStats.filename}`,
+          text: `Glück Calendar Export - ${exportStats.filename}`,
           url: savedFile.uri,
           dialogTitle: 'Save Calendar File'
         });

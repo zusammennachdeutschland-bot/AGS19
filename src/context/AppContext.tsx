@@ -794,7 +794,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode, initialData: any
     if (method === 'notification' || method === 'both') {
       if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
         try {
-          new Notification('💡 الإلهام والامتنان | AGS', {
+          new Notification('💡 الإلهام والامتنان | Glück', {
             body: selectedMsg.text,
             icon: '/icon.png'
           });
@@ -1010,7 +1010,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode, initialData: any
       exportedAt: new Date().toISOString()
     };
     const jsonStr = JSON.stringify(data, null, 2);
-    const fileName = `AGS_Backup_${formatLocalDate()}.json`;
+    const fileName = `Glueck_Backup_${formatLocalDate()}.json`;
 
     if (Capacitor.isNativePlatform()) {
       try {
@@ -1021,8 +1021,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode, initialData: any
           encoding: Encoding.UTF8
         });
         await Share.share({
-          title: 'AGS Backup',
-          text: 'Backup Export Data (AGS)',
+          title: 'Glück Backup',
+          text: 'Backup Export Data (Glück)',
           url: savedFile.uri,
           dialogTitle: 'Export Backup JSON'
         });
@@ -2237,8 +2237,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode, initialData: any
           encoding: Encoding.UTF8
         });
         await Share.share({
-          title: 'AGS Backup',
-          text: 'Backup Export Data (AGS)',
+          title: 'Glück Backup',
+          text: 'Backup Export Data (Glück)',
           url: savedFile.uri,
           dialogTitle: 'Export Backup JSON'
         });

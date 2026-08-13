@@ -92,7 +92,7 @@ export const Header: React.FC = () => {
               ) : (
                 <>
                   <p className="text-[9px] font-black uppercase tracking-widest text-primary dark:text-primary">
-                    AGS Teacher
+                    Glück fröhlich und froh
                   </p>
                   <h1 className="text-sm sm:text-base font-black text-slate-900 dark:text-slate-100 capitalize leading-snug whitespace-normal break-words">
                     {activeTab === 'schedule' ? (t('nav_schedule') || 'Termine')

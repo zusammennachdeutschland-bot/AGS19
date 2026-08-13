@@ -179,7 +179,7 @@ export const ScheduleView: React.FC = () => {
     let icsContent = [
       'BEGIN:VCALENDAR',
       'VERSION:2.0',
-      'PRODID:-//AGS//Calendar App',
+      'PRODID:-//Glück//Calendar App',
       'CALSCALE:GREGORIAN',
       'METHOD:PUBLISH',
     ];
@@ -214,7 +214,7 @@ export const ScheduleView: React.FC = () => {
         });
         await Share.share({
           title: 'Schedule Export',
-          text: `AGS Teacher App Schedule Export - ${filename}`,
+          text: `Glück fröhlich und froh Schedule Export - ${filename}`,
           url: savedFile.uri,
           dialogTitle: 'Save Schedule Calendar File'
         });

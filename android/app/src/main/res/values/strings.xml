@@ -1,9 +1,9 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">AGS Teacher App</string>
-    <string name="title_activity_main">AGS Teacher App</string>
-    <string name="package_name">com.ags19.teacherapp</string>
-    <string name="custom_url_scheme">com.ags19.teacherapp</string>
+    <string name="app_name">Glück fröhlich und froh</string>
+    <string name="title_activity_main">Glück fröhlich und froh</string>
+    <string name="package_name">com.glueck.app</string>
+    <string name="custom_url_scheme">com.glueck.app</string>
 
     <!-- Widget Labels -->
     <string name="widget_name_teacher_overview">Teacher Business Overview</string>

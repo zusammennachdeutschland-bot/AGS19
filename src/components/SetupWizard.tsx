@@ -33,7 +33,7 @@ export const SetupWizard: React.FC = () => {
           <div className="w-16 h-16 bg-surface/20 rounded-lg flex items-center justify-center mx-auto mb-4">
             <Briefcase className="w-8 h-8 text-white" />
           </div>
-          <h2 className="text-2xl font-black mb-1">Welcome to AGS Teacher App</h2>
+          <h2 className="text-2xl font-black mb-1">Welcome to Glück fröhlich und froh</h2>
           <p className="text-sm text-primary-soft font-medium">Let's set up your teacher profile</p>
         </div>
 

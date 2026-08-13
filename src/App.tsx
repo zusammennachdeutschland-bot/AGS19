@@ -5,6 +5,7 @@ import { Header } from './components/Header';
 import { TodaysProgressTimeline } from './components/TodaysProgressTimeline';
 import { DailyStats } from './components/DailyStats';
 import { PaymentAlertsCard } from './components/PaymentAlertsCard';
+import { HomeworkFollowUpWidget } from './components/HomeworkFollowUpWidget';
 import { TomorrowsLessonsWidget } from './components/TomorrowsLessonsWidget';
 import { AvailableTodayWidget } from './components/AvailableTodayWidget';
 
@@ -324,6 +325,8 @@ function MainApp() {
 
               {/* Compact Collapsible To-Do Widget */}
               <QuickTodoWidget />
+
+              <HomeworkFollowUpWidget />
 
               {/* Tomorrow's Lessons Compact Widget */}
               <TomorrowsLessonsWidget />

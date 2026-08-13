@@ -240,8 +240,8 @@ export const SmartBackupCenter: React.FC<SmartBackupCenterProps> = ({ onBack }) 
               encoding: Encoding.UTF8
             });
             await Share.share({
-              title: 'AGS Backup',
-              text: 'Backup Export Data (AGS)',
+              title: 'Glück Backup',
+              text: 'Backup Export Data (Glück)',
               url: savedFile.uri,
               dialogTitle: 'Export Backup JSON'
             });
@@ -329,7 +329,7 @@ export const SmartBackupCenter: React.FC<SmartBackupCenterProps> = ({ onBack }) 
         };
 
         const jsonString = JSON.stringify(backupPayload, null, 2);
-        const fileName = `AGS_Quick_Backup_${formatLocalDate()}.json`;
+        const fileName = `Glück_Quick_Backup_${formatLocalDate()}.json`;
 
         if (Capacitor.isNativePlatform()) {
           const savedFile = await Filesystem.writeFile({
@@ -339,8 +339,8 @@ export const SmartBackupCenter: React.FC<SmartBackupCenterProps> = ({ onBack }) 
             encoding: Encoding.UTF8
           });
           await Share.share({
-            title: 'AGS Simple Backup',
-            text: 'Quick Backup Data (AGS)',
+            title: 'Glück Simple Backup',
+            text: 'Quick Backup Data (Glück)',
             url: savedFile.uri,
             dialogTitle: 'Save Backup File'
           });
