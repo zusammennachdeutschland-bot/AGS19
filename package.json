@@ -9,7 +9,8 @@
     "preview": "vite preview",
     "clean": "rm -rf dist server.js",
     "lint": "tsc --noEmit",
-    "prebuild": "node scripts/check_binaries.cjs"
+    "prebuild": "node scripts/check_binaries.cjs",
+    "restore-binaries": "node scripts/restore_binaries.cjs"
   },
   "dependencies": {
     "@capacitor/android": "^8.0.0",
